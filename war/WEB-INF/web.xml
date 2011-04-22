@@ -23,18 +23,33 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
   </servlet-mapping>
   
   <servlet>
-    <servlet-name>presence</servlet-name>
-    <servlet-class>org.lantern.XmppPresenceServlet</servlet-class>
+    <servlet-name>available</servlet-name>
+    <servlet-class>org.lantern.XmppAvailableServlet</servlet-class>
   </servlet>
   
   <servlet-mapping>
-    <servlet-name>presence</servlet-name>
-    <url-pattern>/_ah/xmpp/presence/available</url-pattern>
+    <servlet-name>available</servlet-name>
+    <url-pattern>/_ah/xmpp/presence/available/</url-pattern>
   </servlet-mapping>
   
+  <servlet>
+    <servlet-name>unavailable</servlet-name>
+    <servlet-class>org.lantern.XmppUnavailableServlet</servlet-class>
+  </servlet>
+  
   <servlet-mapping>
-    <servlet-name>presence</servlet-name>
-    <url-pattern>/_ah/xmpp/presence/unavailable</url-pattern>
+    <servlet-name>unavailable</servlet-name>
+    <url-pattern>/_ah/xmpp/presence/unavailable/</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>subscribe</servlet-name>
+    <servlet-class>org.lantern.XmppSubscribeServlet</servlet-class>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>subscribe</servlet-name>
+    <url-pattern>/_ah/xmpp/subscription/subscribe/</url-pattern>
   </servlet-mapping>
   
   <servlet>
@@ -46,7 +61,6 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
     <servlet-name>subscribed</servlet-name>
     <url-pattern>/_ah/xmpp/subscription/subscribed/</url-pattern>
   </servlet-mapping>
-  
   
 	<welcome-file-list>
 		<welcome-file>index.html</welcome-file>

@@ -7,6 +7,8 @@ public class LanternUser {
     private String id;
     
     private boolean available;
+    
+    private boolean validated;
 
     public LanternUser() {
         super();
@@ -25,7 +27,15 @@ public class LanternUser {
         return available;
     }
 
-    public void setAvailable(boolean available) {
+    public void setAvailable(final boolean available) {
         this.available = available;
+    }
+
+    public void setValidated(final boolean validated) {
+        this.validated = validated;
+    }
+
+    public boolean isValidated() {
+        return validated;
     }
 }

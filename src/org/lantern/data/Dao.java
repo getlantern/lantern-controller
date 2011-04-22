@@ -40,7 +40,7 @@ public class Dao extends DAOBase {
     public Collection<String> getUsers() {
         final Objectify ofy = ObjectifyService.begin();
         final Query<LanternUser> users = 
-            ofy.query(LanternUser.class).filter("available", Boolean.TRUE);
+            ofy.query(LanternUser.class).filter("available", Boolean.TRUE).filter("validated", Boolean.TRUE);
         final Collection<String> results = new HashSet<String>(20);
         final QueryResultIterator<LanternUser> iter = users.iterator();
         while (iter.hasNext()) {
@@ -62,5 +62,16 @@ public class Dao extends DAOBase {
             System.out.println("Could not find user!!");
         }
         
+    }
+
+    public void validate(final String id) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, id);
+        if (user != null) {
+            user.setValidated(true);
+            ofy.put(user);
+        } else {
+            System.out.println("Could not find user!!");
+        }
     }
 }

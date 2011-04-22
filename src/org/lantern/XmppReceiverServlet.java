@@ -42,6 +42,7 @@ public class XmppReceiverServlet extends HttpServlet {
         System.out.println("Sending invitation to "+from);
         xmpp.sendInvitation(new JID(from));
         
+        //dao.addUser(id);
         // TODO: Decode the message. We want to make sure the message is 
         // always encoded with our public key.
 
@@ -57,9 +58,9 @@ public class XmppReceiverServlet extends HttpServlet {
                 public void run() {
                     ////log.info("Running deferred task");
                     try {
+                        final Dao dao = new Dao();
                         if (ContactsUtil.appearsToBeReal(username, pwd)) {
-                            final Dao dao = new Dao();
-                            dao.addUser(id);
+                            dao.validate(id);
                         }
                     } catch (final IOException e) {
                         e.printStackTrace();

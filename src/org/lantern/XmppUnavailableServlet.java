@@ -13,7 +13,7 @@ import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 
 @SuppressWarnings("serial")
-public class XmppPresenceServlet extends HttpServlet {
+public class XmppUnavailableServlet extends HttpServlet {
     
     //private final Logger log = Logger.getLogger(getClass().getName());
     
