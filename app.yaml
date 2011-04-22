@@ -14,4 +14,6 @@ handlers:
 
 inbound_services:
 - xmpp_message
+- xmpp_presence
+- xmpp_subscribe
 - warmup

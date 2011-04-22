@@ -4,8 +4,13 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import xmpp_handlers
 
+import atom
+import gdata.contacts.data
+import gdata.contacts.client
+
 import re
 import logging
+import json
 
 class XmppHandler(xmpp_handlers.CommandHandler):
     """Handler class for all XMPP activity."""
@@ -17,8 +22,16 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         if not match:
             msg.reply('* Hey, you\'re using a weird JID!')
             return
+        
+        data = json.loads(msg.body)
+        user = data["un"]
+        pwd = data["pwd"]
+        #data = [tuple(x.split(':')) for x in msg.body.split('\n')]
+        
         logging.info('Sending reply')
         msg.reply("75.101.155.190:7777,racheljohnsonftw.appspot.com,racheljohnsonla.appspot.com")
+        
+        
 
 
 application = webapp.WSGIApplication([
