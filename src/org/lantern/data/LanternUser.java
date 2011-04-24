@@ -1,5 +1,7 @@
 package org.lantern.data;
 
+import java.util.Date;
+
 import javax.persistence.Id;
 
 public class LanternUser {
@@ -9,6 +11,8 @@ public class LanternUser {
     private boolean available;
     
     private boolean validated;
+    
+    private Date created = new Date();
 
     public LanternUser() {
         super();
@@ -37,5 +41,13 @@ public class LanternUser {
 
     public boolean isValidated() {
         return validated;
+    }
+
+    public void setCreated(Date created) {
+        this.created = created;
+    }
+
+    public Date getCreated() {
+        return created;
     }
 }

@@ -32,13 +32,8 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
     <url-pattern>/_ah/xmpp/presence/available/</url-pattern>
   </servlet-mapping>
   
-  <servlet>
-    <servlet-name>unavailable</servlet-name>
-    <servlet-class>org.lantern.XmppUnavailableServlet</servlet-class>
-  </servlet>
-  
   <servlet-mapping>
-    <servlet-name>unavailable</servlet-name>
+    <servlet-name>available</servlet-name>
     <url-pattern>/_ah/xmpp/presence/unavailable/</url-pattern>
   </servlet-mapping>
   

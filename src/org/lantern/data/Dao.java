@@ -18,14 +18,6 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LanternUser.class);
     }
 
-    public LanternUser getOrCreateUser(final String id) {
-        final LanternUser user = ofy().find(LanternUser.class, id);
-        if (user == null)
-            return new LanternUser(id);
-        else
-            return user;
-    }
-
     public void addUser(final String id) {
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, id);
@@ -40,7 +32,7 @@ public class Dao extends DAOBase {
     public Collection<String> getUsers() {
         final Objectify ofy = ObjectifyService.begin();
         final Query<LanternUser> users = 
-            ofy.query(LanternUser.class).filter("available", Boolean.TRUE).filter("validated", Boolean.TRUE);
+            ofy.query(LanternUser.class).filter("available", true).filter("validated", true);
         final Collection<String> results = new HashSet<String>(20);
         final QueryResultIterator<LanternUser> iter = users.iterator();
         while (iter.hasNext()) {

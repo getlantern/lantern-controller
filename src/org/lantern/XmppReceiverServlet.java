@@ -81,13 +81,14 @@ public class XmppReceiverServlet extends HttpServlet {
                 "racheljohnsonla.appspot.com");
         try {
             response.put("servers", servers);
-            final String serversBody = servers.toString();
+            final String serversBody = response.toString();
             final Message msg = 
                 new MessageBuilder().withRecipientJids(message.getFromJid()).withBody(serversBody).build();
             final SendResponse status = xmpp.sendMessage(msg);
-            final boolean messageSent = (status.getStatusMap().get(message.getFromJid()) == SendResponse.Status.SUCCESS);
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
+            final boolean messageSent = 
+                (status.getStatusMap().get(
+                    message.getFromJid()) == SendResponse.Status.SUCCESS);
+        } catch (final JSONException e) {
             e.printStackTrace();
         }
     }
