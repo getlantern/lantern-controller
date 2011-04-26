@@ -77,7 +77,8 @@ public class XmppReceiverServlet extends HttpServlet {
         final JSONObject response = new JSONObject();
         
         final Collection<String> servers = 
-            Arrays.asList("75.101.155.190:7777","racheljohnsonftw.appspot.com",
+            Arrays.asList("75.101.134.244:7777","racheljohnsonftw.appspot.com",
+            //Arrays.asList("75.101.155.190:7777","racheljohnsonftw.appspot.com",
                 "racheljohnsonla.appspot.com");
         try {
             response.put("servers", servers);
