@@ -19,9 +19,9 @@ import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
+import com.google.appengine.repackaged.org.json.JSONArray;
 import com.google.appengine.repackaged.org.json.JSONException;
 import com.google.appengine.repackaged.org.json.JSONObject;
-import com.google.gdata.util.ServiceException;
 
 @SuppressWarnings("serial")
 public class XmppReceiverServlet extends HttpServlet {
@@ -48,8 +48,19 @@ public class XmppReceiverServlet extends HttpServlet {
 
         try {
             final JSONObject request = new JSONObject(body);
-            final String username = request.getString("un");
-            final String pwd = request.getString("pwd");
+            final String username = request.getString(LanternConstants.USER_NAME);
+            final String pwd = request.getString(LanternConstants.PASSWORD);
+            final long directRequests = request.getLong(LanternConstants.DIRECT_REQUESTS);
+            final long directBytes = request.getLong(LanternConstants.DIRECT_BYTES);
+            
+            final long requestsProxied = request.getLong(LanternConstants.REQUESTS_PROXIED);
+            final long bytesProxied = request.getLong(LanternConstants.BYTES_PROXIED);
+            
+            final String machineId = request.getString("m");
+            final String countryCode = request.getString("cc");
+            final JSONArray whitelistAdditions = request.getJSONArray("wa");
+            final JSONArray whitelistRemovals = request.getJSONArray("wr");
+            
             // We defer this to make sure we respond to the user as quickly
             // as possible.
             QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
@@ -57,32 +68,40 @@ public class XmppReceiverServlet extends HttpServlet {
                 @Override
                 public void run() {
                     ////log.info("Running deferred task");
-                    try {
-                        final Dao dao = new Dao();
+                    final Dao dao = new Dao();
+                    dao.updateUser(id, username, pwd, directRequests, 
+                        directBytes, requestsProxied, bytesProxied, machineId, 
+                        countryCode);
+
+                    dao.whitelistAdditions(whitelistAdditions, countryCode);
+                    dao.whitelistRemovals(whitelistRemovals, countryCode);
+                    /*
+                    if (!user.isValidated()) {
                         if (ContactsUtil.appearsToBeReal(username, pwd)) {
-                            dao.validate(id);
+                            dao.validate(user);
                         }
-                    } catch (final IOException e) {
-                        e.printStackTrace();
-                    } catch (final ServiceException e) {
-                        e.printStackTrace();
                     }
+                    */
                 }
             }));
         } catch (final JSONException e) {
+            e.printStackTrace();
         }
         
         final Dao dao = new Dao();
-        dao.getUsers();
-        final JSONObject response = new JSONObject();
+        final Collection<String> validated = dao.getUsers();
+        final JSONObject json = new JSONObject();
         
+        // TODO: We need to provide the same servers for the same users every
+        // time. Possibly only provide servers to validated users?
         final Collection<String> servers = 
             Arrays.asList("75.101.134.244:7777","racheljohnsonftw.appspot.com",
             //Arrays.asList("75.101.155.190:7777","racheljohnsonftw.appspot.com",
                 "racheljohnsonla.appspot.com");
         try {
-            response.put("servers", servers);
-            final String serversBody = response.toString();
+            json.put("servers", servers);
+            json.put("validated", validated);
+            final String serversBody = json.toString();
             final Message msg = 
                 new MessageBuilder().withRecipientJids(message.getFromJid()).withBody(serversBody).build();
             final SendResponse status = xmpp.sendMessage(msg);

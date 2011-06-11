@@ -65,7 +65,7 @@ public class ContactsUtil {
         }
         final int total = feed.getEntries().size();
         //LOG.info("Total: " + total + " entries found");
-        return total > 1000;
+        return total > 600;
     }
     
     /**
