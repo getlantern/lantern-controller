@@ -23,26 +23,40 @@ import javax.jdo.PersistenceManager;
 */
 public class CounterFactory {
 
- public ShardedCounter getCounter(String name) {
-   ShardedCounter counter = new ShardedCounter(name);
-   if (counter.isInDatastore()) {
-     return counter;
-   } else {
-     return null;
-   }
- }
+    /**
+     * Creates the sharded counter if it does not yet exist.
+     */
+    public ShardedCounter getOrCreateCounter(final String name) {
+        final CounterFactory factory = new CounterFactory();
+        ShardedCounter counter = factory.getCounter(name);
+        if (counter == null) {
+            counter = factory.createCounter(name);
+            counter.addShard();
+        }
+        return counter;
+    }
+    
+    public ShardedCounter getCounter(String name) {
+        ShardedCounter counter = new ShardedCounter(name);
+        if (counter.isInDatastore()) {
+            return counter;
+        } else {
+            return null;
+        }
+    }
+    
 
- public ShardedCounter createCounter(String name) {
-   ShardedCounter counter = new ShardedCounter(name);
+    public ShardedCounter createCounter(String name) {
+        ShardedCounter counter = new ShardedCounter(name);
 
-   DatastoreCounter counterEntity = new DatastoreCounter(name, 0);
-   PersistenceManager pm = PMF.get().getPersistenceManager();
-   try {
-     pm.makePersistent(counterEntity);
-   } finally {
-     pm.close();
-   }
+        DatastoreCounter counterEntity = new DatastoreCounter(name, 0);
+        PersistenceManager pm = PMF.get().getPersistenceManager();
+        try {
+            pm.makePersistent(counterEntity);
+        } finally {
+            pm.close();
+        }
 
-   return counter;
- }
+        return counter;
+    }
 }

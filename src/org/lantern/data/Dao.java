@@ -33,12 +33,12 @@ public class Dao extends DAOBase {
     
     static {
         ObjectifyService.register(LanternUser.class);
-        COUNTER_FACTORY.createCounter(BYTES_PROXIED);
-        COUNTER_FACTORY.createCounter(REQUESTS_PROXIED);
-        COUNTER_FACTORY.createCounter(DIRECT_BYTES);
-        COUNTER_FACTORY.createCounter(DIRECT_REQUESTS);
-        COUNTER_FACTORY.createCounter(CENSORED_USERS);
-        COUNTER_FACTORY.createCounter(UNCENSORED_USERS);
+        COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
+        COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
+        COUNTER_FACTORY.getOrCreateCounter(DIRECT_BYTES);
+        COUNTER_FACTORY.getOrCreateCounter(DIRECT_REQUESTS);
+        COUNTER_FACTORY.getOrCreateCounter(CENSORED_USERS);
+        COUNTER_FACTORY.getOrCreateCounter(UNCENSORED_USERS);
     }
     
     public void addUser(final String id) {
@@ -164,7 +164,7 @@ public class Dao extends DAOBase {
 
     private void add(final JSONObject json, final String key) {
         try {
-            json.put(key.toLowerCase(), COUNTER_FACTORY.getCounter(key).getCount());
+            json.put(key.toLowerCase(), COUNTER_FACTORY.getOrCreateCounter(key).getCount());
         } catch (final JSONException e) {
             e.printStackTrace();
         }

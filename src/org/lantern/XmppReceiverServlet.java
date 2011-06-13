@@ -46,6 +46,7 @@ public class XmppReceiverServlet extends HttpServlet {
         // TODO: Decode the message. We want to make sure the message is 
         // always encoded with our public key.
 
+        System.out.println("Received body: "+body);
         try {
             final JSONObject request = new JSONObject(body);
             final String username = request.getString(LanternConstants.USER_NAME);
@@ -69,7 +70,8 @@ public class XmppReceiverServlet extends HttpServlet {
                 public void run() {
                     ////log.info("Running deferred task");
                     final Dao dao = new Dao();
-                    dao.updateUser(id, username, pwd, directRequests, 
+                    System.out.println("Updating stats");
+                    dao.updateUser(from, username, pwd, directRequests, 
                         directBytes, requestsProxied, bytesProxied, machineId, 
                         countryCode);
 
