@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -39,6 +40,7 @@ public class Dao extends DAOBase {
         COUNTER_FACTORY.getOrCreateCounter(DIRECT_REQUESTS);
         COUNTER_FACTORY.getOrCreateCounter(CENSORED_USERS);
         COUNTER_FACTORY.getOrCreateCounter(UNCENSORED_USERS);
+        COUNTER_FACTORY.getOrCreateCounter(TOTAL_USERS);
     }
     
     public void addUser(final String id) {
@@ -95,7 +97,9 @@ public class Dao extends DAOBase {
 
     public void updateUser(String id, String username, String pwd,
             long directRequests, long directBytes, long requestsProxied,
-            long bytesProxied, String machineId, String countryCode) {
+            long bytesProxied, String countryCode) {
+        System.out.println(
+            "Updating user with stats: dr: "+directRequests+" db: "+directBytes+" bytesProxied: "+bytesProxied);
         final Objectify ofy = ofy();
         final LanternUser user;
         final LanternUser tempUser = ofy.find(LanternUser.class, id);
@@ -124,11 +128,15 @@ public class Dao extends DAOBase {
         user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
         user.setDirectBytes(user.getDirectBytes() + directBytes);
         user.setDirectRequests(user.getDirectRequests() + directRequests);
-        final Collection<String> newCodes = user.getCountryCodes();
+        Collection<String> newCodes = user.getCountryCodes();
+        if (newCodes == null) {
+            newCodes = new HashSet<String>();
+        }
         newCodes.add(countryCode);
         user.setCountryCodes(newCodes);
         ofy.put(user);
         
+        System.out.println("Really bumping stats...");
         COUNTER_FACTORY.getCounter(BYTES_PROXIED).increment(bytesProxied);
         COUNTER_FACTORY.getCounter(REQUESTS_PROXIED).increment(requestsProxied);
         COUNTER_FACTORY.getCounter(DIRECT_BYTES).increment(directBytes);
@@ -140,13 +148,8 @@ public class Dao extends DAOBase {
             } else {
                 COUNTER_FACTORY.getCounter(UNCENSORED_USERS).increment();
             }
-            final ShardedCounter countryCounter;
-            final ShardedCounter tempCc = COUNTER_FACTORY.getCounter(countryCode);
-            if (tempCc == null) {
-                countryCounter = COUNTER_FACTORY.createCounter(countryCode);
-            } else {
-                countryCounter = tempCc;
-            }
+            final ShardedCounter countryCounter = 
+                COUNTER_FACTORY.getOrCreateCounter(countryCode);
             countryCounter.increment();
         }
     }
@@ -163,40 +166,29 @@ public class Dao extends DAOBase {
     }
 
     private void add(final JSONObject json, final String key) {
+        final long count = COUNTER_FACTORY.getCounter(key).getCount();
         try {
-            json.put(key.toLowerCase(), COUNTER_FACTORY.getOrCreateCounter(key).getCount());
+            json.put(key.toLowerCase(), count);
         } catch (final JSONException e) {
             e.printStackTrace();
         }
     }
 
-    public void whitelistAdditions(final JSONArray whitelistAdditions,
+    public void whitelistAdditions(final Collection<String> whitelistAdditions,
         final String countryCode) {
-        final int length = whitelistAdditions.length();
-        for (int i = 0; i < length; i++) {
-            try {
-                final String url = (String) whitelistAdditions.get(i);
-                final WhitelistEntry entry = new WhitelistEntry();
-                entry.setUrl(url);
-                entry.setCountryCode(countryCode);
-            } catch (final JSONException e) {
-                e.printStackTrace();
-            }
+        for (final String url : whitelistAdditions) {
+            final WhitelistEntry entry = new WhitelistEntry();
+            entry.setUrl(url);
+            entry.setCountryCode(countryCode);
         }
     }
 
-    public void whitelistRemovals(final JSONArray whitelistRemovals,
+    public void whitelistRemovals(final Collection<String> whitelistRemovals,
         final String countryCode) {
-        final int length = whitelistRemovals.length();
-        for (int i = 0; i < length; i++) {
-            try {
-                final String url = (String) whitelistRemovals.get(i);
-                final WhitelistRemovalEntry entry = new WhitelistRemovalEntry();
-                entry.setUrl(url);
-                entry.setCountryCode(countryCode);
-            } catch (final JSONException e) {
-                e.printStackTrace();
-            }
+        for (final String url : whitelistRemovals) {
+            final WhitelistRemovalEntry entry = new WhitelistRemovalEntry();
+            entry.setUrl(url);
+            entry.setCountryCode(countryCode);
         }
     }
     

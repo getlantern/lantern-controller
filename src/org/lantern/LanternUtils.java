@@ -1,7 +1,10 @@
 package org.lantern;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
+import com.google.appengine.repackaged.org.json.JSONArray;
+import com.google.appengine.repackaged.org.json.JSONException;
 import com.google.common.collect.Sets;
 
 /**
@@ -50,6 +53,20 @@ public class LanternUtils {
 
     public static boolean isCensored(final String countryCode) {
         return CENSORED.contains(countryCode);
+    }
+
+
+    public static Collection<String> toCollection(final JSONArray json) {
+        final int length = json.length();
+        final Collection<String> strs = new ArrayList<String>(length);
+        for (int i = 0; i < length; i++) {
+            try {
+                strs.add((String) json.get(i));
+            } catch (final JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return strs;
     }
 }
 

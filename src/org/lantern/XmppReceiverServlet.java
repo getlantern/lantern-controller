@@ -46,7 +46,6 @@ public class XmppReceiverServlet extends HttpServlet {
         // TODO: Decode the message. We want to make sure the message is 
         // always encoded with our public key.
 
-        System.out.println("Received body: "+body);
         try {
             final JSONObject request = new JSONObject(body);
             final String username = request.getString(LanternConstants.USER_NAME);
@@ -57,11 +56,21 @@ public class XmppReceiverServlet extends HttpServlet {
             final long requestsProxied = request.getLong(LanternConstants.REQUESTS_PROXIED);
             final long bytesProxied = request.getLong(LanternConstants.BYTES_PROXIED);
             
-            final String machineId = request.getString("m");
-            final String countryCode = request.getString("cc");
-            final JSONArray whitelistAdditions = request.getJSONArray("wa");
-            final JSONArray whitelistRemovals = request.getJSONArray("wr");
+            //final String machineId = request.getString("m");
+            final String countryCode = 
+                request.getString(LanternConstants.COUNTRY_CODE);
+            final JSONArray whitelistAdditionsJson = 
+                request.getJSONArray(LanternConstants.WHITELIST_ADDITIONS);
+            final JSONArray whitelistRemovalsJson = 
+                request.getJSONArray(LanternConstants.WHITELIST_REMOVALS);
             
+            final Collection<String> whitelistAdditions =
+                LanternUtils.toCollection(whitelistAdditionsJson);
+            
+            final Collection<String> whitelistRemovals =
+                LanternUtils.toCollection(whitelistRemovalsJson);
+
+            System.out.println("About to queue task...");
             // We defer this to make sure we respond to the user as quickly
             // as possible.
             QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
@@ -72,7 +81,7 @@ public class XmppReceiverServlet extends HttpServlet {
                     final Dao dao = new Dao();
                     System.out.println("Updating stats");
                     dao.updateUser(from, username, pwd, directRequests, 
-                        directBytes, requestsProxied, bytesProxied, machineId, 
+                        directBytes, requestsProxied, bytesProxied, 
                         countryCode);
 
                     dao.whitelistAdditions(whitelistAdditions, countryCode);
@@ -87,6 +96,7 @@ public class XmppReceiverServlet extends HttpServlet {
                 }
             }));
         } catch (final JSONException e) {
+            System.err.println("JSON error! "+e.getMessage()+Arrays.asList(e.getStackTrace()));
             e.printStackTrace();
         }
         
