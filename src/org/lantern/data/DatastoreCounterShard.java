@@ -29,51 +29,50 @@ import javax.jdo.annotations.PrimaryKey;
 */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class DatastoreCounterShard {
- @PrimaryKey
- @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
- private Long id;
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Long id;
 
- @Persistent
- private Integer shardNumber;
+    @Persistent
+    private Integer shardNumber;
 
- @Persistent
- private String counterName;
+    @Persistent
+    private String counterName;
 
- @Persistent
- private Long count;
+    @Persistent
+    private Long count;
 
- public DatastoreCounterShard(String counterName, int shardNumber) {
-   this(counterName, shardNumber, 0);
- }
+    public DatastoreCounterShard(final String counterName, 
+        final int shardNumber) {
+        this(counterName, shardNumber, 0);
+    }
 
- public DatastoreCounterShard(String counterName, int shardNumber,
-     int count) {
-   this.counterName = counterName;
-   this.shardNumber = new Integer(shardNumber);
-   this.count = new Long(count);
- }
+    public DatastoreCounterShard(final String counterName, 
+        final int shardNumber, final int count) {
+        this.counterName = counterName;
+        this.shardNumber = new Integer(shardNumber);
+        this.count = new Long(count);
+    }
 
- public Long getId() {
-   return id;
- }
+    public Long getId() {
+        return id;
+    }
 
- public String getCounterName() {
-   return counterName;
- }
+    public String getCounterName() {
+        return counterName;
+    }
 
- public Integer getShardNumber() {
-   return shardNumber;
- }
+    public Integer getShardNumber() {
+        return shardNumber;
+    }
 
- public Long getCount() {
-   return count;
- }
+    public Long getCount() {
+        return count;
+    }
 
- public void setCount(Long count) {
-   this.count = count;
- }
-
- public void increment(long count2) {
-   count = new Long(count.longValue() + count2);
- }
+    public void increment(final long inc) {
+        System.out.println(
+            "DatastoreCounterShard::Incrementing "+this.counterName +" by "+inc);
+        count = new Long(count.longValue() + inc);
+    }
 }

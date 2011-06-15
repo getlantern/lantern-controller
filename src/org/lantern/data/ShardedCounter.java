@@ -48,7 +48,9 @@ public class ShardedCounter {
         try {
             cache = CacheManager.getInstance().getCacheFactory()
                     .createCache(Collections.emptyMap());
-        } catch (CacheException e) {
+            cache.clear();
+        } catch (final CacheException e) {
+            e.printStackTrace();
         }
     }
 
@@ -181,8 +183,14 @@ public class ShardedCounter {
     public void increment() {
         increment(1);
     }
+    
 
-    public void increment(long count) {
+    public void decrement() {
+        increment(-1L);
+    }
+
+    public void increment(final long count) {
+        System.out.println("ShardedCounter::incrementing "+counterName+" by "+count);
         if (cache != null) {
             Long cachedCount = (Long) cache.get("count" + counterName);
             if (cachedCount != null) {
@@ -194,7 +202,7 @@ public class ShardedCounter {
         int shardCount = 0;
         PersistenceManager pm = PMF.get().getPersistenceManager();
         try {
-            DatastoreCounter current = getThisCounter(pm);
+            final DatastoreCounter current = getThisCounter(pm);
             shardCount = current.getShardCount();
         } finally {
             pm.close();
@@ -205,16 +213,17 @@ public class ShardedCounter {
 
         pm = PMF.get().getPersistenceManager();
         try {
-            Query randomShardQuery = pm.newQuery(DatastoreCounterShard.class);
-            randomShardQuery
-                    .setFilter("counterName == nameParam && shardNumber == numParam");
-            randomShardQuery
-                    .declareParameters("String nameParam, int numParam");
-            List<DatastoreCounterShard> shards = 
+            final Query randomShardQuery = 
+                pm.newQuery(DatastoreCounterShard.class);
+            randomShardQuery.setFilter(
+                "counterName == nameParam && shardNumber == numParam");
+            randomShardQuery.declareParameters(
+                "String nameParam, int numParam");
+            final List<DatastoreCounterShard> shards = 
                 (List<DatastoreCounterShard>) randomShardQuery.execute(
                     counterName, shardNum);
             if (shards != null && !shards.isEmpty()) {
-                DatastoreCounterShard shard = shards.get(0);
+                final DatastoreCounterShard shard = shards.get(0);
                 shard.increment(count);
                 pm.makePersistent(shard);
             }

@@ -34,13 +34,14 @@ public class XmppReceiverServlet extends HttpServlet {
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
         final Message message = xmpp.parseMessage(req);
 
-        final String id = message.getFromJid().getId();
+        //final String id = message.getFromJid().getId();
         //log.info("Got XMPP message from "+fromJid);
         final String body = message.getBody();
         
-        final String from = message.getFromJid().getId().split("/")[0];
-        System.out.println("Sending invitation to "+from);
-        xmpp.sendInvitation(new JID(from));
+        final String jid = message.getFromJid().getId();
+        
+        System.out.println("Sending invitation to "+jid);
+        xmpp.sendInvitation(new JID(jid));
         
         //dao.addUser(id);
         // TODO: Decode the message. We want to make sure the message is 
@@ -48,13 +49,18 @@ public class XmppReceiverServlet extends HttpServlet {
 
         try {
             final JSONObject request = new JSONObject(body);
-            final String username = request.getString(LanternConstants.USER_NAME);
+            final String username = 
+                request.getString(LanternConstants.USER_NAME);
             final String pwd = request.getString(LanternConstants.PASSWORD);
-            final long directRequests = request.getLong(LanternConstants.DIRECT_REQUESTS);
-            final long directBytes = request.getLong(LanternConstants.DIRECT_BYTES);
+            final long directRequests = 
+                request.getLong(LanternConstants.DIRECT_REQUESTS);
+            final long directBytes = 
+                request.getLong(LanternConstants.DIRECT_BYTES);
             
-            final long requestsProxied = request.getLong(LanternConstants.REQUESTS_PROXIED);
-            final long bytesProxied = request.getLong(LanternConstants.BYTES_PROXIED);
+            final long requestsProxied = 
+                request.getLong(LanternConstants.REQUESTS_PROXIED);
+            final long bytesProxied = 
+                request.getLong(LanternConstants.BYTES_PROXIED);
             
             //final String machineId = request.getString("m");
             final String countryCode = 
@@ -80,19 +86,12 @@ public class XmppReceiverServlet extends HttpServlet {
                     ////log.info("Running deferred task");
                     final Dao dao = new Dao();
                     System.out.println("Updating stats");
-                    dao.updateUser(from, username, pwd, directRequests, 
+                    dao.updateUser(jid, username, pwd, directRequests, 
                         directBytes, requestsProxied, bytesProxied, 
                         countryCode);
 
                     dao.whitelistAdditions(whitelistAdditions, countryCode);
                     dao.whitelistRemovals(whitelistRemovals, countryCode);
-                    /*
-                    if (!user.isValidated()) {
-                        if (ContactsUtil.appearsToBeReal(username, pwd)) {
-                            dao.validate(user);
-                        }
-                    }
-                    */
                 }
             }));
         } catch (final JSONException e) {
@@ -101,18 +100,17 @@ public class XmppReceiverServlet extends HttpServlet {
         }
         
         final Dao dao = new Dao();
-        final Collection<String> validated = dao.getUsers();
+        final Collection<String> servers = dao.getInstances();
         final JSONObject json = new JSONObject();
         
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
-        final Collection<String> servers = 
-            Arrays.asList("75.101.134.244:7777","racheljohnsonftw.appspot.com",
-            //Arrays.asList("75.101.155.190:7777","racheljohnsonftw.appspot.com",
-                "racheljohnsonla.appspot.com");
+        servers.addAll(Arrays.asList("75.101.134.244:7777",
+            "racheljohnsonftw.appspot.com",
+            "racheljohnsonla.appspot.com"));
         try {
-            json.put("servers", servers);
-            json.put("validated", validated);
+            json.put(LanternConstants.SERVERS, servers);
+            json.put(LanternConstants.UPDATE_TIME, "");
             final String serversBody = json.toString();
             final Message msg = 
                 new MessageBuilder().withRecipientJids(message.getFromJid()).withBody(serversBody).build();

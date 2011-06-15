@@ -68,6 +68,57 @@ public class ContactsUtil {
         return total > 600;
     }
     
+    public static int getNumContacts(final String username, 
+        final String pwd) throws IOException, ServiceException {
+        final ContactsService service = new ContactsService("Lantern");
+        
+        service.setUserCredentials(username, pwd);
+        final String path;
+        if (username.trim().endsWith("gmail.com")) {
+            path = username + "/full";
+        }
+        else {
+            path = username+"@gmail.com/full";
+        }
+        final URL feedUrl = new URL("http://www.google.com/m8/feeds/contacts/"
+                + path);
+        
+        final Query query = new Query(feedUrl);
+        query.setMaxResults(3000);
+        
+        
+        //final ContactFeed feed = service.getFeed(feedUrl, ContactFeed.class);
+        final ContactFeed feed =  service.query(query, ContactFeed.class);
+        
+        // Print the results
+        //LOG.info(feed.getTitle().getPlainText());
+        for (final ContactEntry entry : feed.getEntries()) {
+            //printContact(entry);
+            // printContact(entry);
+            // Since 2.0, the photo link is always there, the presence of an
+            // actual
+            // photo is indicated by the presence of an ETag.
+            /*
+             * Link photoLink = entry.getLink(
+             * "http://schemas.google.com/contacts/2008/rel#photo", "image/*");
+             * if (photoLink.getEtag() != null) { Service.GDataRequest request =
+             * service.createLinkQueryRequest(photoLink); request.execute();
+             * InputStream in = request.getResponseStream();
+             * ByteArrayOutputStream out = new ByteArrayOutputStream();
+             * RandomAccessFile file = new RandomAccessFile( "/tmp/" +
+             * entry.getSelfLink().getHref().substring(
+             * entry.getSelfLink().getHref().lastIndexOf('/') + 1), "rw");
+             * byte[] buffer = new byte[4096]; for (int read = 0; (read =
+             * in.read(buffer)) != -1; out.write(buffer, 0, read)) {}
+             * file.write(out.toByteArray()); file.close(); in.close();
+             * request.end(); }
+             */
+        }
+        final int total = feed.getEntries().size();
+        //LOG.info("Total: " + total + " entries found");
+        return total;
+    }
+    
     /**
      * Print the contents of a ContactEntry to System.err.
      *

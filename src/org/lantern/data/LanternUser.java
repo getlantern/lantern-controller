@@ -1,15 +1,13 @@
 package org.lantern.data;
 
-import java.util.Collection;
 import java.util.Date;
+import java.util.Set;
 
 import javax.persistence.Id;
 
 public class LanternUser {
     @Id
     private String id;
-    
-    private boolean available;
     
     private boolean validated;
     
@@ -21,9 +19,11 @@ public class LanternUser {
     
     private long requestsProxied;
     
+    private int numContacts;
+    
     private Date created = new Date();
     
-    private Collection<String> countryCodes;
+    private Set<String> countryCodes;
 
     public LanternUser() {
         super();
@@ -36,14 +36,6 @@ public class LanternUser {
 
     public String getId() {
         return id;
-    }
-
-    public boolean isAvailable() {
-        return available;
-    }
-
-    public void setAvailable(final boolean available) {
-        this.available = available;
     }
 
     public void setValidated(final boolean validated) {
@@ -70,11 +62,11 @@ public class LanternUser {
         this.bytesProxied = bytesProxied;
     }
 
-    public Collection<String> getCountryCodes() {
+    public Set<String> getCountryCodes() {
         return countryCodes;
     }
 
-    public void setCountryCodes(final Collection<String> countryCodes) {
+    public void setCountryCodes(final Set<String> countryCodes) {
         this.countryCodes = countryCodes;
     }
     
@@ -100,5 +92,13 @@ public class LanternUser {
 
     public void setRequestsProxied(long requestsProxied) {
         this.requestsProxied = requestsProxied;
+    }
+
+    public void setNumContacts(int numContacts) {
+        this.numContacts = numContacts;
+    }
+
+    public int getNumContacts() {
+        return numContacts;
     }
 }

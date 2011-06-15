@@ -1,15 +1,15 @@
 package org.lantern.data;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.lantern.ContactsUtil;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.repackaged.org.json.JSONArray;
 import com.google.appengine.repackaged.org.json.JSONException;
 import com.google.appengine.repackaged.org.json.JSONObject;
 import com.google.gdata.util.ServiceException;
@@ -20,13 +20,14 @@ import com.googlecode.objectify.util.DAOBase;
 
 public class Dao extends DAOBase {
     
-    private static final String BYTES_PROXIED = "BYTES_PROXIED";
-    private static final String REQUESTS_PROXIED = "REQUESTS_PROXIED";
+    private static final String BYTES_PROXIED = "PROXIED_BYTES";
+    private static final String REQUESTS_PROXIED = "PROXIED_REQUESTS";
     private static final String DIRECT_BYTES = "DIRECT_BYTES";
     private static final String DIRECT_REQUESTS = "DIRECT_REQUESTS";
     private static final String CENSORED_USERS = "CENSORED_USERS";
     private static final String UNCENSORED_USERS = "UNCENSORED_USERS";
     private static final String TOTAL_USERS = "TOTAL_USERS";
+    private static final String ONLINE = "ONLINE";
 
     private static final CounterFactory COUNTER_FACTORY = new CounterFactory();
     //private static final Logger LOG = 
@@ -34,6 +35,7 @@ public class Dao extends DAOBase {
     
     static {
         ObjectifyService.register(LanternUser.class);
+        ObjectifyService.register(LanternInstance.class);
         COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(DIRECT_BYTES);
@@ -41,6 +43,7 @@ public class Dao extends DAOBase {
         COUNTER_FACTORY.getOrCreateCounter(CENSORED_USERS);
         COUNTER_FACTORY.getOrCreateCounter(UNCENSORED_USERS);
         COUNTER_FACTORY.getOrCreateCounter(TOTAL_USERS);
+        COUNTER_FACTORY.getOrCreateCounter(ONLINE);
     }
     
     public void addUser(final String id) {
@@ -54,35 +57,73 @@ public class Dao extends DAOBase {
         }
     }
 
-    public Collection<String> getUsers() {
+    public Collection<String> getInstances() {
         final Objectify ofy = ObjectifyService.begin();
         
         // TODO: Limit this more and randomize it more.
-        final Query<LanternUser> users = 
-            ofy.query(LanternUser.class).filter("available", true).filter("validated", true);
+        // First find the users that are validated, and then find the 
+        // instances associated with that user that are available.
+        final Query<LanternInstance> instances = 
+            ofy.query(LanternInstance.class).filter("available", true).filter(
+                "user.validated", true);
+        
+        //final Query<LanternUser> users = 
+        //    ofy.query(LanternUser.class).filter("available", true).filter("validated", true);
         final Collection<String> results = new HashSet<String>(20);
-        final QueryResultIterator<LanternUser> iter = users.iterator();
+        final QueryResultIterator<LanternInstance> iter = instances.iterator();
         while (iter.hasNext()) {
-            final LanternUser user = iter.next();
+            final LanternInstance user = iter.next();
             results.add(user.getId());
         }
-        System.out.println("Returning users: "+results);
+        System.out.println("Returning instances: "+results);
         return results;
     }
 
-    public void setAvailable(final String id, boolean available) {
+    public void setAvailable(final String id, final boolean available) {
         final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, id);
-        if (user != null) {
+        final LanternInstance instance = ofy.find(LanternInstance.class, id);
+        final boolean originalAvailable;
+        if (instance != null) {
             System.out.println("Setting availability to "+available+" for "+id);
-            user.setAvailable(available);
-            ofy.put(user);
+            originalAvailable = instance.getAvailable();
+            if (originalAvailable && !available) {
+                System.out.println("DAO::decrementing");
+                COUNTER_FACTORY.getCounter(ONLINE).decrement();
+            } else if (!originalAvailable && available) {
+                System.out.println("DAO::incrementing");
+                COUNTER_FACTORY.getCounter(ONLINE).increment();
+            }
+            
+            instance.setAvailable(available);
+            instance.setLastUpdated(new Date());
+            final LanternUser user = instance.getUser();
+            if (user == null) {
+                final LanternUser lu = 
+                    ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
+                instance.setUser(lu);
+            }
+            ofy.put(instance);
         } else {
-            System.out.println("Could not find user!!");
+            System.out.println("Could not find instance!!");
+            final LanternInstance inst = new LanternInstance(id);
+            inst.setAvailable(available);
+            final LanternUser user = 
+                ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
+            if (user == null) {
+                System.err.println("No associated user?");
+            } else {
+                inst.setUser(user);
+            }
+            if (available) {
+                System.out.println("DAO incrementing new user");
+                COUNTER_FACTORY.getCounter(ONLINE).increment();
+            }
+            // We don't decrement if it's not available since we never knew
+            // about it anyway, presumably. That should generally not happen.
+            ofy.put(inst);
         }
-        
     }
-
+    
     public void validate(final String id) {
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, id);
@@ -95,29 +136,58 @@ public class Dao extends DAOBase {
     }
 
 
-    public void updateUser(String id, String username, String pwd,
+    public void updateUser(final String fullId, final String username, 
+        final String pwd,
             long directRequests, long directBytes, long requestsProxied,
             long bytesProxied, String countryCode) {
         System.out.println(
-            "Updating user with stats: dr: "+directRequests+" db: "+directBytes+" bytesProxied: "+bytesProxied);
+            "Updating user with stats: dr: "+directRequests+" db: "+
+            directBytes+" bytesProxied: "+bytesProxied);
+        
+        final String userId = LanternUtils.jidToUserId(fullId);
+        
         final Objectify ofy = ofy();
         final LanternUser user;
-        final LanternUser tempUser = ofy.find(LanternUser.class, id);
-        final boolean isNew;
+        final LanternUser tempUser = ofy.find(LanternUser.class, userId);
+        final boolean isUserNew;
         if (tempUser == null) {
             System.out.println("Could not find user!!");
-            user = new LanternUser(id);
-            isNew = true;
+            user = new LanternUser(userId);
+            isUserNew = true;
+            
+            // We put here to make sure it's written right away so there
+            // aren't any race conditions with future requests, particularly
+            // since the validation call can take awhile.
+            ofy.put(user);
         } else {
             user = tempUser;
-            isNew = false;
+            isUserNew = false;
         }
+        
+        /*
+        final String instanceId = LanternUtils.jidToInstanceId(fullId);
+        final LanternInstance instance;
+        final LanternInstance tempInstance = ofy.find(LanternInstance.class, instanceId);
+        final boolean isInstanceNew;
+        if (tempInstance == null) {
+            System.out.println("Could not find user!!");
+            instance = new LanternInstance(instanceId);
+            isInstanceNew = true;
+        } else {
+            instance = tempInstance;
+            isInstanceNew = false;
+        }
+        */
+        
         if (!user.isValidated()) {
             try {
-                if (ContactsUtil.appearsToBeReal(username, pwd)) {
+                final int contacts = ContactsUtil.getNumContacts(username, pwd);
+                if (contacts > 600) {
                     user.setValidated(true);
-                    ofy.put(user);
                 }
+                
+                // Don't store the exact number of contacts.
+                user.setNumContacts(Math.round(contacts/50) * 50); 
             } catch (final IOException e) {
                 e.printStackTrace();
             } catch (final ServiceException e) {
@@ -128,7 +198,7 @@ public class Dao extends DAOBase {
         user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
         user.setDirectBytes(user.getDirectBytes() + directBytes);
         user.setDirectRequests(user.getDirectRequests() + directRequests);
-        Collection<String> newCodes = user.getCountryCodes();
+        Set<String> newCodes = user.getCountryCodes();
         if (newCodes == null) {
             newCodes = new HashSet<String>();
         }
@@ -141,11 +211,12 @@ public class Dao extends DAOBase {
         COUNTER_FACTORY.getCounter(REQUESTS_PROXIED).increment(requestsProxied);
         COUNTER_FACTORY.getCounter(DIRECT_BYTES).increment(directBytes);
         COUNTER_FACTORY.getCounter(DIRECT_REQUESTS).increment(directRequests);
-        if (isNew) {
+        if (isUserNew) {
             COUNTER_FACTORY.getCounter(TOTAL_USERS).increment();
             if (LanternUtils.isCensored(countryCode)) {
                 COUNTER_FACTORY.getCounter(CENSORED_USERS).increment();
             } else {
+                System.out.println("Adding uncensored user");
                 COUNTER_FACTORY.getCounter(UNCENSORED_USERS).increment();
             }
             final ShardedCounter countryCounter = 
@@ -162,6 +233,7 @@ public class Dao extends DAOBase {
         add(json, DIRECT_REQUESTS);
         add(json, CENSORED_USERS);
         add(json, UNCENSORED_USERS);
+        add(json, ONLINE);
         return json;
     }
 

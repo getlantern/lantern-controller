@@ -24,12 +24,13 @@ public class XmppAvailableServlet extends HttpServlet {
         final Presence presence = service.parsePresence(req);
         final boolean available = presence.isAvailable();
         final String id = presence.getFromJid().getId();
-        System.out.println("Got presence "+available+" for "+id);
+        System.out.println("XmppAvailableServlet::Got presence "+available+" for "+id);
         
         if (LanternControllerUtils.isLantern(id)) {
             final Dao dao = new Dao();
-            dao.addUser(id);
             dao.setAvailable(id, available);
+        } else {
+            System.out.println("XmppAvailableServlet::Not a Lantern ID: "+id);
         }
     }
 }
