@@ -28,7 +28,10 @@ public class XmppAvailableServlet extends HttpServlet {
         
         if (LanternControllerUtils.isLantern(id)) {
             final Dao dao = new Dao();
-            dao.setAvailable(id, available);
+            // The following will delete the instance if it's not available,
+            // updating all counters.
+            dao.setInstanceAvailable(id, available);
+            
         } else {
             System.out.println("XmppAvailableServlet::Not a Lantern ID: "+id);
         }

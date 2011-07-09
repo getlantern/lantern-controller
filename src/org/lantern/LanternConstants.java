@@ -1,10 +1,12 @@
 package org.lantern;
 
+
 /**
  * Constants for Lantern.
  */
 public class LanternConstants {
 
+    
     /**
      * This is the local proxy port data is relayed to on the "server" side
      * of P2P connections.
@@ -30,5 +32,4 @@ public class LanternConstants {
     public static final String SERVERS = "s";
     public static final String UPDATE_TIME = "ut";
     
-
 }

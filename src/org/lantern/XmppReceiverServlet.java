@@ -49,9 +49,9 @@ public class XmppReceiverServlet extends HttpServlet {
 
         try {
             final JSONObject request = new JSONObject(body);
-            final String username = 
-                request.getString(LanternConstants.USER_NAME);
-            final String pwd = request.getString(LanternConstants.PASSWORD);
+            //final String username = 
+            //    request.getString(LanternConstants.USER_NAME);
+            //final String pwd = request.getString(LanternConstants.PASSWORD);
             final long directRequests = 
                 request.getLong(LanternConstants.DIRECT_REQUESTS);
             final long directBytes = 
@@ -86,7 +86,7 @@ public class XmppReceiverServlet extends HttpServlet {
                     ////log.info("Running deferred task");
                     final Dao dao = new Dao();
                     System.out.println("Updating stats");
-                    dao.updateUser(jid, username, pwd, directRequests, 
+                    dao.updateUser(jid, directRequests, 
                         directBytes, requestsProxied, bytesProxied, 
                         countryCode);
 
@@ -110,10 +110,11 @@ public class XmppReceiverServlet extends HttpServlet {
             "racheljohnsonla.appspot.com"));
         try {
             json.put(LanternConstants.SERVERS, servers);
-            json.put(LanternConstants.UPDATE_TIME, "");
+            json.put(LanternConstants.UPDATE_TIME, 60 * 1000);
             final String serversBody = json.toString();
             final Message msg = 
                 new MessageBuilder().withRecipientJids(message.getFromJid()).withBody(serversBody).build();
+            System.out.println("Sending response:\n"+json.toString());
             final SendResponse status = xmpp.sendMessage(msg);
             final boolean messageSent = 
                 (status.getStatusMap().get(
