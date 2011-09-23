@@ -22,7 +22,7 @@ public class XmppSubscribedServlet extends HttpServlet {
 
         // Split the bare XMPP address (e.g., user@gmail.com)
         // from the resource (e.g., gmail.CD6EBC4A)
-        final String from = sub.getFromJid().getId().split("/")[0];
+        final String from = sub.getFromJid().getId();//.split("/")[0];
         System.out.println("Got subscribed from: "+from);
     }
 }

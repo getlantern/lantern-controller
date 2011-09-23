@@ -3,6 +3,8 @@ package org.lantern;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -32,14 +34,24 @@ public class XmppReceiverServlet extends HttpServlet {
     public void doPost(final HttpServletRequest req, 
         final HttpServletResponse res) throws IOException {
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
-        final Message message = xmpp.parseMessage(req);
-
-        //final String id = message.getFromJid().getId();
-        //log.info("Got XMPP message from "+fromJid);
+        final Message message;
+        try {
+            message = xmpp.parseMessage(req);
+        } catch (final IllegalArgumentException e) {
+            System.err.println("Caught exception processing request URI: "+
+                req.getRequestURI());
+            System.err.println("Headers:\n"+toHeaders(req));
+            e.printStackTrace();
+            return;
+        }
+        System.out.println("Got message from: "+message.getFromJid().getId());
+        
         final String body = message.getBody();
         
         final String jid = message.getFromJid().getId();
         
+        // If it's a new user, send it an invitation to subscribe 
+        // to our status.
         System.out.println("Sending invitation to "+jid);
         xmpp.sendInvitation(new JID(jid));
         
@@ -47,6 +59,7 @@ public class XmppReceiverServlet extends HttpServlet {
         // TODO: Decode the message. We want to make sure the message is 
         // always encoded with our public key.
 
+        final JSONObject responseJson = new JSONObject();
         try {
             final JSONObject request = new JSONObject(body);
             //final String username = 
@@ -75,6 +88,29 @@ public class XmppReceiverServlet extends HttpServlet {
             
             final Collection<String> whitelistRemovals =
                 LanternUtils.toCollection(whitelistRemovalsJson);
+            
+            final String versionString = 
+                request.getString(LanternConstants.VERSION_KEY);
+            
+            try {
+                final double version = Double.parseDouble(versionString);
+                if (LanternConstants.LATEST_VERSION > version) {
+                    final JSONObject updateJson = new JSONObject();
+                    updateJson.put(LanternConstants.UPDATE_TITLE_KEY, 
+                        LanternConstants.UPDATE_TITLE);
+                    updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
+                        LanternConstants.UPDATE_MESSAGE);
+                    updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
+                        String.valueOf(LanternConstants.LATEST_VERSION));
+                    updateJson.put(LanternConstants.UPDATE_URL_KEY,
+                        LanternConstants.UPDATE_URL);
+                    responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
+                }
+            } catch (final NumberFormatException nfe) {
+                // Probably running from main line.
+                System.out.println("Format exception on version: "+versionString);
+            }
+
 
             System.out.println("About to queue task...");
             // We defer this to make sure we respond to the user as quickly
@@ -85,6 +121,9 @@ public class XmppReceiverServlet extends HttpServlet {
                 public void run() {
                     ////log.info("Running deferred task");
                     final Dao dao = new Dao();
+                    System.out.println("Setting instance to available");
+                    dao.setInstanceAvailable(jid, true);
+                    
                     System.out.println("Updating stats");
                     dao.updateUser(jid, directRequests, 
                         directBytes, requestsProxied, bytesProxied, 
@@ -101,7 +140,9 @@ public class XmppReceiverServlet extends HttpServlet {
         
         final Dao dao = new Dao();
         final Collection<String> servers = dao.getInstances();
-        final JSONObject json = new JSONObject();
+        
+        // Make sure to remove ourselves.
+        servers.remove(jid);
         
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
@@ -109,12 +150,14 @@ public class XmppReceiverServlet extends HttpServlet {
             "racheljohnsonftw.appspot.com",
             "racheljohnsonla.appspot.com"));
         try {
-            json.put(LanternConstants.SERVERS, servers);
-            json.put(LanternConstants.UPDATE_TIME, 60 * 1000);
-            final String serversBody = json.toString();
+            responseJson.put(LanternConstants.SERVERS, servers);
+            responseJson.put(LanternConstants.UPDATE_TIME, 
+                LanternConstants.UPDATE_TIME_MILLIS);
+            final String serversBody = responseJson.toString();
             final Message msg = 
-                new MessageBuilder().withRecipientJids(message.getFromJid()).withBody(serversBody).build();
-            System.out.println("Sending response:\n"+json.toString());
+                new MessageBuilder().withRecipientJids(
+                    message.getFromJid()).withBody(serversBody).build();
+            System.out.println("Sending response:\n"+responseJson.toString());
             final SendResponse status = xmpp.sendMessage(msg);
             final boolean messageSent = 
                 (status.getStatusMap().get(
@@ -122,5 +165,17 @@ public class XmppReceiverServlet extends HttpServlet {
         } catch (final JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private String toHeaders(final HttpServletRequest req) {
+        final StringBuilder sb = new StringBuilder();
+        final List<String> headerNames = Collections.list(req.getHeaderNames());
+        for (final String hn : headerNames) {
+            final String val = req.getHeader(hn);
+            sb.append(hn);
+            sb.append(";");
+            sb.append(val);
+        }
+        return sb.toString();
     }
 }

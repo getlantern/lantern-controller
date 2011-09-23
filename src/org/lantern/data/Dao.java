@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.lantern.CensoredUtils;
+import org.lantern.LanternConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -44,15 +45,10 @@ public class Dao extends DAOBase {
         COUNTER_FACTORY.getOrCreateCounter(ONLINE);
     }
     
-    public void addUser(final String id) {
+    public boolean exists(final String id) {
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, id);
-        if (user == null) {
-            System.out.println("Adding user for: "+id);
-            ofy.put(new LanternUser(id));
-        } else {
-            System.out.println("Not adding user "+id);
-        }
+        return user != null;
     }
 
     public Collection<String> getInstances() {
@@ -62,7 +58,14 @@ public class Dao extends DAOBase {
         // First find the users that are validated, and then find the 
         // instances associated with that user that are available.
         final long now = System.currentTimeMillis();
-        final Date cutoff = new Date(now - 1000 * 60 * 60 * 24 * 5);
+        //final Date cutoff = new Date(now - 1000 * 60 * 60 * 24 * 5);
+        
+        // Instances get updated quite often via info chat messages. These are
+        // more reliable than presence updates because we don't get presence
+        // updates from users in invisibility mode. 
+        // Only give out the freshest instances.
+        final Date cutoff = 
+            new Date(now - LanternConstants.UPDATE_TIME_MILLIS);
         
         final Query<LanternInstance> instances = 
             ofy.query(LanternInstance.class).filter("available", true).filter("lastUpdated >", cutoff).filter(
@@ -106,23 +109,28 @@ public class Dao extends DAOBase {
             if (user == null) {
                 final LanternUser lu = 
                     ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
-                instance.setUser(lu);
+                if (lu == null) {
+                    System.err.println("Dao::setInstanceAvailable::no user?");
+                } else {
+                    instance.setUser(lu);
+                }
             }
             ofy.put(instance);
+            System.out.println("Finished updating datastore...");
         } else {
             System.out.println("Could not find instance!!");
-            // In this case we'll assume it's censored. We want to avoid ever
-            // logging or storing anything for censored users in particular.
-            /*
+            final LanternUser lu = 
+                ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
+            if (lu == null) {
+                // This probably means the user is censored and unstored. 
+                // That's totally normal and expected.
+                System.out.println("Ignoring instance from unknown user");
+                return;
+            }
+            
             final LanternInstance inst = new LanternInstance(id);
             inst.setAvailable(available);
-            final LanternUser user = 
-                ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
-            if (user == null) {
-                System.err.println("No associated usr?");
-            } else {
-                inst.setUser(user);
-            }
+            inst.setUser(lu);
             if (available) {
                 System.out.println("DAO incrementing online count");
                 COUNTER_FACTORY.getCounter(ONLINE).increment();
@@ -130,7 +138,6 @@ public class Dao extends DAOBase {
             // We don't decrement if it's not available since we never knew
             // about it anyway, presumably. That should generally not happen.
             ofy.put(inst);
-            */
         }
     }
     
@@ -146,7 +153,7 @@ public class Dao extends DAOBase {
     }
 
 
-    public void updateUser(final String fullId, final long directRequests, 
+    public boolean updateUser(final String fullId, final long directRequests, 
         final long directBytes, final long requestsProxied,
         final long bytesProxied, final String countryCode) {
         System.out.println(
@@ -238,6 +245,8 @@ public class Dao extends DAOBase {
                 COUNTER_FACTORY.getOrCreateCounter(countryCode);
             countryCounter.increment();
         }
+        
+        return isUserNew;
     }
 
     public JSONObject getStats() {

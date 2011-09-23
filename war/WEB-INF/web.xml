@@ -36,6 +36,11 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
     <servlet-class>org.lantern.XmppAvailableServlet</servlet-class>
   </servlet>
   
+  <servlet>
+    <servlet-name>probe</servlet-name>
+    <servlet-class>org.lantern.XmppProbeServlet</servlet-class>
+  </servlet>
+  
   <servlet-mapping>
     <servlet-name>available</servlet-name>
     <url-pattern>/_ah/xmpp/presence/available/</url-pattern>
@@ -44,6 +49,11 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
   <servlet-mapping>
     <servlet-name>available</servlet-name>
     <url-pattern>/_ah/xmpp/presence/unavailable/</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>probe</servlet-name>
+    <url-pattern>/_ah/xmpp/presence/probe/</url-pattern>
   </servlet-mapping>
   
   <servlet>
