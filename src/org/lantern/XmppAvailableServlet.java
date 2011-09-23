@@ -26,6 +26,9 @@ public class XmppAvailableServlet extends HttpServlet {
         final String id = presence.getFromJid().getId();
         System.out.println("XmppAvailableServlet::Got presence "+available+" for "+id);
         
+        final String stanza = presence.getStanza();
+        System.out.println("Stanza: "+stanza);
+        //System.out.println("Status: "+presence.getStatus());
         if (LanternControllerUtils.isLantern(id)) {
             final Dao dao = new Dao();
             // The following will delete the instance if it's not available,

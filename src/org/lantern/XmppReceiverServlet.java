@@ -1,6 +1,8 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,6 +20,7 @@ import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.xmpp.JID;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
+import com.google.appengine.api.xmpp.MessageType;
 import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
@@ -41,6 +44,8 @@ public class XmppReceiverServlet extends HttpServlet {
             System.err.println("Caught exception processing request URI: "+
                 req.getRequestURI());
             System.err.println("Headers:\n"+toHeaders(req));
+            System.err.println("Body:\n"+
+                new String(toByteArray(req.getInputStream()), "UTF-8"));
             e.printStackTrace();
             return;
         }
@@ -156,7 +161,8 @@ public class XmppReceiverServlet extends HttpServlet {
             final String serversBody = responseJson.toString();
             final Message msg = 
                 new MessageBuilder().withRecipientJids(
-                    message.getFromJid()).withBody(serversBody).build();
+                    message.getFromJid()).withBody(serversBody).withMessageType(
+                        MessageType.NORMAL).build();
             System.out.println("Sending response:\n"+responseJson.toString());
             final SendResponse status = xmpp.sendMessage(msg);
             final boolean messageSent = 
@@ -178,5 +184,32 @@ public class XmppReceiverServlet extends HttpServlet {
             sb.append("\n");
         }
         return sb.toString();
+    }
+    
+    private static byte[] toByteArray(InputStream input) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        copy(input, output);
+        return output.toByteArray();
+    }
+    
+    public static int copy(InputStream input, OutputStream output) throws IOException {
+        long count = copyLarge(input, output);
+        if (count > Integer.MAX_VALUE) {
+            return -1;
+        }
+        return (int) count;
+    }
+    
+    private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
+    public static long copyLarge(InputStream input, OutputStream output)
+            throws IOException {
+        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+        long count = 0;
+        int n = 0;
+        while (-1 != (n = input.read(buffer))) {
+            output.write(buffer, 0, n);
+            count += n;
+        }
+        return count;
     }
 }
