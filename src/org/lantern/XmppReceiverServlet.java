@@ -175,6 +175,7 @@ public class XmppReceiverServlet extends HttpServlet {
             sb.append(hn);
             sb.append(";");
             sb.append(val);
+            sb.append("\n");
         }
         return sb.toString();
     }
