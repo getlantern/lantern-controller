@@ -152,8 +152,8 @@ public class XmppReceiverServlet extends HttpServlet {
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
         servers.addAll(Arrays.asList("75.101.134.244:7777",
-            "racheljohnsonftw.appspot.com",
-            "racheljohnsonla.appspot.com"));
+            "laeproxyhr1.appspot.com",
+            "rlanternz.appspot.com"));
         try {
             responseJson.put(LanternConstants.SERVERS, servers);
             responseJson.put(LanternConstants.UPDATE_TIME, 

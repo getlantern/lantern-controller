@@ -29,7 +29,7 @@ class XmppHandler(xmpp_handlers.CommandHandler):
         #data = [tuple(x.split(':')) for x in msg.body.split('\n')]
         
         logging.info('Sending reply')
-        msg.reply("75.101.155.190:7777,racheljohnsonftw.appspot.com,racheljohnsonla.appspot.com")
+        msg.reply("75.101.155.190:7777,lanternhr1.appspot.com,rlanternz.appspot.com")
         
         
 
