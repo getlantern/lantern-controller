@@ -162,7 +162,7 @@ public class XmppReceiverServlet extends HttpServlet {
             final Message msg = 
                 new MessageBuilder().withRecipientJids(
                     message.getFromJid()).withBody(serversBody).withMessageType(
-                        MessageType.NORMAL).build();
+                        MessageType.HEADLINE).build();
             System.out.println("Sending response:\n"+responseJson.toString());
             final SendResponse status = xmpp.sendMessage(msg);
             final boolean messageSent = 

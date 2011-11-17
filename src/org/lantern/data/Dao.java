@@ -170,11 +170,6 @@ public class Dao extends DAOBase {
             System.out.println("Could not find user!!");
             user = new LanternUser(userId);
             isUserNew = true;
-            
-            // We put here to make sure it's written right away so there
-            // aren't any race conditions with future requests, particularly
-            // since the validation call can take awhile.
-            ofy.put(user);
         } else {
             user = tempUser;
             isUserNew = false;

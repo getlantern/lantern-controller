@@ -9,11 +9,12 @@ import com.google.common.collect.Sets;
 public class CensoredUtils {
 
     /**
-     * Censored country codes, in order of population.
+     * Censored country codes", "in order of population.
      */
     private static final Collection<String> CENSORED =
         Sets.newHashSet(
             // Asia 
+                /*
             "CN",
             "VN",
             "MM",
@@ -30,7 +31,14 @@ public class CensoredUtils {
             "ET", 
             "ER",
             // LAC: 
-            "CU");
+            "CU"
+            */
+            // These are taken from ONI data -- 11/16 - any country containing
+            // any type of censorship considered "substantial" or "pervasive".
+            "AE", "AM", "BH", "CN", "CU", "ET", "ID", "IR", "KP", "KR", 
+            "KW", "MM", "OM", "PK", "PS", "QA", "SA", "SD", "SY", "TM", "UZ", 
+            "VN", "YE"
+            );
 
     
     public static boolean isCensored(final String countryCode) {
