@@ -1,8 +1,12 @@
 package org.lantern.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.lantern.CensoredUtils;
@@ -18,6 +22,17 @@ import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
 
 public class Dao extends DAOBase {
+    
+    private static final String[] countries = {
+        "AE", "AL", "AR", "AT", "AU", "BA", "BE", "BG", "BH", "BO", "BR", "BY", 
+        "CA", "CH", "CL", "CN", "CO", "CR", "CS", "CY", "CZ", "DE", "DK", "DO", 
+        "DZ", "EC", "EE", "EG", "ES", "FI", "FR", "GB", "GR", "GT", "HK", "HN", 
+        "HR", "HU", "ID", "IE", "IL", "IN", "IQ", "IS", "IT", "JO", "JP", "KR", 
+        "KW", "LB", "LT", "LU", "LV", "LY", "MA", "ME", "MK", "MT", "MX", "MY", 
+        "NI", "NL", "NO", "NZ", "OM", "PA", "PE", "PH", "PL", "PR", "PT", "PY", 
+        "QA", "RO", "RS", "RU", "SA", "SD", "SE", "SG", "SI", "SK", "SV", "SY", 
+        "TH", "TN", "TR", "TW", "UA", "US", "UY", "VE", "VN", "YE", "ZA"
+    };
     
     private static final String BYTES_PROXIED = "PROXIED_BYTES";
     private static final String REQUESTS_PROXIED = "PROXIED_REQUESTS";
@@ -233,12 +248,23 @@ public class Dao extends DAOBase {
             if (CensoredUtils.isCensored(countryCode)) {
                 COUNTER_FACTORY.getCounter(CENSORED_USERS).increment();
             } else {
-                System.out.println("Adding uncensored user");
+                System.out.println("Incrementing uncensored count");
                 COUNTER_FACTORY.getCounter(UNCENSORED_USERS).increment();
             }
             final ShardedCounter countryCounter = 
                 COUNTER_FACTORY.getOrCreateCounter(countryCode);
             countryCounter.increment();
+            /*
+            final ShardedCounter countryBytesCounter = 
+                COUNTER_FACTORY.getOrCreateCounter(countryCode+"-b");
+            countryBytesCounter.increment(bytesProxied);
+            final ShardedCounter countryCounter = 
+                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+            final ShardedCounter countryCounter = 
+                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+            final ShardedCounter countryCounter = 
+                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+                */
         }
         
         return isUserNew;
@@ -253,13 +279,26 @@ public class Dao extends DAOBase {
         add(json, CENSORED_USERS);
         add(json, UNCENSORED_USERS);
         add(json, ONLINE);
+        final JSONObject countriesJson = new JSONObject();
+        for (final String country : countries) {
+            add(countriesJson, country);
+        }
         return json;
     }
 
     private void add(final JSONObject json, final String key) {
-        final long count = COUNTER_FACTORY.getCounter(key).getCount();
+        final ShardedCounter counter = COUNTER_FACTORY.getCounter(key);
+        if (counter == null) {
+            add(json, key, 0);
+        } else {
+            final long count = counter.getCount();
+            add(json, key, count);
+        }
+    }
+
+    private void add(final JSONObject json, final String key, final long val) {
         try {
-            json.put(key.toLowerCase(), count);
+            json.put(key.toLowerCase(), val);
         } catch (final JSONException e) {
             e.printStackTrace();
         }

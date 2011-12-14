@@ -18,9 +18,8 @@ package org.lantern.data;
 import javax.jdo.PersistenceManager;
 
 /**
-* Finds or creates a sharded counter with the desired name.
-*
-*/
+ * Finds or creates a sharded counter with the desired name.
+ */
 public class CounterFactory {
 
     /**
@@ -36,8 +35,8 @@ public class CounterFactory {
         return counter;
     }
     
-    public ShardedCounter getCounter(String name) {
-        ShardedCounter counter = new ShardedCounter(name);
+    public ShardedCounter getCounter(final String name) {
+        final ShardedCounter counter = new ShardedCounter(name);
         if (counter.isInDatastore()) {
             return counter;
         } else {
@@ -46,11 +45,11 @@ public class CounterFactory {
     }
     
 
-    public ShardedCounter createCounter(String name) {
-        ShardedCounter counter = new ShardedCounter(name);
+    public ShardedCounter createCounter(final String name) {
+        final ShardedCounter counter = new ShardedCounter(name);
 
-        DatastoreCounter counterEntity = new DatastoreCounter(name, 0);
-        PersistenceManager pm = PMF.get().getPersistenceManager();
+        final DatastoreCounter counterEntity = new DatastoreCounter(name, 0);
+        final PersistenceManager pm = PMF.get().getPersistenceManager();
         try {
             pm.makePersistent(counterEntity);
         } finally {
