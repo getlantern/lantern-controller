@@ -301,6 +301,9 @@ public class Dao extends DAOBase {
 
     public void whitelistAdditions(final Collection<String> whitelistAdditions,
         final String countryCode) {
+        if (whitelistAdditions == null) {
+            return;
+        }
         for (final String url : whitelistAdditions) {
             final WhitelistEntry entry = new WhitelistEntry();
             entry.setUrl(url);
@@ -310,6 +313,9 @@ public class Dao extends DAOBase {
 
     public void whitelistRemovals(final Collection<String> whitelistRemovals,
         final String countryCode) {
+        if (whitelistRemovals == null) {
+            return;
+        }
         for (final String url : whitelistRemovals) {
             final WhitelistRemovalEntry entry = new WhitelistRemovalEntry();
             entry.setUrl(url);
