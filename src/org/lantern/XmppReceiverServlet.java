@@ -73,14 +73,14 @@ public class XmppReceiverServlet extends HttpServlet {
         //    request.getString(LanternConstants.USER_NAME);
         //final String pwd = request.getString(LanternConstants.PASSWORD);
         final long directRequests = 
-            (Long) request.get(LanternConstants.DIRECT_REQUESTS);
+            (Integer) request.get(LanternConstants.DIRECT_REQUESTS);
         final long directBytes = 
-            (Long) request.get(LanternConstants.DIRECT_BYTES);
+            (Integer) request.get(LanternConstants.DIRECT_BYTES);
         
         final long requestsProxied = 
-            (Long) request.get(LanternConstants.REQUESTS_PROXIED);
+            (Integer) request.get(LanternConstants.REQUESTS_PROXIED);
         final long bytesProxied = 
-            (Long) request.get(LanternConstants.BYTES_PROXIED);
+            (Integer) request.get(LanternConstants.BYTES_PROXIED);
         
         //final String machineId = request.getString("m");
         final String countryCode = 

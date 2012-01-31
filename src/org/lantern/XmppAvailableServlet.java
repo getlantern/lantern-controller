@@ -73,14 +73,14 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String,Object> request = mapper.readValue(stats, Map.class);
         //final JSONObject request = new JSONObject(stats);
         final long directRequests = 
-            (Long) request.get(LanternConstants.DIRECT_REQUESTS);
+            (Integer) request.get(LanternConstants.DIRECT_REQUESTS);
         final long directBytes = 
-            (Long) request.get(LanternConstants.DIRECT_BYTES);
+            (Integer) request.get(LanternConstants.DIRECT_BYTES);
         
         final long requestsProxied = 
-            (Long) request.get(LanternConstants.REQUESTS_PROXIED);
+            (Integer) request.get(LanternConstants.REQUESTS_PROXIED);
         final long bytesProxied = 
-            (Long) request.get(LanternConstants.BYTES_PROXIED);
+            (Integer) request.get(LanternConstants.BYTES_PROXIED);
         
         //final String machineId = request.getString("m");
         final String countryCode = 
