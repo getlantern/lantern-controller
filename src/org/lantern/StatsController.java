@@ -4,10 +4,8 @@ import java.io.OutputStream;
 
 import javax.servlet.http.*;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
-
-import com.google.appengine.repackaged.org.json.JSONObject;
 
 @SuppressWarnings("serial")
 public class StatsController extends HttpServlet {
@@ -17,8 +15,8 @@ public class StatsController extends HttpServlet {
         final HttpServletResponse response) throws IOException {
         
         final Dao dao = new Dao();
-        final JSONObject json = dao.getStats();
-        final String finalData = json.toString();
+        //final JSONObject json = dao.getStats();
+        final String finalData = dao.getStats();
         
         final String responseString;
         final String functionName = request.getParameter("callback");

@@ -3,12 +3,17 @@ package org.lantern;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
 
 import com.google.appengine.api.taskqueue.DeferredTask;
@@ -21,9 +26,6 @@ import com.google.appengine.api.xmpp.Presence;
 import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
-import com.google.appengine.repackaged.org.json.JSONArray;
-import com.google.appengine.repackaged.org.json.JSONException;
-import com.google.appengine.repackaged.org.json.JSONObject;
 
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
@@ -58,85 +60,88 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final String stats, final Presence presence, 
-        final XMPPService xmpp) {
+        final XMPPService xmpp) throws IOException {
         if (StringUtils.isBlank(stats)) {
             System.out.println("No stats!");
             return;
         }
         final String jid = presence.getFromJid().getId();
-        final JSONObject responseJson = new JSONObject();
+        final Map<String,Object> responseJson = 
+            new LinkedHashMap<String,Object>();
+        //final JSONObject responseJson = new JSONObject();
+        final ObjectMapper mapper = new ObjectMapper();
+        final Map<String,Object> request = mapper.readValue(stats, Map.class);
+        //final JSONObject request = new JSONObject(stats);
+        final long directRequests = 
+            (Long) request.get(LanternConstants.DIRECT_REQUESTS);
+        final long directBytes = 
+            (Long) request.get(LanternConstants.DIRECT_BYTES);
+        
+        final long requestsProxied = 
+            (Long) request.get(LanternConstants.REQUESTS_PROXIED);
+        final long bytesProxied = 
+            (Long) request.get(LanternConstants.BYTES_PROXIED);
+        
+        //final String machineId = request.getString("m");
+        final String countryCode = 
+            (String) request.get(LanternConstants.COUNTRY_CODE);
+        //final Map<String,Object> whitelistAdditionsJson = 
+        //    request.get(LanternConstants.WHITELIST_ADDITIONS);
+        //final Map<String,Object>  whitelistRemovalsJson = 
+        //    request.get(LanternConstants.WHITELIST_REMOVALS);
+        
+        final Collection<String> whitelistAdditions =
+            (Collection<String>) request.get(LanternConstants.WHITELIST_ADDITIONS);
+            //LanternUtils.toCollection(whitelistAdditionsJson);
+        
+        final Collection<String> whitelistRemovals =
+            (Collection<String>) request.get(LanternConstants.WHITELIST_REMOVALS);
+            //LanternUtils.toCollection(whitelistRemovalsJson);
+        
+        final String versionString = 
+            (String) request.get(LanternConstants.VERSION_KEY);
+        
         try {
-            final JSONObject request = new JSONObject(stats);
-            final long directRequests = 
-                request.getLong(LanternConstants.DIRECT_REQUESTS);
-            final long directBytes = 
-                request.getLong(LanternConstants.DIRECT_BYTES);
-            
-            final long requestsProxied = 
-                request.getLong(LanternConstants.REQUESTS_PROXIED);
-            final long bytesProxied = 
-                request.getLong(LanternConstants.BYTES_PROXIED);
-            
-            final String countryCode = 
-                request.getString(LanternConstants.COUNTRY_CODE);
-            final JSONArray whitelistAdditionsJson = 
-                request.getJSONArray(LanternConstants.WHITELIST_ADDITIONS);
-            final JSONArray whitelistRemovalsJson = 
-                request.getJSONArray(LanternConstants.WHITELIST_REMOVALS);
-            
-            final Collection<String> whitelistAdditions =
-                LanternUtils.toCollection(whitelistAdditionsJson);
-            
-            final Collection<String> whitelistRemovals =
-                LanternUtils.toCollection(whitelistRemovalsJson);
-            
-            final String versionString = 
-                request.getString(LanternConstants.VERSION_KEY);
-
-            try {
-                final double version = Double.parseDouble(versionString);
-                if (LanternConstants.LATEST_VERSION > version) {
-                    final JSONObject updateJson = new JSONObject();
-                    updateJson.put(LanternConstants.UPDATE_TITLE_KEY, 
-                        LanternConstants.UPDATE_TITLE);
-                    updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
-                        LanternConstants.UPDATE_MESSAGE);
-                    updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
-                        String.valueOf(LanternConstants.LATEST_VERSION));
-                    updateJson.put(LanternConstants.UPDATE_URL_KEY,
-                        LanternConstants.UPDATE_URL);
-                    responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
-                }
-            } catch (final NumberFormatException nfe) {
-                // Probably running from main line.
-                System.out.println("Format exception on version: "+versionString);
+            final double version = Double.parseDouble(versionString);
+            if (LanternConstants.LATEST_VERSION > version) {
+                final Map<String,Object> updateJson = new LinkedHashMap<String,Object>();
+                updateJson.put(LanternConstants.UPDATE_TITLE_KEY, 
+                    LanternConstants.UPDATE_TITLE);
+                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
+                    LanternConstants.UPDATE_MESSAGE);
+                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
+                    String.valueOf(LanternConstants.LATEST_VERSION));
+                updateJson.put(LanternConstants.UPDATE_URL_KEY,
+                    LanternConstants.UPDATE_URL);
+                responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
             }
-
-            System.out.println("About to queue task...");
-            // We defer this to make sure we respond to the user as quickly
-            // as possible.
-            QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
-                new DeferredTask() {
-                @Override
-                public void run() {
-                    ////log.info("Running deferred task");
-                    final Dao dao = new Dao();
-                    System.out.println("Setting instance to available");
-                    dao.setInstanceAvailable(jid, true);
-                    
-                    System.out.println("Updating stats");
-                    dao.updateUser(jid, directRequests, 
-                        directBytes, requestsProxied, bytesProxied, 
-                        countryCode);
-
-                    dao.whitelistAdditions(whitelistAdditions, countryCode);
-                    dao.whitelistRemovals(whitelistRemovals, countryCode);
-                }
-            }));
-        } catch (final JSONException e) {
-            System.out.println("JSON Error");
-            e.printStackTrace();
+        } catch (final NumberFormatException nfe) {
+            // Probably running from main line.
+            System.out.println("Format exception on version: "+versionString);
         }
+
+        System.out.println("About to queue task...");
+        // We defer this to make sure we respond to the user as quickly
+        // as possible.
+        QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
+            new DeferredTask() {
+            @Override
+            public void run() {
+                ////log.info("Running deferred task");
+                final Dao dao = new Dao();
+                System.out.println("Setting instance to available");
+                dao.setInstanceAvailable(jid, true);
+                
+                System.out.println("Updating stats");
+                dao.updateUser(jid, directRequests, 
+                    directBytes, requestsProxied, bytesProxied, 
+                    countryCode);
+
+                dao.whitelistAdditions(whitelistAdditions, countryCode);
+                dao.whitelistRemovals(whitelistRemovals, countryCode);
+            }
+        }));
+
         
 
         final Dao dao = new Dao();
@@ -150,22 +155,19 @@ public class XmppAvailableServlet extends HttpServlet {
         servers.addAll(Arrays.asList("75.101.134.244:7777",
             "laeproxyhr1.appspot.com",
             "rlanternz.appspot.com"));
-        try {
-            responseJson.put(LanternConstants.SERVERS, servers);
-            responseJson.put(LanternConstants.UPDATE_TIME, 
-                LanternConstants.UPDATE_TIME_MILLIS);
-            final String serversBody = responseJson.toString();
-            final Message msg = 
-                new MessageBuilder().withRecipientJids(
-                    presence.getFromJid()).withBody(serversBody).withMessageType(
-                        MessageType.HEADLINE).build();
-            System.out.println("Sending response:\n"+responseJson.toString());
-            final SendResponse status = xmpp.sendMessage(msg);
-            final boolean messageSent = 
-                (status.getStatusMap().get(
-                    presence.getFromJid()) == SendResponse.Status.SUCCESS);
-        } catch (final JSONException e) {
-            e.printStackTrace();
-        }
+        responseJson.put(LanternConstants.SERVERS, servers);
+        responseJson.put(LanternConstants.UPDATE_TIME, 
+            LanternConstants.UPDATE_TIME_MILLIS);
+        final String serversBody = LanternUtils.jsonify(responseJson);
+        final Message msg = 
+            new MessageBuilder().withRecipientJids(
+                presence.getFromJid()).withBody(serversBody).withMessageType(
+                    MessageType.HEADLINE).build();
+        System.out.println("Sending response:\n"+responseJson.toString());
+        final SendResponse status = xmpp.sendMessage(msg);
+        final boolean messageSent = 
+            (status.getStatusMap().get(
+                presence.getFromJid()) == SendResponse.Status.SUCCESS);
+
     }
 }

@@ -1,18 +1,19 @@
 package org.lantern;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.codehaus.jackson.map.SerializationConfig.Feature;
 
 import com.google.appengine.api.xmpp.Message;
-import com.google.appengine.repackaged.org.json.JSONArray;
-import com.google.appengine.repackaged.org.json.JSONException;
 
 /**
  * Utility methods for use with Lantern.
@@ -44,6 +45,7 @@ public class LanternUtils {
         System.out.println(getCountryCodes());
     }
     
+    /*
     public static Collection<String> toCollection(final JSONArray json) {
         final int length = json.length();
         final Collection<String> strs = new ArrayList<String>(length);
@@ -56,6 +58,7 @@ public class LanternUtils {
         }
         return strs;
     }
+    */
 
 
     public static String userId(final Message message) {
@@ -72,6 +75,40 @@ public class LanternUtils {
     
     public static String jidToInstanceId(final String fullId) {
         return fullId.split("/")[1];
+    }
+    
+    public static String jsonify(final Object all) {
+        
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(Feature.INDENT_OUTPUT, true);
+        //mapper.configure(Feature.SORT_PROPERTIES_ALPHABETICALLY, false);
+
+        try {
+            return mapper.writeValueAsString(all);
+        } catch (final JsonGenerationException e) {
+            System.out.println("Error generating JSON" + e);
+        } catch (final JsonMappingException e) {
+            System.out.println("Error generating JSON" + e);
+        } catch (final IOException e) {
+            System.out.println("Error generating JSON" + e);
+        }
+        return "";
+    }
+    
+    public static String jsonify(final Object all, Class<?> view) {
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(Feature.INDENT_OUTPUT, true);
+        ObjectWriter writer = mapper.writerWithView(view);
+        try {
+            return writer.writeValueAsString(all);
+        } catch (final JsonGenerationException e) {
+            System.out.println("Error generating JSON "+e);
+        } catch (final JsonMappingException e) {
+            System.out.println("Error generating JSON "+ e);
+        } catch (final IOException e) {
+            System.out.println("Error generating JSON " + e);
+        }
+        return "";
     }
 }
 

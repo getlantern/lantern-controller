@@ -1,12 +1,10 @@
 package org.lantern.data;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.lantern.CensoredUtils;
@@ -14,8 +12,6 @@ import org.lantern.LanternConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.repackaged.org.json.JSONException;
-import com.google.appengine.repackaged.org.json.JSONObject;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -270,38 +266,37 @@ public class Dao extends DAOBase {
         return isUserNew;
     }
 
-    public JSONObject getStats() {
-        final JSONObject json = new JSONObject();
-        add(json, BYTES_PROXIED);
-        add(json, REQUESTS_PROXIED);
-        add(json, DIRECT_BYTES);
-        add(json, DIRECT_REQUESTS);
-        add(json, CENSORED_USERS);
-        add(json, UNCENSORED_USERS);
-        add(json, ONLINE);
-        final JSONObject countriesJson = new JSONObject();
+    public String getStats() {
+        final Map<String, Object> data = new HashMap<String, Object>();
+        add(data, BYTES_PROXIED);
+        add(data, REQUESTS_PROXIED);
+        add(data, DIRECT_BYTES);
+        add(data, DIRECT_REQUESTS);
+        add(data, CENSORED_USERS);
+        add(data, UNCENSORED_USERS);
+        add(data, ONLINE);
+
+        /*
+        final Map<String, Object> countriesData = new HashMap<String, Object>();
         for (final String country : countries) {
-            add(countriesJson, country);
+            add(countriesData, country);
         }
-        return json;
+        */
+        return LanternUtils.jsonify(data);
     }
 
-    private void add(final JSONObject json, final String key) {
+    private void add(final Map<String, Object> data, final String key) {
         final ShardedCounter counter = COUNTER_FACTORY.getCounter(key);
         if (counter == null) {
-            add(json, key, 0);
+            add(data, key, 0);
         } else {
             final long count = counter.getCount();
-            add(json, key, count);
+            add(data, key, count);
         }
     }
 
-    private void add(final JSONObject json, final String key, final long val) {
-        try {
-            json.put(key.toLowerCase(), val);
-        } catch (final JSONException e) {
-            e.printStackTrace();
-        }
+    private void add(final Map<String, Object> data, final String key, final long val) {
+        data.put(key.toLowerCase(), val);
     }
 
     public void whitelistAdditions(final Collection<String> whitelistAdditions,
