@@ -1,16 +1,33 @@
 package org.lantern;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Constants for Lantern.
  */
 public class LanternConstants {
     
-    /**
-     * The key for the version of Lantern the client is recording.
-     */
-    public static final String VERSION_KEY = "v";
+
+    public static final String UPDATE_RELEASED_KEY = "released";
+    public static final String UPDATE_URLS_KEY = "urls";
+    public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00.0Z";
     
-    public static final double LATEST_VERSION = 0.1;
+    public static final Map<String, String> UPDATE_URLS = 
+        new HashMap<String, String>();
+    
+    public static final double LATEST_VERSION = 1.0;//0.1;
+    
+    private static final String URL_BASE = 
+        "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION;
+    
+    static {
+        UPDATE_URLS.put("macos", URL_BASE+".exe");
+        UPDATE_URLS.put("windows", URL_BASE+".dmg");
+        UPDATE_URLS.put("ubuntu", URL_BASE+".deb");
+        UPDATE_URLS.put("fedora", URL_BASE+".rpm");
+        UPDATE_URLS.put("tarball", URL_BASE+".tgz");
+    }
     
     /**
      * This is the local proxy port data is relayed to on the "server" side
@@ -35,28 +52,31 @@ public class LanternConstants {
     public static final String WHITELIST_ADDITIONS = "wa";
     public static final String WHITELIST_REMOVALS = "wr";
     public static final String SERVERS = "s";
+    
+    
     public static final String UPDATE_TIME = "ut";
     
     public static final long UPDATE_TIME_MILLIS = 60 * 1000;
 
-    public static final String UPDATE_MESSAGE_KEY = "upm";
+    public static final String UPDATE_MESSAGE_KEY = "message";
     
     public static final String UPDATE_MESSAGE = 
-        "Lantern "+LATEST_VERSION+" is now available. To update please visit " +
-        "the <br> <a href='http://www.getlantern.org'>Lantern download page</a>.";
+        "Lantern "+LATEST_VERSION+" is now available with many new performance and usability improvements.";
+    
+    public static final String VERSION_KEY = "v";
     
     /**
      * The key for the update JSON object.
      */
     public static final String UPDATE_KEY = "uk";
 
-    public static final String UPDATE_VERSION_KEY = "uv";
+    public static final String UPDATE_VERSION_KEY = "number";
     
-    public static final String UPDATE_TITLE_KEY = "upt";
+    //public static final String UPDATE_TITLE_KEY = "upt";
 
-    public static final String UPDATE_TITLE = "Update Lantern?";
+    //public static final String UPDATE_TITLE = "Update Lantern?";
 
-    public static final String UPDATE_URL_KEY = "uuk";
+    //public static final String UPDATE_URL_KEY = "uuk";
 
-    public static final String UPDATE_URL = "http://www.getlantern.org";
+    //public static final String UPDATE_URL = "http://www.getlantern.org";
 }

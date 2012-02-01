@@ -11,8 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
 
@@ -104,15 +102,16 @@ public class XmppAvailableServlet extends HttpServlet {
         try {
             final double version = Double.parseDouble(versionString);
             if (LanternConstants.LATEST_VERSION > version) {
-                final Map<String,Object> updateJson = new LinkedHashMap<String,Object>();
-                updateJson.put(LanternConstants.UPDATE_TITLE_KEY, 
-                    LanternConstants.UPDATE_TITLE);
+                final Map<String,Object> updateJson = 
+                    new LinkedHashMap<String,Object>();
+                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
+                    LanternConstants.LATEST_VERSION);
+                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY, 
+                    LanternConstants.UPDATE_RELEASE_DATE);
+                updateJson.put(LanternConstants.UPDATE_URLS_KEY, 
+                        LanternConstants.UPDATE_URLS);
                 updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
                     LanternConstants.UPDATE_MESSAGE);
-                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
-                    String.valueOf(LanternConstants.LATEST_VERSION));
-                updateJson.put(LanternConstants.UPDATE_URL_KEY,
-                    LanternConstants.UPDATE_URL);
                 responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
             }
         } catch (final NumberFormatException nfe) {
