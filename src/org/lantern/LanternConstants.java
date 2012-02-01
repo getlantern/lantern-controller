@@ -76,7 +76,7 @@ public class LanternConstants {
 
     //public static final String UPDATE_TITLE = "Update Lantern?";
 
-    //public static final String UPDATE_URL_KEY = "uuk";
+    public static final String UPDATE_URL_KEY = "url";
 
-    //public static final String UPDATE_URL = "http://www.getlantern.org";
+    public static final String UPDATE_URL = "http://www.getlantern.org";
 }
