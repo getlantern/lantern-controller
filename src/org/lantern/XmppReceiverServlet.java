@@ -101,6 +101,7 @@ public class XmppReceiverServlet extends HttpServlet {
         final String versionString = 
             (String) request.get(LanternConstants.VERSION_KEY);
         
+        /*
         try {
             final double version = Double.parseDouble(versionString);
             if (LanternConstants.LATEST_VERSION > version) {
@@ -119,6 +120,7 @@ public class XmppReceiverServlet extends HttpServlet {
             // Probably running from main line.
             System.out.println("Format exception on version: "+versionString);
         }
+        */
 
 
         System.out.println("About to queue task...");
