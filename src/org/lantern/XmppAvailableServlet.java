@@ -100,8 +100,8 @@ public class XmppAvailableServlet extends HttpServlet {
             (String) request.get(LanternConstants.VERSION_KEY);
         
         try {
-            //final double version = Double.parseDouble(versionString);
-            final double version = 0.001; //just for testing!!
+            final double version = Double.parseDouble(versionString);
+            //final double version = 0.001; //just for testing!!
             if (LanternConstants.LATEST_VERSION > version) {
                 final Map<String,Object> updateJson = 
                     new LinkedHashMap<String,Object>();

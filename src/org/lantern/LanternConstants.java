@@ -11,12 +11,12 @@ public class LanternConstants {
 
     public static final String UPDATE_RELEASED_KEY = "released";
     public static final String UPDATE_URLS_KEY = "urls";
-    public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00.0Z";
+    public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
     
     public static final Map<String, String> UPDATE_URLS = 
         new HashMap<String, String>();
     
-    public static final double LATEST_VERSION = 1.0;//0.1;
+    public static final double LATEST_VERSION = 0.96;
     
     private static final String URL_BASE = 
         "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION;
