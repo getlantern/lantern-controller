@@ -33,10 +33,17 @@ public class XmppAvailableServlet extends HttpServlet {
     @Override
     public void doPost(final HttpServletRequest req, 
         final HttpServletResponse res) throws IOException {
+        System.out.println("Got XMPP post...");
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
         final Presence presence = xmpp.parsePresence(req);
         final boolean available = presence.isAvailable();
         final String id = presence.getFromJid().getId();
+        System.out.println("ID: "+id);
+        final boolean lan = LanternControllerUtils.isLantern(id);
+        if (!lan) {
+            // Ignore non-Lantern requests.
+            return;
+        }
         System.out.println("XmppAvailableServlet::Got presence "+available+" for "+id);
         
         System.out.println("Status: '"+presence.getStatus()+"'");
@@ -44,28 +51,24 @@ public class XmppAvailableServlet extends HttpServlet {
         System.out.println("Stanza: "+stanza);
         final String stats = StringUtils.substringBetween(stanza, 
                 "<property><name>stats</name><value type=\"string\">", "</value></property>");
-        System.out.println("Stats JSON: "+stats);
+        //System.out.println("Stats JSON: "+stats);
         updateStats(stats, presence, xmpp);
-        if (LanternControllerUtils.isLantern(id)) {
-            final Dao dao = new Dao();
-            // The following will delete the instance if it's not available,
-            // updating all counters.
-            dao.setInstanceAvailable(id, available);
-            
-        } else {
-            System.out.println("XmppAvailableServlet::Not a Lantern ID: "+id);
-        }
+        final Dao dao = new Dao();
+        // The following will delete the instance if it's not available,
+        // updating all counters.
+        dao.setInstanceAvailable(id, available);
     }
 
     private void updateStats(final String stats, final Presence presence, 
         final XMPPService xmpp) throws IOException {
-        if (StringUtils.isBlank(stats)) {
-            System.out.println("No stats!");
-            return;
-        }
         final String jid = presence.getFromJid().getId();
         final Map<String,Object> responseJson = 
             new LinkedHashMap<String,Object>();
+        if (StringUtils.isBlank(stats)) {
+            System.out.println("No stats!");
+            sendServers(presence, xmpp, jid, responseJson);
+            return;
+        }
         //final JSONObject responseJson = new JSONObject();
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String,Object> request = mapper.readValue(stats, Map.class);
@@ -142,7 +145,12 @@ public class XmppAvailableServlet extends HttpServlet {
             }
         }));
 
-        
+        sendServers(presence, xmpp, jid, responseJson);
+
+    }
+
+    private void sendServers(Presence presence, XMPPService xmpp, 
+        String jid, Map<String, Object> responseJson) {
 
         final Dao dao = new Dao();
         final Collection<String> servers = dao.getInstances();
@@ -168,6 +176,5 @@ public class XmppAvailableServlet extends HttpServlet {
         final boolean messageSent = 
             (status.getStatusMap().get(
                 presence.getFromJid()) == SendResponse.Status.SUCCESS);
-
     }
 }
