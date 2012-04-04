@@ -37,13 +37,11 @@ public class XmppAvailableServlet extends HttpServlet {
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
         final Presence presence = xmpp.parsePresence(req);
         final boolean available = presence.isAvailable();
+        
+        
         final String id = presence.getFromJid().getId();
         System.out.println("ID: "+id);
-        final boolean lan = LanternControllerUtils.isLantern(id);
-        if (!lan) {
-            // Ignore non-Lantern requests.
-            return;
-        }
+        //final boolean lan = LanternControllerUtils.isLantern(id);
         System.out.println("XmppAvailableServlet::Got presence "+available+" for "+id);
         
         System.out.println("Status: '"+presence.getStatus()+"'");
@@ -52,7 +50,16 @@ public class XmppAvailableServlet extends HttpServlet {
         final String stats = StringUtils.substringBetween(stanza, 
                 "<property><name>stats</name><value type=\"string\">", "</value></property>");
         //System.out.println("Stats JSON: "+stats);
-        updateStats(stats, presence, xmpp);
+        
+        final boolean isGiveMode = LanternControllerUtils.isLantern(id);
+        
+        final Map<String,Object> responseJson = 
+            new LinkedHashMap<String,Object>();
+        updateStats(stats, presence, responseJson);
+        
+        if (available && !isGiveMode) {
+            sendServers(presence, xmpp, id, responseJson);
+        }
         final Dao dao = new Dao();
         // The following will delete the instance if it's not available,
         // updating all counters.
@@ -60,13 +67,10 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final String stats, final Presence presence, 
-        final XMPPService xmpp) throws IOException {
+        final Map<String, Object> responseJson) throws IOException {
         final String jid = presence.getFromJid().getId();
-        final Map<String,Object> responseJson = 
-            new LinkedHashMap<String,Object>();
         if (StringUtils.isBlank(stats)) {
             System.out.println("No stats!");
-            sendServers(presence, xmpp, jid, responseJson);
             return;
         }
         //final JSONObject responseJson = new JSONObject();
@@ -144,9 +148,6 @@ public class XmppAvailableServlet extends HttpServlet {
                 dao.whitelistRemovals(whitelistRemovals, countryCode);
             }
         }));
-
-        sendServers(presence, xmpp, jid, responseJson);
-
     }
 
     private void sendServers(Presence presence, XMPPService xmpp, 

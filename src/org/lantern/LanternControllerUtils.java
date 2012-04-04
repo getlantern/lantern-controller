@@ -13,7 +13,6 @@ public class LanternControllerUtils {
      * <code>false</code>.
      */
     public static boolean isLantern(final String id) {
-        return id.contains("@gmail.com/-lan");
+        return id.contains("/-lan");
     }
-
 }
