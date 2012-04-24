@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.lantern.CensoredUtils;
 import org.lantern.LanternConstants;
@@ -18,6 +19,8 @@ import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
 
 public class Dao extends DAOBase {
+    
+    private final transient Logger log = Logger.getLogger(getClass().getName());
     
     private static final String[] countries = {
         "AE", "AL", "AR", "AT", "AU", "BA", "BE", "BG", "BH", "BO", "BR", "BY", 
@@ -90,7 +93,7 @@ public class Dao extends DAOBase {
             final LanternInstance user = iter.next();
             results.add(user.getId());
         }
-        System.out.println("Returning instances: "+results);
+        log.info("Returning instances: "+results);
         return results;
     }
 

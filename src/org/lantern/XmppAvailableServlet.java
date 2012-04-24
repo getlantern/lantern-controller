@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,28 +29,28 @@ import com.google.appengine.api.xmpp.XMPPServiceFactory;
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
     
-    //private final Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = Logger.getLogger(getClass().getName());
     
     @Override
     public void doPost(final HttpServletRequest req, 
         final HttpServletResponse res) throws IOException {
-        System.out.println("Got XMPP post...");
+        log.info("Got XMPP post...");
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
         final Presence presence = xmpp.parsePresence(req);
         final boolean available = presence.isAvailable();
         
         
         final String id = presence.getFromJid().getId();
-        System.out.println("ID: "+id);
+        log.info("ID: "+id);
         //final boolean lan = LanternControllerUtils.isLantern(id);
-        System.out.println("XmppAvailableServlet::Got presence "+available+" for "+id);
+        log.info("XmppAvailableServlet::Got presence "+available+" for "+id);
         
-        System.out.println("Status: '"+presence.getStatus()+"'");
+        log.info("Status: '"+presence.getStatus()+"'");
         final String stanza = presence.getStanza();
-        System.out.println("Stanza: "+stanza);
+        log.info("Stanza: "+stanza);
         final String stats = StringUtils.substringBetween(stanza, 
                 "<property><name>stats</name><value type=\"string\">", "</value></property>");
-        //System.out.println("Stats JSON: "+stats);
+        //log.info("Stats JSON: "+stats);
         
         final boolean isGiveMode = LanternControllerUtils.isLantern(id);
         
@@ -70,7 +71,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String, Object> responseJson) throws IOException {
         final String jid = presence.getFromJid().getId();
         if (StringUtils.isBlank(stats)) {
-            System.out.println("No stats!");
+            log.info("No stats!");
             return;
         }
         //final JSONObject responseJson = new JSONObject();
@@ -124,10 +125,10 @@ public class XmppAvailableServlet extends HttpServlet {
             }
         } catch (final NumberFormatException nfe) {
             // Probably running from main line.
-            System.out.println("Format exception on version: "+versionString);
+            log.info("Format exception on version: "+versionString);
         }
 
-        System.out.println("About to queue task...");
+        log.info("About to queue task...");
         // We defer this to make sure we respond to the user as quickly
         // as possible.
         QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
@@ -135,11 +136,12 @@ public class XmppAvailableServlet extends HttpServlet {
             @Override
             public void run() {
                 ////log.info("Running deferred task");
+                final Logger log = Logger.getLogger(getClass().getName());
                 final Dao dao = new Dao();
-                System.out.println("Setting instance to available");
+                log.info("Setting instance to available");
                 dao.setInstanceAvailable(jid, true);
                 
-                System.out.println("Updating stats");
+                log.info("Updating stats");
                 dao.updateUser(jid, directRequests, 
                     directBytes, requestsProxied, bytesProxied, 
                     countryCode);
@@ -172,7 +174,7 @@ public class XmppAvailableServlet extends HttpServlet {
             new MessageBuilder().withRecipientJids(
                 presence.getFromJid()).withBody(serversBody).withMessageType(
                     MessageType.HEADLINE).build();
-        System.out.println("Sending response:\n"+responseJson.toString());
+        log.info("Sending response:\n"+responseJson.toString());
         final SendResponse status = xmpp.sendMessage(msg);
         final boolean messageSent = 
             (status.getStatusMap().get(
