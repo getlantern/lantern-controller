@@ -37,7 +37,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final Presence presence;
         try {
             presence = xmpp.parsePresence(req);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.severe("Could not parse presence: "+e.getMessage());
             return;
         }
@@ -53,7 +53,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final String stanza = presence.getStanza();
         log.info("Stanza: "+stanza);
         final String stats = StringUtils.substringBetween(stanza, 
-                "<property><name>stats</name><value type=\"string\">", "</value></property>");
+            "<property><name>stats</name><value type=\"string\">", "</value></property>");
         //log.info("Stats JSON: "+stats);
         
         final boolean isGiveMode = LanternControllerUtils.isLantern(id);
@@ -68,11 +68,18 @@ public class XmppAvailableServlet extends HttpServlet {
             log.severe("Error updating stats: "+e.getMessage());
         }
         
-        if (available && !isGiveMode) {
-            log.info("Sending servers to available get mode");
-            sendServers(presence, xmpp, id, responseJson);
-        } else if (available) {
-            log.info("Not sending servers to give mode");
+        // We always need to tell the client to check back in because we use
+        // it as a fallback for which users are online.
+        if (available) {
+            if (isGiveMode) {
+                responseJson.put(LanternConstants.UPDATE_TIME, 
+                    LanternConstants.UPDATE_TIME_MILLIS);
+                log.info("Not sending servers to give mode");
+            } else {
+                log.info("Sending servers to available get mode");
+                addServers(id, responseJson);
+            }
+            sendResponse(presence, xmpp, responseJson);
         } else {
             log.info("Not sending servers to unavailable clients");
         }
@@ -80,6 +87,20 @@ public class XmppAvailableServlet extends HttpServlet {
         // The following will delete the instance if it's not available,
         // updating all counters.
         dao.setInstanceAvailable(id, available);
+    }
+
+    private void sendResponse(final Presence presence, final XMPPService xmpp, 
+        final Map<String, Object> responseJson) {
+        final String serversBody = LanternUtils.jsonify(responseJson);
+        final Message msg = 
+            new MessageBuilder().withRecipientJids(
+                presence.getFromJid()).withBody(serversBody).withMessageType(
+                    MessageType.HEADLINE).build();
+        log.info("Sending response:\n"+responseJson.toString());
+        final SendResponse status = xmpp.sendMessage(msg);
+        final boolean messageSent = 
+            (status.getStatusMap().get(
+                presence.getFromJid()) == SendResponse.Status.SUCCESS);
     }
 
     private void updateStats(final String stats, final Presence presence, 
@@ -127,10 +148,10 @@ public class XmppAvailableServlet extends HttpServlet {
             read.getCountryCode());
     }
 
-    private void sendServers(final Presence presence, final XMPPService xmpp, 
-        final String jid, final Map<String, Object> responseJson) {
+    private void addServers(final String jid, 
+        final Map<String, Object> responseJson) {
 
-        log.info("Sending servers...");
+        log.info("Adding servers...");
         final Dao dao = new Dao();
         final Collection<String> servers = dao.getInstances();
         
@@ -143,17 +164,5 @@ public class XmppAvailableServlet extends HttpServlet {
             "laeproxyhr1.appspot.com",
             "rlanternz.appspot.com"));
         responseJson.put(LanternConstants.SERVERS, servers);
-        responseJson.put(LanternConstants.UPDATE_TIME, 
-            LanternConstants.UPDATE_TIME_MILLIS);
-        final String serversBody = LanternUtils.jsonify(responseJson);
-        final Message msg = 
-            new MessageBuilder().withRecipientJids(
-                presence.getFromJid()).withBody(serversBody).withMessageType(
-                    MessageType.HEADLINE).build();
-        log.info("Sending response:\n"+responseJson.toString());
-        final SendResponse status = xmpp.sendMessage(msg);
-        final boolean messageSent = 
-            (status.getStatusMap().get(
-                presence.getFromJid()) == SendResponse.Status.SUCCESS);
     }
 }

@@ -81,9 +81,11 @@ public class Dao extends DAOBase {
         final Date cutoff = 
             new Date(now - LanternConstants.UPDATE_TIME_MILLIS);
         
+        log.info("Cutoff data is: "+cutoff);
         final Query<LanternInstance> instances = 
-            ofy.query(LanternInstance.class).filter("available", true).filter("lastUpdated >", cutoff).filter(
-                "user.validated", true);
+            ofy.query(LanternInstance.class).filter("available", true).filter("lastUpdated >", cutoff);
+        //final Query<LanternInstance> instances = 
+        //    ofy.query(LanternInstance.class).filter("available", true);
         
         //final Query<LanternUser> users = 
         //    ofy.query(LanternUser.class).filter("available", true).filter("validated", true);
