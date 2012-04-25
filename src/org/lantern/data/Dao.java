@@ -102,17 +102,17 @@ public class Dao extends DAOBase {
         final LanternInstance instance = ofy.find(LanternInstance.class, id);
         final boolean originalAvailable;
         if (instance != null) {
-            System.out.println("Setting availability to "+available+" for "+id);
+            log.info("Setting availability to "+available+" for "+id);
             originalAvailable = instance.getAvailable();
             if (originalAvailable && !available) {
-                System.out.println("DAO::decrementing");
+                log.info("Decrementing online count");
                 COUNTER_FACTORY.getCounter(ONLINE).decrement();
             } else if (!originalAvailable && available) {
-                System.out.println("DAO::incrementing");
+                log.info("Incrementing online count");
                 COUNTER_FACTORY.getCounter(ONLINE).increment();
             }
             if (!available) {
-                System.out.println("Deleting instance");
+                log.info("Deleting instance");
                 ofy.delete(instance);
                 return;
             }
@@ -124,21 +124,21 @@ public class Dao extends DAOBase {
                 final LanternUser lu = 
                     ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
                 if (lu == null) {
-                    System.err.println("Dao::setInstanceAvailable::no user?");
+                    log.severe("No user?");
                 } else {
                     instance.setUser(lu);
                 }
             }
             ofy.put(instance);
-            System.out.println("Finished updating datastore...");
+            log.info("Finished updating datastore...");
         } else {
-            System.out.println("Could not find instance!!");
+            log.info("Could not find instance!!");
             final LanternUser lu = 
                 ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
             if (lu == null) {
                 // This probably means the user is censored and unstored. 
                 // That's totally normal and expected.
-                System.out.println("Ignoring instance from unknown user");
+                log.info("Ignoring instance from unknown user");
                 return;
             }
             
@@ -146,7 +146,7 @@ public class Dao extends DAOBase {
             inst.setAvailable(available);
             inst.setUser(lu);
             if (available) {
-                System.out.println("DAO incrementing online count");
+                log.info("DAO incrementing online count");
                 COUNTER_FACTORY.getCounter(ONLINE).increment();
             }
             // We don't decrement if it's not available since we never knew
@@ -162,7 +162,7 @@ public class Dao extends DAOBase {
             user.setValidated(true);
             ofy.put(user);
         } else {
-            System.out.println("Could not find user!!");
+            log.info("Could not find user!!");
         }
     }
 
@@ -170,7 +170,7 @@ public class Dao extends DAOBase {
     public boolean updateUser(final String fullId, final long directRequests, 
         final long directBytes, final long requestsProxied,
         final long bytesProxied, final String countryCode) {
-        System.out.println(
+        log.info(
             "Updating user with stats: dr: "+directRequests+" db: "+
             directBytes+" bytesProxied: "+bytesProxied);
         
@@ -181,7 +181,7 @@ public class Dao extends DAOBase {
         final LanternUser tempUser = ofy.find(LanternUser.class, userId);
         final boolean isUserNew;
         if (tempUser == null) {
-            System.out.println("Could not find user!!");
+            log.info("Could not find user!!");
             user = new LanternUser(userId);
             isUserNew = true;
         } else {
@@ -195,7 +195,7 @@ public class Dao extends DAOBase {
         final LanternInstance tempInstance = ofy.find(LanternInstance.class, instanceId);
         final boolean isInstanceNew;
         if (tempInstance == null) {
-            System.out.println("Could not find user!!");
+            log.info("Could not find user!!");
             instance = new LanternInstance(instanceId);
             isInstanceNew = true;
         } else {
@@ -237,7 +237,7 @@ public class Dao extends DAOBase {
             ofy.put(user);
         }
         
-        System.out.println("Really bumping stats...");
+        log.info("Really bumping stats...");
         COUNTER_FACTORY.getCounter(BYTES_PROXIED).increment(bytesProxied);
         COUNTER_FACTORY.getCounter(REQUESTS_PROXIED).increment(requestsProxied);
         COUNTER_FACTORY.getCounter(DIRECT_BYTES).increment(directBytes);
@@ -247,7 +247,7 @@ public class Dao extends DAOBase {
             if (CensoredUtils.isCensored(countryCode)) {
                 COUNTER_FACTORY.getCounter(CENSORED_USERS).increment();
             } else {
-                System.out.println("Incrementing uncensored count");
+                log.info("Incrementing uncensored count");
                 COUNTER_FACTORY.getCounter(UNCENSORED_USERS).increment();
             }
             final ShardedCounter countryCounter = 

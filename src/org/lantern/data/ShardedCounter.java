@@ -17,6 +17,7 @@ package org.lantern.data;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import net.sf.jsr107cache.Cache;
 import net.sf.jsr107cache.CacheException;
@@ -39,6 +40,7 @@ import javax.jdo.Query;
 *
 */
 public class ShardedCounter {
+    private final transient Logger log = Logger.getLogger(getClass().getName());
     private String counterName;
     private Cache cache;
 
@@ -190,7 +192,7 @@ public class ShardedCounter {
     }
 
     public void increment(final long count) {
-        System.out.println("ShardedCounter::incrementing "+counterName+" by "+count);
+        log.info("Incrementing "+counterName+" by "+count);
         if (cache != null) {
             Long cachedCount = (Long) cache.get("count" + counterName);
             if (cachedCount != null) {

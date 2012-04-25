@@ -11,13 +11,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
 
-import com.google.appengine.api.taskqueue.DeferredTask;
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.MessageType;
@@ -33,17 +31,23 @@ public class XmppAvailableServlet extends HttpServlet {
     
     @Override
     public void doPost(final HttpServletRequest req, 
-        final HttpServletResponse res) throws IOException {
+        final HttpServletResponse res) {
         log.info("Got XMPP post...");
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
-        final Presence presence = xmpp.parsePresence(req);
+        final Presence presence;
+        try {
+            presence = xmpp.parsePresence(req);
+        } catch (IOException e) {
+            log.severe("Could not parse presence: "+e.getMessage());
+            return;
+        }
         final boolean available = presence.isAvailable();
         
         
         final String id = presence.getFromJid().getId();
         log.info("ID: "+id);
         //final boolean lan = LanternControllerUtils.isLantern(id);
-        log.info("XmppAvailableServlet::Got presence "+available+" for "+id);
+        log.info("Got presence "+available+" for "+id);
         
         log.info("Status: '"+presence.getStatus()+"'");
         final String stanza = presence.getStanza();
@@ -56,10 +60,21 @@ public class XmppAvailableServlet extends HttpServlet {
         
         final Map<String,Object> responseJson = 
             new LinkedHashMap<String,Object>();
-        updateStats(stats, presence, responseJson);
+        try {
+            updateStats(stats, presence, responseJson);
+        } catch (final IOException e) {
+            log.severe("Error updating stats: "+e.getMessage());
+        } catch (final UnsupportedOperationException e) {
+            log.severe("Error updating stats: "+e.getMessage());
+        }
         
         if (available && !isGiveMode) {
+            log.info("Sending servers to available get mode");
             sendServers(presence, xmpp, id, responseJson);
+        } else if (available) {
+            log.info("Not sending servers to give mode");
+        } else {
+            log.info("Not sending servers to unavailable clients");
         }
         final Dao dao = new Dao();
         // The following will delete the instance if it's not available,
@@ -74,41 +89,14 @@ public class XmppAvailableServlet extends HttpServlet {
             log.info("No stats!");
             return;
         }
+        
         //final JSONObject responseJson = new JSONObject();
+        //final ObjectMapper mapper = new ObjectMapper(new SmileFactory());
         final ObjectMapper mapper = new ObjectMapper();
-        final Map<String,Object> request = mapper.readValue(stats, Map.class);
-        //final JSONObject request = new JSONObject(stats);
-        final long directRequests = 
-            (Integer) request.get(LanternConstants.DIRECT_REQUESTS);
-        final long directBytes = 
-            (Integer) request.get(LanternConstants.DIRECT_BYTES);
-        
-        final long requestsProxied = 
-            (Integer) request.get(LanternConstants.REQUESTS_PROXIED);
-        final long bytesProxied = 
-            (Integer) request.get(LanternConstants.BYTES_PROXIED);
-        
-        //final String machineId = request.getString("m");
-        final String countryCode = 
-            (String) request.get(LanternConstants.COUNTRY_CODE);
-        //final Map<String,Object> whitelistAdditionsJson = 
-        //    request.get(LanternConstants.WHITELIST_ADDITIONS);
-        //final Map<String,Object>  whitelistRemovalsJson = 
-        //    request.get(LanternConstants.WHITELIST_REMOVALS);
-        
-        final Collection<String> whitelistAdditions =
-            (Collection<String>) request.get(LanternConstants.WHITELIST_ADDITIONS);
-            //LanternUtils.toCollection(whitelistAdditionsJson);
-        
-        final Collection<String> whitelistRemovals =
-            (Collection<String>) request.get(LanternConstants.WHITELIST_REMOVALS);
-            //LanternUtils.toCollection(whitelistRemovalsJson);
-        
-        final String versionString = 
-            (String) request.get(LanternConstants.VERSION_KEY);
-        
+        mapper.registerModule(new MrBeanModule());
+        final Stats read = mapper.readValue(stats, Stats.class);
         try {
-            final double version = Double.parseDouble(versionString);
+            final double version = Double.parseDouble(read.getVersion());
             //final double version = 0.001; //just for testing!!
             if (LanternConstants.LATEST_VERSION > version) {
                 final Map<String,Object> updateJson = 
@@ -125,36 +113,24 @@ public class XmppAvailableServlet extends HttpServlet {
             }
         } catch (final NumberFormatException nfe) {
             // Probably running from main line.
-            log.info("Format exception on version: "+versionString);
+            log.info("Format exception on version: "+read.getVersion());
         }
 
-        log.info("About to queue task...");
-        // We defer this to make sure we respond to the user as quickly
-        // as possible.
-        QueueFactory.getDefaultQueue().add(TaskOptions.Builder.withPayload(
-            new DeferredTask() {
-            @Override
-            public void run() {
-                ////log.info("Running deferred task");
-                final Logger log = Logger.getLogger(getClass().getName());
-                final Dao dao = new Dao();
-                log.info("Setting instance to available");
-                dao.setInstanceAvailable(jid, true);
-                
-                log.info("Updating stats");
-                dao.updateUser(jid, directRequests, 
-                    directBytes, requestsProxied, bytesProxied, 
-                    countryCode);
-
-                dao.whitelistAdditions(whitelistAdditions, countryCode);
-                dao.whitelistRemovals(whitelistRemovals, countryCode);
-            }
-        }));
+        final Dao dao = new Dao();
+        log.info("Setting instance to available");
+        dao.setInstanceAvailable(jid, true);
+        
+        log.info("Updating stats");
+        dao.updateUser(jid, read.getDirectRequests(), 
+            read.getDirectBytes(), read.getTotalProxiedRequests(), 
+            read.getTotalBytesProxied(), 
+            read.getCountryCode());
     }
 
-    private void sendServers(Presence presence, XMPPService xmpp, 
-        String jid, Map<String, Object> responseJson) {
+    private void sendServers(final Presence presence, final XMPPService xmpp, 
+        final String jid, final Map<String, Object> responseJson) {
 
+        log.info("Sending servers...");
         final Dao dao = new Dao();
         final Collection<String> servers = dao.getInstances();
         

@@ -72,7 +72,7 @@ public class DatastoreCounterShard {
 
     public void increment(final long inc) {
         System.out.println(
-            "DatastoreCounterShard::Incrementing "+this.counterName +" by "+inc);
+            getClass().getName()+" incrementing "+this.counterName +" by "+inc);
         count = new Long(count.longValue() + inc);
     }
 }
