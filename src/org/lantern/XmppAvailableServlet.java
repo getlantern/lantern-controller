@@ -1,7 +1,8 @@
 package org.lantern;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,10 +12,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
+import org.littleshoot.util.Sha1;
+import org.littleshoot.util.Sha1Hasher;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
@@ -44,10 +50,8 @@ public class XmppAvailableServlet extends HttpServlet {
         final boolean available = presence.isAvailable();
         
         
-        final String id = presence.getFromJid().getId();
-        log.info("ID: "+id);
         //final boolean lan = LanternControllerUtils.isLantern(id);
-        log.info("Got presence "+available+" for "+id);
+        log.info("Got presence "+available);
         
         log.info("Status: '"+presence.getStatus()+"'");
         final String stanza = presence.getStanza();
@@ -56,37 +60,117 @@ public class XmppAvailableServlet extends HttpServlet {
             "<property><name>stats</name><value type=\"string\">", "</value></property>");
         //log.info("Stats JSON: "+stats);
         
-        final boolean isGiveMode = LanternControllerUtils.isLantern(id);
+        final boolean isGiveMode = 
+            LanternControllerUtils.isLantern(presence.getFromJid().getId());
+        
         
         final Map<String,Object> responseJson = 
             new LinkedHashMap<String,Object>();
-        try {
-            updateStats(stats, presence, responseJson);
-        } catch (final IOException e) {
-            log.severe("Error updating stats: "+e.getMessage());
-        } catch (final UnsupportedOperationException e) {
-            log.severe("Error updating stats: "+e.getMessage());
+        final String userId = userId(presence, isGiveMode);
+        processClientInfo(stats, responseJson, userId);
+        if (isGiveMode) {
+            processGiveMode(presence, xmpp, available, responseJson);
+        } else {
+            processGetMode(presence, xmpp, available, responseJson);
         }
-        
-        // We always need to tell the client to check back in because we use
-        // it as a fallback for which users are online.
+    }
+
+    private String userId(final Presence presence, final boolean isGiveMode) {
+        if (isGiveMode) {
+            return LanternControllerUtils.userId(presence);
+        } else {
+            // We hash the ID of users in censored countries and just count them
+            // as a generic number. We only look at the JID at all to avoid 
+            // overcounting.
+            return Sha1Hasher.hash(LanternControllerUtils.userId(presence));
+        }
+    }
+
+    private void processGetMode(final Presence presence,
+        final XMPPService xmpp, final boolean available, 
+        final Map<String, Object> responseJson) {
         if (available) {
-            if (isGiveMode) {
-                responseJson.put(LanternConstants.UPDATE_TIME, 
-                    LanternConstants.UPDATE_TIME_MILLIS);
-                log.info("Not sending servers to give mode");
-            } else {
-                log.info("Sending servers to available get mode");
-                addServers(id, responseJson);
-            }
+            // Not we don't tell get mode users to check back in -- we just 
+            // give them servers to connect to.
+            log.info("Sending servers to available get mode");
+            addServers(presence.getFromJid().getId(), responseJson);
             sendResponse(presence, xmpp, responseJson);
         } else {
             log.info("Not sending servers to unavailable clients");
         }
-        final Dao dao = new Dao();
+    }
+
+    private void processGiveMode(final Presence presence,
+        final XMPPService xmpp, final boolean available, 
+        final Map<String, Object> responseJson) {
+        if (available) {
+            // We always need to tell the client to check back in because 
+            // we use it as a fallback for which users are online.
+            responseJson.put(LanternConstants.UPDATE_TIME, 
+                LanternConstants.UPDATE_TIME_MILLIS);
+            log.info("Not sending servers to give mode");
+            sendResponse(presence, xmpp, responseJson);
+        } else {
+            log.info("Not sending servers to unavailable clients");
+        }
+        
         // The following will delete the instance if it's not available,
         // updating all counters.
-        dao.setInstanceAvailable(id, available);
+        log.info("Setting instance availability");
+        final String instanceId = presence.getFromJid().getId();
+        final Dao dao = new Dao();
+        dao.setInstanceAvailable(instanceId, available);
+    }
+
+    private void processClientInfo(final String stats,
+        final Map<String, Object> responseJson, final String idToUse) {
+        if (StringUtils.isBlank(stats)) {
+            log.info("No stats to process!");
+            return;
+        }
+        log.info("Processing stats!");
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new MrBeanModule());
+        Stats data;
+        try {
+            data = mapper.readValue(stats, Stats.class);
+            addUpdateData(data, responseJson);
+            try {
+                updateStats(data, idToUse);
+            } catch (final UnsupportedOperationException e) {
+                log.severe("Error updating stats: "+e.getMessage());
+            }
+        } catch (final JsonParseException e) {
+            log.severe("Error parsing stats: "+e.getMessage());
+        } catch (final JsonMappingException e) {
+            log.severe("Error parsing stats: "+e.getMessage());
+        } catch (final IOException e) {
+            log.severe("Error parsing stats: "+e.getMessage());
+        }
+    }
+
+    private void addUpdateData(final Stats data,
+        final Map<String, Object> responseJson) {
+        try {
+            final double version = Double.parseDouble(data.getVersion());
+            //final double version = 0.001; //just for testing!!
+            if (LanternConstants.LATEST_VERSION > version) {
+                final Map<String,Object> updateJson = 
+                    new LinkedHashMap<String,Object>();
+                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
+                    LanternConstants.LATEST_VERSION);
+                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY, 
+                    LanternConstants.UPDATE_RELEASE_DATE);
+                updateJson.put(LanternConstants.UPDATE_URL_KEY, 
+                    LanternConstants.UPDATE_URL);
+                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
+                    LanternConstants.UPDATE_MESSAGE);
+                responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
+            }
+        } catch (final NumberFormatException nfe) {
+            // Probably running from main line.
+            log.info("Format exception on version: "+data.getVersion());
+        }
     }
 
     private void sendResponse(final Presence presence, final XMPPService xmpp, 
@@ -103,49 +187,15 @@ public class XmppAvailableServlet extends HttpServlet {
                 presence.getFromJid()) == SendResponse.Status.SUCCESS);
     }
 
-    private void updateStats(final String stats, final Presence presence, 
-        final Map<String, Object> responseJson) throws IOException {
-        final String jid = presence.getFromJid().getId();
-        if (StringUtils.isBlank(stats)) {
-            log.info("No stats!");
-            return;
-        }
+    private void updateStats(final Stats data, final String idToUse) {
         
-        //final JSONObject responseJson = new JSONObject();
-        //final ObjectMapper mapper = new ObjectMapper(new SmileFactory());
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new MrBeanModule());
-        final Stats read = mapper.readValue(stats, Stats.class);
-        try {
-            final double version = Double.parseDouble(read.getVersion());
-            //final double version = 0.001; //just for testing!!
-            if (LanternConstants.LATEST_VERSION > version) {
-                final Map<String,Object> updateJson = 
-                    new LinkedHashMap<String,Object>();
-                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
-                    LanternConstants.LATEST_VERSION);
-                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY, 
-                    LanternConstants.UPDATE_RELEASE_DATE);
-                updateJson.put(LanternConstants.UPDATE_URL_KEY, 
-                        LanternConstants.UPDATE_URL);
-                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
-                    LanternConstants.UPDATE_MESSAGE);
-                responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
-            }
-        } catch (final NumberFormatException nfe) {
-            // Probably running from main line.
-            log.info("Format exception on version: "+read.getVersion());
-        }
-
         final Dao dao = new Dao();
-        log.info("Setting instance to available");
-        dao.setInstanceAvailable(jid, true);
         
         log.info("Updating stats");
-        dao.updateUser(jid, read.getDirectRequests(), 
-            read.getDirectBytes(), read.getTotalProxiedRequests(), 
-            read.getTotalBytesProxied(), 
-            read.getCountryCode());
+        dao.updateUser(idToUse, data.getDirectRequests(), 
+            data.getDirectBytes(), data.getTotalProxiedRequests(), 
+            data.getTotalBytesProxied(), 
+            data.getCountryCode());
     }
 
     private void addServers(final String jid, 
@@ -160,9 +210,11 @@ public class XmppAvailableServlet extends HttpServlet {
         
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
+        /*
         servers.addAll(Arrays.asList("75.101.134.244:7777",
             "laeproxyhr1.appspot.com",
             "rlanternz.appspot.com"));
+            */
         responseJson.put(LanternConstants.SERVERS, servers);
     }
 }

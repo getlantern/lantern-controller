@@ -169,14 +169,12 @@ public class Dao extends DAOBase {
     }
 
 
-    public boolean updateUser(final String fullId, final long directRequests, 
+    public boolean updateUser(final String userId, final long directRequests, 
         final long directBytes, final long requestsProxied,
         final long bytesProxied, final String countryCode) {
         log.info(
             "Updating user with stats: dr: "+directRequests+" db: "+
             directBytes+" bytesProxied: "+bytesProxied);
-        
-        final String userId = LanternUtils.jidToUserId(fullId);
         
         final Objectify ofy = ofy();
         final LanternUser user;
@@ -190,39 +188,8 @@ public class Dao extends DAOBase {
             user = tempUser;
             isUserNew = false;
         }
-        
-        /*
-        final String instanceId = LanternUtils.jidToInstanceId(fullId);
-        final LanternInstance instance;
-        final LanternInstance tempInstance = ofy.find(LanternInstance.class, instanceId);
-        final boolean isInstanceNew;
-        if (tempInstance == null) {
-            log.info("Could not find user!!");
-            instance = new LanternInstance(instanceId);
-            isInstanceNew = true;
-        } else {
-            instance = tempInstance;
-            isInstanceNew = false;
-        }
-        */
+
         user.setValidated(true);
-        /*
-        if (!user.isValidated()) {
-            try {
-                final int contacts = ContactsUtil.getNumContacts(username, pwd);
-                if (contacts > 600) {
-                    user.setValidated(true);
-                }
-                
-                // Don't store the exact number of contacts.
-                user.setNumContacts(Math.round(contacts/50) * 50); 
-            } catch (final IOException e) {
-                e.printStackTrace();
-            } catch (final ServiceException e) {
-                e.printStackTrace();
-            }
-        }
-        */
         user.setBytesProxied(user.getBytesProxied() + bytesProxied);
         user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
         user.setDirectBytes(user.getDirectBytes() + directBytes);
