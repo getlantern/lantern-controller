@@ -20,7 +20,7 @@ public class LanternControllerUtils {
     }
     
     public static String userId(final Message message) {
-        return LanternUtils.jidToUserId(message.getFromJid().getId());
+        return jidToUserId(message.getFromJid().getId());
     }
     
     public static String instanceId(final Message message) {
@@ -28,7 +28,14 @@ public class LanternControllerUtils {
     }
     
     public static String userId(final Presence presence) {
-        return LanternUtils.jidToUserId(presence.getFromJid().getId());
+        return jidToUserId(presence.getFromJid().getId());
     }
-
+    
+    public static String jidToUserId(final String fullId) {
+        return fullId.split("/")[0];
+    }
+    
+    public static String jidToInstanceId(final String fullId) {
+        return fullId.split("/")[1];
+    }
 }
