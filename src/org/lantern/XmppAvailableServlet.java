@@ -1,6 +1,7 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -103,7 +104,7 @@ public class XmppAvailableServlet extends HttpServlet {
             // We always need to tell the client to check back in because 
             // we use it as a fallback for which users are online.
             responseJson.put(LanternConstants.UPDATE_TIME, 
-                LanternConstants.UPDATE_TIME_MILLIS);
+                LanternControllerConstants.UPDATE_TIME_MILLIS);
             log.info("Not sending servers to give mode");
             sendResponse(presence, xmpp, responseJson);
         } else {
@@ -127,9 +128,8 @@ public class XmppAvailableServlet extends HttpServlet {
         log.info("Processing stats!");
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());
-        Stats data;
         try {
-            data = mapper.readValue(stats, Stats.class);
+            final Stats data = mapper.readValue(stats, Stats.class);
             addUpdateData(data, responseJson);
             try {
                 updateStats(data, idToUse);
@@ -150,17 +150,17 @@ public class XmppAvailableServlet extends HttpServlet {
         try {
             final double version = Double.parseDouble(data.getVersion());
             //final double version = 0.001; //just for testing!!
-            if (LanternConstants.LATEST_VERSION > version) {
+            if (LanternControllerConstants.LATEST_VERSION > version) {
                 final Map<String,Object> updateJson = 
                     new LinkedHashMap<String,Object>();
                 updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
-                    LanternConstants.LATEST_VERSION);
+                    LanternControllerConstants.LATEST_VERSION);
                 updateJson.put(LanternConstants.UPDATE_RELEASED_KEY, 
-                    LanternConstants.UPDATE_RELEASE_DATE);
+                    LanternControllerConstants.UPDATE_RELEASE_DATE);
                 updateJson.put(LanternConstants.UPDATE_URL_KEY, 
-                    LanternConstants.UPDATE_URL);
+                    LanternControllerConstants.UPDATE_URL);
                 updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
-                    LanternConstants.UPDATE_MESSAGE);
+                    LanternControllerConstants.UPDATE_MESSAGE);
                 responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
             }
         } catch (final NumberFormatException nfe) {
@@ -206,11 +206,11 @@ public class XmppAvailableServlet extends HttpServlet {
         
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
-        /*
+        
         servers.addAll(Arrays.asList("75.101.134.244:7777",
             "laeproxyhr1.appspot.com",
             "rlanternz.appspot.com"));
-            */
+            
         responseJson.put(LanternConstants.SERVERS, servers);
     }
 }

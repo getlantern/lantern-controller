@@ -6,10 +6,9 @@ import java.util.Map;
 /**
  * Constants for Lantern.
  */
-public class LanternConstants {
+public class LanternControllerConstants {
     
 
-    public static final String UPDATE_RELEASED_KEY = "released";
     public static final String UPDATE_URLS_KEY = "urls";
     public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
     
@@ -33,6 +32,7 @@ public class LanternConstants {
      * This is the local proxy port data is relayed to on the "server" side
      * of P2P connections.
      */
+    /*
     public static final int PLAINTEXT_LOCALHOST_PROXY_PORT = 7777;
     public static final int LANTERN_LOCALHOST_HTTP_PORT = 8787;
     
@@ -55,10 +55,11 @@ public class LanternConstants {
     
     
     public static final String UPDATE_TIME = "ut";
+    */
     
     public static final long UPDATE_TIME_MILLIS = 60 * 1000;
 
-    public static final String UPDATE_MESSAGE_KEY = "message";
+    //public static final String UPDATE_MESSAGE_KEY = "message";
     
     public static final String UPDATE_MESSAGE = 
         "Lantern "+LATEST_VERSION+" is now available with many new performance and usability improvements.";

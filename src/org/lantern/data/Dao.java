@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.lantern.CensoredUtils;
-import org.lantern.LanternConstants;
+import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -79,7 +79,7 @@ public class Dao extends DAOBase {
         // updates from users in invisibility mode. 
         // Only give out the freshest instances.
         final Date cutoff = 
-            new Date(now - LanternConstants.UPDATE_TIME_MILLIS);
+            new Date(now - LanternControllerConstants.UPDATE_TIME_MILLIS);
         
         log.info("Cutoff data is: "+cutoff);
         final Query<LanternInstance> instances = 
