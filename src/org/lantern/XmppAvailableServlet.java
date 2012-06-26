@@ -64,7 +64,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String,Object> responseJson = 
             new LinkedHashMap<String,Object>();
         final String userId = userId(presence, isGiveMode);
-        processClientInfo(stats, responseJson, userId);
+        processClientInfo(presence, stats, responseJson, userId);
         if (isGiveMode) {
             processGiveMode(presence, xmpp, available, responseJson);
         } else {
@@ -119,8 +119,8 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.setInstanceAvailable(instanceId, available);
     }
 
-    private void processClientInfo(final String stats,
-        final Map<String, Object> responseJson, final String idToUse) {
+    private void processClientInfo(final Presence presence, 
+        final String stats, final Map<String, Object> responseJson, final String idToUse) {
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;
@@ -131,6 +131,7 @@ public class XmppAvailableServlet extends HttpServlet {
         try {
             final Stats data = mapper.readValue(stats, Stats.class);
             addUpdateData(data, responseJson);
+            addInviteData(presence, responseJson);
             try {
                 updateStats(data, idToUse);
             } catch (final UnsupportedOperationException e) {
@@ -143,6 +144,16 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (final IOException e) {
             log.severe("Error parsing stats: "+e.getMessage());
         }
+    }
+
+    private void addInviteData(final Presence presence,
+        final Map<String, Object> responseJson) {
+        
+        final Dao dao = new Dao();
+        final int invites = 
+            dao.getInvites(LanternControllerUtils.userId(presence));
+        responseJson.put(LanternConstants.INVITES_KEY, invites);
+        
     }
 
     private void addUpdateData(final Stats data,

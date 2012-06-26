@@ -24,6 +24,8 @@ public class LanternUser {
     private Date created = new Date();
     
     private Set<String> countryCodes;
+    
+    private int invites = 0;
 
     public LanternUser() {
         super();
@@ -100,5 +102,13 @@ public class LanternUser {
 
     public int getNumContacts() {
         return numContacts;
+    }
+
+    public void setInvites(int invites) {
+        this.invites = invites;
+    }
+
+    public int getInvites() {
+        return invites;
     }
 }

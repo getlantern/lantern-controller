@@ -168,6 +168,14 @@ public class Dao extends DAOBase {
         }
     }
 
+    public int getInvites(final String userId) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, userId);
+        if (user == null) {
+            return 0;
+        } 
+        return user.getInvites();
+    }
 
     public boolean updateUser(final String userId, final long directRequests, 
         final long directBytes, final long requestsProxied,
