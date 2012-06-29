@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.persistence.Id;
 
 public class LanternUser {
+    
     @Id
     private String id;
     
@@ -25,8 +26,10 @@ public class LanternUser {
     
     private Set<String> countryCodes;
     
-    private int invites = 0;
+    private int invites = 8;
 
+    private int degree = Integer.MAX_VALUE;
+    
     public LanternUser() {
         super();
     }
@@ -110,5 +113,13 @@ public class LanternUser {
 
     public int getInvites() {
         return invites;
+    }
+
+    public void setDegree(int degree) {
+        this.degree = degree;
+    }
+
+    public int getDegree() {
+        return degree;
     }
 }

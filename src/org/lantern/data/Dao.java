@@ -49,6 +49,7 @@ public class Dao extends DAOBase {
     static {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
+        ObjectifyService.register(Invite.class);
         COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(DIRECT_BYTES);
@@ -175,6 +176,34 @@ public class Dao extends DAOBase {
             return 0;
         } 
         return user.getInvites();
+    }
+    
+
+    public boolean hasMoreInvites(final String userId) {
+        return getInvites(userId) > 0;
+    }
+    
+
+    public void addInvite(final String sponsor, final String email) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, sponsor);
+        if (user == null) {
+            return;
+        }
+        final Invite invite = new Invite(email);
+        invite.setDegree(user.getDegree());
+        invite.setSponsor(sponsor);
+        ofy.put(invite);
+    }
+    
+    public void decrementInvites(final String userId) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, userId);
+        if (user == null) {
+            return;
+        } 
+        user.setInvites(user.getInvites()-1);
+        ofy.put(user);
     }
 
     public boolean updateUser(final String userId, final long directRequests, 
