@@ -26,7 +26,7 @@ public class LanternUser {
     
     private Set<String> countryCodes;
     
-    private int invites = 8;
+    private int invites;
 
     private int degree = Integer.MAX_VALUE;
     
@@ -37,6 +37,7 @@ public class LanternUser {
     public LanternUser(final String id) {
         super();
         this.id = id;
+        this.invites = 8;
     }
 
     public String getId() {

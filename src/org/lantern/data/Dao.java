@@ -197,6 +197,7 @@ public class Dao extends DAOBase {
     }
     
     public void decrementInvites(final String userId) {
+        log.info("Decrementing invites for "+userId);
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, userId);
         if (user == null) {
@@ -204,6 +205,13 @@ public class Dao extends DAOBase {
         } 
         user.setInvites(user.getInvites()-1);
         ofy.put(user);
+    }
+    
+
+    public boolean isInvited(final String email) {
+        final Objectify ofy = ofy();
+        final Invite invite = ofy.find(Invite.class, email);
+        return invite != null;
     }
 
     public boolean updateUser(final String userId, final long directRequests, 

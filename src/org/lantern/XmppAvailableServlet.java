@@ -63,7 +63,11 @@ public class XmppAvailableServlet extends HttpServlet {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            processInvite(presence);
+            try {
+                processInvite(presence);
+            } catch (final AlreadyInvitedException e) {
+                return;
+            }
             dao.decrementInvites(from);
             return;
         }
@@ -128,11 +132,21 @@ public class XmppAvailableServlet extends HttpServlet {
         msgContent.replaceAll("\n\n", "<br><br>") +
         "<a href='"+LINK+"'>DOWNLOAD LANTERN HERE</a><br><br>"+
         "-Team Lantern";
+    
+    
+    private final class AlreadyInvitedException extends Exception {}
         
-    private void processInvite(final Presence presence) {
+    private void processInvite(final Presence presence) 
+        throws AlreadyInvitedException {
+        final Dao dao = new Dao();
         final String stanza = presence.getStanza();
         final String email = StringUtils.substringBetween(stanza, INVITE, 
             "</value></property>");
+        
+        if (dao.isInvited(email)) {
+            log.info("User is already invited: "+email);
+            throw new AlreadyInvitedException();
+        }
         final Properties props = new Properties();
         final Session session = Session.getDefaultInstance(props, null);
 
@@ -142,7 +156,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final String html = msgHtml.replace(EMAIL_TOKEN, from);
         try {
             final javax.mail.Message msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress(from));
+            msg.setFrom(new InternetAddress("myles@getlantern.org"));
             msg.addRecipient(javax.mail.Message.RecipientType.TO,
                 new InternetAddress(email));
             msg.setSubject(from + " has invited you to join the Lantern trust network...");
@@ -162,7 +176,6 @@ public class XmppAvailableServlet extends HttpServlet {
             msg.setContent(mp);
             
             Transport.send(msg);
-            final Dao dao = new Dao();
             dao.addInvite(from, email);
         } catch (final AddressException e) {
             log.warning("Address error? "+e);
