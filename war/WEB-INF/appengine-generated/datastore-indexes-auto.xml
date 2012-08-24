@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<datastore-indexes autoGenerate="true">
-    <datastore-index kind="LanternInstance" ancestor="false" source="manual">
-        <property name="available" direction="asc"/>
-        <property name="lastUpdated" direction="asc"/>
-    </datastore-index>
-</datastore-indexes>
+<!-- Indices written at Fri, 24 Aug 2012 14:16:51 EDT -->
+
+<datastore-indexes/>
 

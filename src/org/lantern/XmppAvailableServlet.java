@@ -103,35 +103,12 @@ public class XmppAvailableServlet extends HttpServlet {
         "<property><name>" + LanternConstants.INVITE_KEY + 
         "</name><value type=\"string\">";
     
-    
-    private static final String LINK = "http://s3.amazonaws.com/lantern/latest.dmg";
-
-
-    private static final String EMAIL_TOKEN = "{email}";
-    
-    final String msgContent = 
-        "Welcome to Lantern!\n\n" +
-        "" +
-        "Your trusted friend or contact at e-mail address '"+EMAIL_TOKEN+"' " +
-        "has invited you to join the Lantern community. Lantern is a " +
-        "network of trusted users who cooperate to provide uncensored " +
-        "internet access to people around the world securely. When you " +
-        "join Lantern, you become a trusted participant in that network - " +
-        "a covenant of sorts dedicated to freedom of expression around the world.\n\n" +
-        "" +
-        "You can download Lantern at the link below and will then have the " +
-        "opportunity to invite people you in turn trust. Remember, don't " +
-        "invite just anyone, but please do invite people you trust!\n\n";
-
-    private final String msgBody = 
-        msgContent +
-        LINK +"\n\n"+
-        "-Team Lantern";
-    
-    private final String msgHtml = 
-        msgContent.replaceAll("\n\n", "<br><br>") +
-        "<a href='"+LINK+"'>DOWNLOAD LANTERN HERE</a><br><br>"+
-        "-Team Lantern";
+    // constant merge vars for invite email template:
+    private static final String ACCESSKEY = "secret"; // XXX get this from getlantern.org code's secrets.py?
+    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest."; // XXX will be generated dynamically
+    private static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
+    private static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
+    private static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
     
     
     private final class AlreadyInvitedException extends Exception {}
@@ -147,41 +124,48 @@ public class XmppAvailableServlet extends HttpServlet {
             log.info("User is already invited: "+email);
             throw new AlreadyInvitedException();
         }
-        final Properties props = new Properties();
-        final Session session = Session.getDefaultInstance(props, null);
-
-        final String from = LanternControllerUtils.userId(presence);
-
-        final String body = msgBody.replace(EMAIL_TOKEN, from);
-        final String html = msgHtml.replace(EMAIL_TOKEN, from);
+        
         try {
-            final javax.mail.Message msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress("myles@getlantern.org"));
-            msg.addRecipient(javax.mail.Message.RecipientType.TO,
-                new InternetAddress(email));
-            msg.setSubject(from + " has invited you to join the Lantern trust network...");
-            
-            // Unformatted text version
-            final MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setText(body);
-            // HTML version
-            final MimeBodyPart htmlPart = new MimeBodyPart();
-            htmlPart.setContent(html, "text/html");
-            htmlPart.setDisposition("inline");
-            // Create the Multipart.  Add BodyParts to it.
-            final Multipart mp = new MimeMultipart();
-            mp.addBodyPart(textPart);
-            mp.addBodyPart(htmlPart);
-            // Set Multipart as the message's content
-            msg.setContent(mp);
-            
-            Transport.send(msg);
-            dao.addInvite(from, email);
-        } catch (final AddressException e) {
-            log.warning("Address error? "+e);
-            e.printStackTrace();
-        } catch (final MessagingException e) {
-            log.warning("Messaging error? "+e);
+        	// see http://mandrillapp.com/api/docs/messages.html#method=send-template
+            // XXX Java equivalent of this here:
+            /* $ python
+             * >>> import requests, json
+             * >>> requests.post(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL,
+             * ...   data=json.dumps(dict(
+             * ...     key=LanternControllerConstants.MANDRILL_API_KEY,
+             * ...     template_name=LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
+             * ...     template_content=[],
+             * ...     message=dict(
+             * ...       text="???",
+             * ...       subject=LanternControllerConstants.INVITE_EMAIL_SUBJECT,
+             * ...       from_email=LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
+             * ...       from_name=LanternControllerConstants.INVITE_EMAIL_FROM_NAME,
+             * ...       to=[dict(
+             * ...         email=email, # as calculated above
+             * ...         name=name, # XXX can we get this too if available?
+             * ...         )],
+             * ...       track_opens=True,
+             * ...       track_clicks=True,
+             * ...       auto_text=True,
+             * ...       url_strip_qs=True,
+             * ...       preserve_recipients=False,
+             * ...       bcc_address='bcc@getlantern.org', # XXX use INVITER_EMAIL instead?
+             * ...       merge_vars=[
+             * ...         {'name': 'INVITER_EMAIL', 'content': INVITER_EMAIL},
+             * ...         {'name': 'ACCESSKEY', 'content': ACCESSKEY},
+             * ...         {'name': 'INSTALLER_URL_DMG', 'content': INSTALLER_URL_DMG},
+             * ...         {'name': 'INSTALLER_URL_EXE', 'content': INSTALLER_URL_EXE},
+             * ...         {'name': 'INSTALLER_URL_DEB', 'content': INSTALLER_URL_DEB},
+             * ...         ],
+             * ...      ),
+             * ...    )
+             * ...  )))
+             * ...
+             * >>> # now check r.json; if r.json.get('status') == 'error', we got an error
+             * >>> # otherwise the call succeeded, and r.json will just have an 'html' key with the value of the rendered template html 
+        	 */
+        } catch (Exception e) {
+            log.warning("Exception? "+e);
             e.printStackTrace();
         }
     }

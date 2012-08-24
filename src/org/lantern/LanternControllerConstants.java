@@ -7,7 +7,14 @@ import java.util.Map;
  * Constants for Lantern.
  */
 public class LanternControllerConstants {
-    
+
+    public static final String MANDRILL_API_KEY = "a74f57aa-786e-4ddd-aaa0-ee65806d5066";
+    public static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
+    public static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
+    public static final String INVITE_EMAIL_TEMPLATE_NAME = "Welcome to the Lantern Beta";
+    public static final String INVITE_EMAIL_SUBJECT = "Welcome to the Lantern Beta";
+    public static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
+    public static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
 
     public static final String UPDATE_URLS_KEY = "urls";
     public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
