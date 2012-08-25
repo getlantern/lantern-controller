@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class LanternControllerConstants {
 
-    public static final String MANDRILL_API_KEY = "a74f57aa-786e-4ddd-aaa0-ee65806d5066";
+    public static final String MANDRILL_API_KEY = "a74f57aa-786e-4ddd-aaa0-ee65806d5066"; // keep this secret
     public static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     public static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
     public static final String INVITE_EMAIL_TEMPLATE_NAME = "Welcome to the Lantern Beta";

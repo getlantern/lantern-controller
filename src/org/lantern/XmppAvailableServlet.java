@@ -1,5 +1,6 @@
 package org.lantern;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import com.google.appengine.api.xmpp.Presence;
 import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
+import com.google.appengine.labs.repackaged.org.json.JSONObject;
 
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
@@ -102,17 +104,17 @@ public class XmppAvailableServlet extends HttpServlet {
     private static final String INVITE = 
         "<property><name>" + LanternConstants.INVITE_KEY + 
         "</name><value type=\"string\">";
-    
-    // constant merge vars for invite email template:
-    private static final String ACCESSKEY = "secret"; // XXX get this from getlantern.org code's secrets.py?
-    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest."; // XXX will be generated dynamically
+
+    // query string param to bypass password wall on getlantern.org:
+    private static final String ACCESSKEY = "secret"; // XXX violates DRY (duplicated in getlantern.org code's secrets.py)
+    // XXX dynamically generate random s3 bucket for this:
+    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
     private static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
     private static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
     private static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
-    
-    
+
     private final class AlreadyInvitedException extends Exception {}
-        
+
     private void processInvite(final Presence presence) 
         throws AlreadyInvitedException {
         final Dao dao = new Dao();
@@ -125,49 +127,117 @@ public class XmppAvailableServlet extends HttpServlet {
             throw new AlreadyInvitedException();
         }
         
-        try {
-        	// see http://mandrillapp.com/api/docs/messages.html#method=send-template
-            // XXX Java equivalent of this here:
-            /* $ python
-             * >>> import requests, json
-             * >>> requests.post(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL,
-             * ...   data=json.dumps(dict(
-             * ...     key=LanternControllerConstants.MANDRILL_API_KEY,
-             * ...     template_name=LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
-             * ...     template_content=[],
-             * ...     message=dict(
-             * ...       text="???",
-             * ...       subject=LanternControllerConstants.INVITE_EMAIL_SUBJECT,
-             * ...       from_email=LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
-             * ...       from_name=LanternControllerConstants.INVITE_EMAIL_FROM_NAME,
-             * ...       to=[dict(
-             * ...         email=email, # as calculated above
-             * ...         name=name, # XXX can we get this too if available?
-             * ...         )],
-             * ...       track_opens=True,
-             * ...       track_clicks=True,
-             * ...       auto_text=True,
-             * ...       url_strip_qs=True,
-             * ...       preserve_recipients=False,
-             * ...       bcc_address='bcc@getlantern.org', # XXX use INVITER_EMAIL instead?
-             * ...       merge_vars=[
-             * ...         {'name': 'INVITER_EMAIL', 'content': INVITER_EMAIL},
-             * ...         {'name': 'ACCESSKEY', 'content': ACCESSKEY},
-             * ...         {'name': 'INSTALLER_URL_DMG', 'content': INSTALLER_URL_DMG},
-             * ...         {'name': 'INSTALLER_URL_EXE', 'content': INSTALLER_URL_EXE},
-             * ...         {'name': 'INSTALLER_URL_DEB', 'content': INSTALLER_URL_DEB},
-             * ...         ],
-             * ...      ),
-             * ...    )
-             * ...  )))
-             * ...
-             * >>> # now check r.json; if r.json.get('status') == 'error', we got an error
-             * >>> # otherwise the call succeeded, and r.json will just have an 'html' key with the value of the rendered template html 
-        	 */
-        } catch (Exception e) {
-            log.warning("Exception? "+e);
-            e.printStackTrace();
-        }
+
+        // see http://mandrillapp.com/api/docs/messages.html#method=send-template
+        // XXX Java equivalent of this here:
+        /* $ python
+         * >>> import requests, json
+         * >>> requests.post(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL,
+         * ...   data=json.dumps(dict(
+         * ...     key=LanternControllerConstants.MANDRILL_API_KEY,
+         * ...     template_name=LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
+         * ...     template_content=[],
+         * ...     message=dict(
+         * ...       subject=LanternControllerConstants.INVITE_EMAIL_SUBJECT,
+         * ...       from_email=LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
+         * ...       from_name=LanternControllerConstants.INVITE_EMAIL_FROM_NAME,
+         * ...       to=[dict(
+         * ...         email=email, # as calculated above
+         * ...         name=name, # XXX can we get this too if available?
+         * ...         )],
+         * ...       track_opens=True,
+         * ...       track_clicks=True,
+         * ...       auto_text=True,
+         * ...       url_strip_qs=True,
+         * ...       preserve_recipients=False,
+         * ...       bcc_address='bcc@getlantern.org', # XXX use inviter_email instead?
+         * ...       merge_vars=[
+         * ...         {'name': 'INVITER_EMAIL', 'content': inviter_email},
+         * ...         {'name': 'INVITER_NAME', 'content': inviter_name}, # XXX can we get this too if available?
+         * ...         {'name': 'ACCESSKEY', 'content': ACCESSKEY},
+         * ...         {'name': 'INSTALLER_URL_DMG', 'content': INSTALLER_URL_DMG},
+         * ...         {'name': 'INSTALLER_URL_EXE', 'content': INSTALLER_URL_EXE},
+         * ...         {'name': 'INSTALLER_URL_DEB', 'content': INSTALLER_URL_DEB},
+         * ...         ],
+         * ...      ),
+         * ...    )
+         * ...  )))
+         * ...
+         * >>> # now check r.json; if r.json.get('status') == 'error', we got an error
+         * >>> # otherwise the call succeeded, and we'll get:
+         * >>> r.json
+         * [{u'email': u'recipient@example.com', u'status': u'sent'}]
+         */
+
+        final JSONObject json = new JSONObject();
+        json.put("key", LanternControllerConstants.MANDRILL_API_KEY);
+        json.put("template_name", LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME);
+        json.put("template_content", new String[]);
+        final JSONObject msg = new JSONObject();
+        msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
+        msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
+        msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
+        final JSONObject[] to = {
+            new JSONObject() {{
+                put("email", email)
+             // put("name", name) // XXX can we get this too if available?
+            }}
+        };
+        msg.put("to", to);
+        msg.put("track_opens", true);
+        msg.put("track_clicks", true);
+        msg.put("auto_text", true);
+        msg.put("url_strip_qs", true);
+        msg.put("preserve_recipients", false);
+        msg.put("bcc_address", "bcc@getlantern.org"); // XXX use inviter_email instead?
+        final JSONObject[] mergeVars = {
+            new JSONObject() {{
+                put("name", "INVITER_EMAIL"),
+                put("content", inviter_email) }},
+            /* XXX can we get this too if available? (if so, modify template)
+            new JSONObject() {{
+                put("name", "INVITER_NAME"),
+                put("content", inviter_name) }},
+            */
+            new JSONObject() {{
+                put("name", "ACCESSKEY"),
+                put("content", ACCESSKEY) }},
+            new JSONObject() {{
+                put("name", "INSTALLER_URL_DMG"),
+                put("content", INSTALLER_URL_DMG) }},
+            new JSONObject() {{
+                put("name", "INSTALLER_URL_EXE"),
+                put("content", INSTALLER_URL_EXE) }},
+            new JSONObject() {{
+                put("name", "INSTALLER_URL_DEB"),
+                put("content", INSTALLER_URL_DEB) }}
+        };
+        msg.put("merge_vars", mergeVars);
+        json.put("message", msg);
+        final String payload = json.toJSONString();
+
+        final Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                final HttpPost post = new HttpPost(
+                    LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
+                // XXX gzip
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                baos.write(payload.getBytes("UTF-8"));
+                post.setEntity(new ByteArrayEntity(baos.toByteArray()));
+                final DefaultHttpClient httpclient = new DefaultHttpClient();
+                try {
+                    final HttpResponse response = httpclient.execute(post);
+                    // XXX get response json and see what happened
+                } catch (Exception e) {
+                    log.warning("Exception: "+e);
+                    e.printStackTrace();
+                }
+            }
+        };
+        final Thread t = new Thread(r, "Mandrill-API-Thread");
+        t.setDaemon(true);
+        t.start();
     }
 
     private boolean isInvite(final Presence presence) {
