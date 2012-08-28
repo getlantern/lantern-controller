@@ -23,6 +23,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -37,7 +41,7 @@ import com.google.appengine.api.xmpp.Presence;
 import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
-import com.google.appengine.labs.repackaged.org.json.JSONObject;
+import org.json.simple.JSONObject;
 
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
@@ -108,11 +112,14 @@ public class XmppAvailableServlet extends HttpServlet {
     private final class AlreadyInvitedException extends Exception {}
 
     private void processInvite(final Presence presence) 
-    {   //throws AlreadyInvitedException {
+            throws AlreadyInvitedException {
         final Dao dao = new Dao();
         final String stanza = presence.getStanza();
-        final String inviter_email = "???"; // XXX
-        final String inviter_name = "looked up inviter name".isEmpty() ? "inviter_name" : inviter_email; // XXX
+        final String inviter_email = LanternControllerUtils.userId(presence); // XXX this is really a jabberid, email template makes it a "mailto:" link
+        String inviter_name_tmp = LanternControllerUtils.userName(presence);
+        if (StringUtils.isBlank(inviter_name_tmp))
+            inviter_name_tmp = inviter_email;
+        final String inviter_name = inviter_name_tmp;
         final String invited_email = StringUtils.substringBetween(stanza, INVITE, 
             "</value></property>");
         
@@ -240,10 +247,10 @@ public class XmppAvailableServlet extends HttpServlet {
                     LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
                 // XXX gzip
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                baos.write(payload.getBytes("UTF-8"));
-                post.setEntity(new ByteArrayEntity(baos.toByteArray()));
-                final DefaultHttpClient httpclient = new DefaultHttpClient();
                 try {
+                    baos.write(payload.getBytes("UTF-8"));
+                    post.setEntity(new ByteArrayEntity(baos.toByteArray()));
+                    final DefaultHttpClient httpclient = new DefaultHttpClient();
                     final HttpResponse response = httpclient.execute(post);
                     // XXX get response json and see what happened
                 } catch (Exception e) {

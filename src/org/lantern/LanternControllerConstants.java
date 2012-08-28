@@ -24,7 +24,6 @@ public class LanternControllerConstants {
     static final String ACCESSKEY = "secret";
 
     // XXX these are out of date?:
-    /*
     public static final String UPDATE_URLS_KEY = "urls";
     public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
     
@@ -43,7 +42,7 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("fedora", URL_BASE+".rpm");
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
     }
-    */
+
     
     // XXX dynamically generate random s3 bucket for this:
     static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
@@ -85,10 +84,8 @@ public class LanternControllerConstants {
 
     //public static final String UPDATE_MESSAGE_KEY = "message";
     
-    /*
     public static final String UPDATE_MESSAGE = 
         "Lantern "+LATEST_VERSION+" is now available with many new performance and usability improvements.";
-    */
     
     public static final String VERSION_KEY = "v";
     

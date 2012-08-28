@@ -22,6 +22,11 @@ public class LanternControllerUtils {
     public static String userId(final Message message) {
         return jidToUserId(message.getFromJid().getId());
     }
+
+    // XXX TODO
+    public static String userName(final Presence presence) {
+        return "";
+    }
     
     public static String instanceId(final Message message) {
         return message.getFromJid().getId().split("/")[1];
