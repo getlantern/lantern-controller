@@ -105,69 +105,82 @@ public class XmppAvailableServlet extends HttpServlet {
         "<property><name>" + LanternConstants.INVITE_KEY + 
         "</name><value type=\"string\">";
 
-    // query string param to bypass password wall on getlantern.org:
-    private static final String ACCESSKEY = "secret"; // XXX violates DRY (duplicated in getlantern.org code's secrets.py)
-    // XXX dynamically generate random s3 bucket for this:
-    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
-    private static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
-    private static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
-    private static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
-
     private final class AlreadyInvitedException extends Exception {}
 
     private void processInvite(final Presence presence) 
-        throws AlreadyInvitedException {
+    {   //throws AlreadyInvitedException {
         final Dao dao = new Dao();
         final String stanza = presence.getStanza();
-        final String email = StringUtils.substringBetween(stanza, INVITE, 
+ // XXX final String inviter_email = ???;
+        final String invited_email = StringUtils.substringBetween(stanza, INVITE, 
             "</value></property>");
         
-        if (dao.isInvited(email)) {
-            log.info("User is already invited: "+email);
+        // XXX we still want to send an email notification in this case, no?
+        /*
+        if (dao.isInvited(invited_email)) {
+            log.info("User is already invited: "+invited_email);
             throw new AlreadyInvitedException();
         }
-        
+        */
 
         // see http://mandrillapp.com/api/docs/messages.html#method=send-template
-        // XXX Java equivalent of this here:
-        /* $ python
-         * >>> import requests, json
-         * >>> requests.post(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL,
-         * ...   data=json.dumps(dict(
-         * ...     key=LanternControllerConstants.MANDRILL_API_KEY,
-         * ...     template_name=LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
-         * ...     template_content=[],
-         * ...     message=dict(
-         * ...       subject=LanternControllerConstants.INVITE_EMAIL_SUBJECT,
-         * ...       from_email=LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
-         * ...       from_name=LanternControllerConstants.INVITE_EMAIL_FROM_NAME,
-         * ...       to=[dict(
-         * ...         email=email, # as calculated above
-         * ...         name=name, # XXX can we get this too if available?
-         * ...         )],
-         * ...       track_opens=True,
-         * ...       track_clicks=True,
-         * ...       auto_text=True,
-         * ...       url_strip_qs=True,
-         * ...       preserve_recipients=False,
-         * ...       bcc_address='bcc@getlantern.org', # XXX use inviter_email instead?
-         * ...       merge_vars=[
-         * ...         {'name': 'INVITER_EMAIL', 'content': inviter_email},
-         * ...         {'name': 'INVITER_NAME', 'content': inviter_name}, # XXX can we get this too if available?
-         * ...         {'name': 'ACCESSKEY', 'content': ACCESSKEY},
-         * ...         {'name': 'INSTALLER_URL_DMG', 'content': INSTALLER_URL_DMG},
-         * ...         {'name': 'INSTALLER_URL_EXE', 'content': INSTALLER_URL_EXE},
-         * ...         {'name': 'INSTALLER_URL_DEB', 'content': INSTALLER_URL_DEB},
-         * ...         ],
-         * ...      ),
-         * ...    )
-         * ...  )))
-         * ...
-         * >>> # now check r.json; if r.json.get('status') == 'error', we got an error
-         * >>> # otherwise the call succeeded, and we'll get:
-         * >>> r.json
-         * [{u'email': u'recipient@example.com', u'status': u'sent'}]
-         */
+        // copy the following, run iPython in a virtualenv with requests
+        // installed, and then use the %paste magic command:
+        /*
+          >>> import requests, json
+          >>> inviter_email = "_pants+test-inviter@anotherwebsite.org"
+          >>> invited_email = "_pants+test-invited@anotherwebsite.org"
+          >>> class LanternControllerConstants:
+                  ACCESSKEY = "secret"
+                  MANDRILL_API_KEY = "secret"
+                  MANDRILL_API_SEND_TEMPLATE_URL = "https://mandrillapp.com/api/1.0/messages/send-template.json"
+                  INVITE_EMAIL_TEMPLATE_NAME = "invite-notification"
+                  INVITE_EMAIL_SUBJECT = "You have been invited to Lantern"
+                  INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org"
+                  INVITE_EMAIL_FROM_NAME = "Lantern Beta"
+                  INVITE_EMAIL_BCC_ADDRESS = "bcc@getlantern.org"
+                  INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest."
+                  INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg"
+                  INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe"
+                  INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb"
+          >>> r = requests.post(
+                  LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL,
+                  data=json.dumps(dict(
+                      key=LanternControllerConstants.MANDRILL_API_KEY,
+                      template_name=LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
+                      template_content=[],
+                      message=dict(
+                          subject=LanternControllerConstants.INVITE_EMAIL_SUBJECT,
+                          from_email=LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
+                          from_name=LanternControllerConstants.INVITE_EMAIL_FROM_NAME,
+                          to=[dict(
+                                  email=invited_email,
+                                # name=invited_name, # XXX can we get this too if available?
+                              )],
+                          track_opens=True,
+                          track_clicks=True,
+                          auto_text=True,
+                          url_strip_qs=True,
+                          preserve_recipients=False,
+                          bcc_address=LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS, # XXX use inviter_email instead?
+                          global_merge_vars=[
+                              {'name': 'INVITER_EMAIL', 'content': inviter_email},
+                            # {'name': 'INVITER_NAME', 'content': inviter_name}, # XXX can we get this too if available?
+                              {'name': 'ACCESSKEY', 'content': LanternControllerConstants.ACCESSKEY},
+                              {'name': 'INSTALLER_URL_DMG', 'content': LanternControllerConstants.INSTALLER_URL_DMG},
+                              {'name': 'INSTALLER_URL_EXE', 'content': LanternControllerConstants.INSTALLER_URL_EXE},
+                              {'name': 'INSTALLER_URL_DEB', 'content': LanternControllerConstants.INSTALLER_URL_DEB},
+                              ],
+                          # XXX use these?:
+                          # google_analytics_campaign=...,
+                          # attachments=...,
+                          ),
+                      ))
+                  )
+          >>> # now check r.json; if r.json.get('status') == 'error', we got an error
+          >>> # otherwise the call succeeded, and we'll get:
+        */
+       // [{u'email': u'_pants+test-invited@anotherwebsite.org', u'status': u'sent'}] 
 
         final JSONObject json = new JSONObject();
         json.put("key", LanternControllerConstants.MANDRILL_API_KEY);
@@ -179,8 +192,8 @@ public class XmppAvailableServlet extends HttpServlet {
         msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
         final JSONObject[] to = {
             new JSONObject() {{
-                put("email", email)
-             // put("name", name) // XXX can we get this too if available?
+                put("email", invited_email)
+             // put("name", invited_name) // XXX can we get this too if available?
             }}
         };
         msg.put("to", to);
@@ -189,7 +202,7 @@ public class XmppAvailableServlet extends HttpServlet {
         msg.put("auto_text", true);
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
-        msg.put("bcc_address", "bcc@getlantern.org"); // XXX use inviter_email instead?
+        msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS); // XXX use inviter_email instead?
         final JSONObject[] mergeVars = {
             new JSONObject() {{
                 put("name", "INVITER_EMAIL"),
@@ -201,18 +214,21 @@ public class XmppAvailableServlet extends HttpServlet {
             */
             new JSONObject() {{
                 put("name", "ACCESSKEY"),
-                put("content", ACCESSKEY) }},
+                put("content", LanternControllerConstants.ACCESSKEY) }},
             new JSONObject() {{
                 put("name", "INSTALLER_URL_DMG"),
-                put("content", INSTALLER_URL_DMG) }},
+                put("content", LanternControllerConstants.INSTALLER_URL_DMG) }},
             new JSONObject() {{
                 put("name", "INSTALLER_URL_EXE"),
-                put("content", INSTALLER_URL_EXE) }},
+                put("content", LanternControllerConstants.INSTALLER_URL_EXE) }},
             new JSONObject() {{
                 put("name", "INSTALLER_URL_DEB"),
-                put("content", INSTALLER_URL_DEB) }}
+                put("content", LanternControllerConstants.INSTALLER_URL_DEB) }}
         };
-        msg.put("merge_vars", mergeVars);
+        msg.put("global_merge_vars", mergeVars);
+        // XXX use these?:
+        // msg.put("google_analytics_campaign", ...);
+        // msg.put("attachments", ...);
         json.put("message", msg);
         final String payload = json.toJSONString();
 

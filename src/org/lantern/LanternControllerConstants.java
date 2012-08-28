@@ -8,14 +8,23 @@ import java.util.Map;
  */
 public class LanternControllerConstants {
 
-    public static final String MANDRILL_API_KEY = "a74f57aa-786e-4ddd-aaa0-ee65806d5066"; // keep this secret
+    public static final String MANDRILL_API_KEY = "secret"; // keep this secret
     public static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     public static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
-    public static final String INVITE_EMAIL_TEMPLATE_NAME = "Welcome to the Lantern Beta";
-    public static final String INVITE_EMAIL_SUBJECT = "Welcome to the Lantern Beta";
+    public static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-notification";
+    public static final String INVITE_EMAIL_SUBJECT = "You have been invited to Lantern";
     public static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
     public static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
+    public static final String INVITE_EMAIL_BCC_ADDRESS = "bcc@getlantern.org";
 
+    // query string param to bypass password wall on getlantern.org:
+    // XXX handle this better? it's duplicated in getlantern.org code's
+    // secrets.py, and it'd be nice to be able to change its value without
+    // having to redeploy Lantern Controller
+    private static final String ACCESSKEY = "secret";
+
+    // XXX these are out of date?:
+    /*
     public static final String UPDATE_URLS_KEY = "urls";
     public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
     
@@ -34,6 +43,14 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("fedora", URL_BASE+".rpm");
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
     }
+    */
+    
+    // XXX dynamically generate random s3 bucket for this:
+    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
+    private static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
+    private static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
+    private static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
+
     
     /**
      * This is the local proxy port data is relayed to on the "server" side
