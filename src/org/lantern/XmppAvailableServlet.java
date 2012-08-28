@@ -111,7 +111,8 @@ public class XmppAvailableServlet extends HttpServlet {
     {   //throws AlreadyInvitedException {
         final Dao dao = new Dao();
         final String stanza = presence.getStanza();
- // XXX final String inviter_email = ???;
+        final String inviter_email = "???"; // XXX
+        final String inviter_name = "looked up inviter name".isEmpty() ? "inviter_name" : inviter_email; // XXX
         final String invited_email = StringUtils.substringBetween(stanza, INVITE, 
             "</value></property>");
         
@@ -124,11 +125,13 @@ public class XmppAvailableServlet extends HttpServlet {
         */
 
         // see http://mandrillapp.com/api/docs/messages.html#method=send-template
-        // copy the following, run iPython in a virtualenv with requests
-        // installed, and then use the %paste magic command:
+        // copy the following, replace invited_email with your email address, 
+        // run iPython in a virtualenv with requests installed,
+        // and then use iPython's %paste magic command:
         /*
           >>> import requests, json
           >>> inviter_email = "_pants+test-inviter@anotherwebsite.org"
+          >>> inviter_name = "Philboyd Studge"
           >>> invited_email = "_pants+test-invited@anotherwebsite.org"
           >>> class LanternControllerConstants:
                   ACCESSKEY = "secret"
@@ -165,7 +168,7 @@ public class XmppAvailableServlet extends HttpServlet {
                           bcc_address=LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS, # XXX use inviter_email instead?
                           global_merge_vars=[
                               {'name': 'INVITER_EMAIL', 'content': inviter_email},
-                            # {'name': 'INVITER_NAME', 'content': inviter_name}, # XXX can we get this too if available?
+                              {'name': 'INVITER_NAME', 'content': inviter_name},
                               {'name': 'ACCESSKEY', 'content': LanternControllerConstants.ACCESSKEY},
                               {'name': 'INSTALLER_URL_DMG', 'content': LanternControllerConstants.INSTALLER_URL_DMG},
                               {'name': 'INSTALLER_URL_EXE', 'content': LanternControllerConstants.INSTALLER_URL_EXE},
@@ -178,21 +181,21 @@ public class XmppAvailableServlet extends HttpServlet {
                       ))
                   )
           >>> # now check r.json; if r.json.get('status') == 'error', we got an error
-          >>> # otherwise the call succeeded, and we'll get:
+          >>> # otherwise the call succeeded, and we'll get something like:
         */
        // [{u'email': u'_pants+test-invited@anotherwebsite.org', u'status': u'sent'}] 
 
         final JSONObject json = new JSONObject();
         json.put("key", LanternControllerConstants.MANDRILL_API_KEY);
         json.put("template_name", LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME);
-        json.put("template_content", new String[]);
+        json.put("template_content", new String[]{});
         final JSONObject msg = new JSONObject();
         msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
         msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
         msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
         final JSONObject[] to = {
             new JSONObject() {{
-                put("email", invited_email)
+                put("email", invited_email);
              // put("name", invited_name) // XXX can we get this too if available?
             }}
         };
@@ -205,25 +208,23 @@ public class XmppAvailableServlet extends HttpServlet {
         msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS); // XXX use inviter_email instead?
         final JSONObject[] mergeVars = {
             new JSONObject() {{
-                put("name", "INVITER_EMAIL"),
-                put("content", inviter_email) }},
-            /* XXX can we get this too if available? (if so, modify template)
+                put("name", "INVITER_EMAIL");
+                put("content", inviter_email); }},
             new JSONObject() {{
-                put("name", "INVITER_NAME"),
-                put("content", inviter_name) }},
-            */
+                put("name", "INVITER_NAME");
+                put("content", inviter_name); }},
             new JSONObject() {{
-                put("name", "ACCESSKEY"),
-                put("content", LanternControllerConstants.ACCESSKEY) }},
+                put("name", "ACCESSKEY");
+                put("content", LanternControllerConstants.ACCESSKEY); }},
             new JSONObject() {{
-                put("name", "INSTALLER_URL_DMG"),
-                put("content", LanternControllerConstants.INSTALLER_URL_DMG) }},
+                put("name", "INSTALLER_URL_DMG");
+                put("content", LanternControllerConstants.INSTALLER_URL_DMG); }},
             new JSONObject() {{
-                put("name", "INSTALLER_URL_EXE"),
-                put("content", LanternControllerConstants.INSTALLER_URL_EXE) }},
+                put("name", "INSTALLER_URL_EXE");
+                put("content", LanternControllerConstants.INSTALLER_URL_EXE); }},
             new JSONObject() {{
-                put("name", "INSTALLER_URL_DEB"),
-                put("content", LanternControllerConstants.INSTALLER_URL_DEB) }}
+                put("name", "INSTALLER_URL_DEB");
+                put("content", LanternControllerConstants.INSTALLER_URL_DEB); }}
         };
         msg.put("global_merge_vars", mergeVars);
         // XXX use these?:

@@ -8,20 +8,20 @@ import java.util.Map;
  */
 public class LanternControllerConstants {
 
-    public static final String MANDRILL_API_KEY = "secret"; // keep this secret
-    public static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
-    public static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
-    public static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-notification";
-    public static final String INVITE_EMAIL_SUBJECT = "You have been invited to Lantern";
-    public static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
-    public static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
-    public static final String INVITE_EMAIL_BCC_ADDRESS = "bcc@getlantern.org";
+    static final String MANDRILL_API_KEY = "secret"; // keep this secret
+    static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
+    static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
+    static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-notification";
+    static final String INVITE_EMAIL_SUBJECT = "You have been invited to Lantern";
+    static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
+    static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
+    static final String INVITE_EMAIL_BCC_ADDRESS = "bcc@getlantern.org";
 
     // query string param to bypass password wall on getlantern.org:
     // XXX handle this better? it's duplicated in getlantern.org code's
     // secrets.py, and it'd be nice to be able to change its value without
     // having to redeploy Lantern Controller
-    private static final String ACCESSKEY = "secret";
+    static final String ACCESSKEY = "secret";
 
     // XXX these are out of date?:
     /*
@@ -46,10 +46,10 @@ public class LanternControllerConstants {
     */
     
     // XXX dynamically generate random s3 bucket for this:
-    private static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
-    private static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
-    private static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
-    private static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
+    static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
+    static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
+    static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
+    static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
 
     
     /**
@@ -85,8 +85,10 @@ public class LanternControllerConstants {
 
     //public static final String UPDATE_MESSAGE_KEY = "message";
     
+    /*
     public static final String UPDATE_MESSAGE = 
         "Lantern "+LATEST_VERSION+" is now available with many new performance and usability improvements.";
+    */
     
     public static final String VERSION_KEY = "v";
     
