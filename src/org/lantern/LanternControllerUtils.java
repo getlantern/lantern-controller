@@ -1,5 +1,7 @@
 package org.lantern;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.Presence;
 
@@ -21,6 +23,20 @@ public class LanternControllerUtils {
     
     public static String userId(final Message message) {
         return jidToUserId(message.getFromJid().getId());
+    }
+    
+    public static String invitedName(final Presence presence) {
+        return getProperty(presence, LanternConstants.INVITE_NAME);
+    }
+    
+    public static String getProperty(final Presence presence, 
+        final String key) {
+        final String start = 
+            "<property><name>" + key + 
+            "</name><value type=\"string\">";
+        final String stanza = presence.getStanza();
+        return StringUtils.substringBetween(stanza, start, 
+            "</value></property>");
     }
     
     public static String instanceId(final Message message) {

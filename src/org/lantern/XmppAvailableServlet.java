@@ -5,18 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,6 +18,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
 import org.littleshoot.util.Sha1Hasher;
+import org.littleshoot.util.ThreadUtils;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
@@ -63,11 +54,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            try {
-                processInvite(presence);
-            } catch (final AlreadyInvitedException e) {
-                return;
-            }
+            processInvite(presence);
             dao.decrementInvites(from);
             return;
         }
@@ -99,96 +86,33 @@ public class XmppAvailableServlet extends HttpServlet {
         }
     }
 
-    private static final String INVITE = 
-        "<property><name>" + LanternConstants.INVITE_KEY + 
-        "</name><value type=\"string\">";
-    
-    
-    private static final String LINK = "http://s3.amazonaws.com/lantern/latest.dmg";
-
-
-    private static final String EMAIL_TOKEN = "{email}";
-    
-    final String msgContent = 
-        "Welcome to Lantern!\n\n" +
-        "" +
-        "Your trusted friend or contact at e-mail address '"+EMAIL_TOKEN+"' " +
-        "has invited you to join the Lantern community. Lantern is a " +
-        "network of trusted users who cooperate to provide uncensored " +
-        "internet access to people around the world securely. When you " +
-        "join Lantern, you become a trusted participant in that network - " +
-        "a covenant of sorts dedicated to freedom of expression around the world.\n\n" +
-        "" +
-        "You can download Lantern at the link below and will then have the " +
-        "opportunity to invite people you in turn trust. Remember, don't " +
-        "invite just anyone, but please do invite people you trust!\n\n";
-
-    private final String msgBody = 
-        msgContent +
-        LINK +"\n\n"+
-        "-Team Lantern";
-    
-    private final String msgHtml = 
-        msgContent.replaceAll("\n\n", "<br><br>") +
-        "<a href='"+LINK+"'>DOWNLOAD LANTERN HERE</a><br><br>"+
-        "-Team Lantern";
-    
-    
     private final class AlreadyInvitedException extends Exception {}
-        
-    private void processInvite(final Presence presence) 
-        throws AlreadyInvitedException {
-        final Dao dao = new Dao();
-        final String stanza = presence.getStanza();
-        final String email = StringUtils.substringBetween(stanza, INVITE, 
-            "</value></property>");
-        
-        if (dao.isInvited(email)) {
-            log.info("User is already invited: "+email);
-            throw new AlreadyInvitedException();
+
+    private void processInvite(final Presence presence) {
+        // XXX this is really a jabberid, email template makes it a "mailto:" link
+        final String inviterEmail = LanternControllerUtils.userId(presence); 
+        final String inviterName;
+        final String inviterNameTmp = 
+            LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_NAME);
+        if (StringUtils.isBlank(inviterNameTmp)) {
+            inviterName = inviterEmail;
+        } else {
+            inviterName = inviterNameTmp;
         }
-        final Properties props = new Properties();
-        final Session session = Session.getDefaultInstance(props, null);
+        final String invited_email = 
+            LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_KEY);
 
-        final String from = LanternControllerUtils.userId(presence);
-
-        final String body = msgBody.replace(EMAIL_TOKEN, from);
-        final String html = msgHtml.replace(EMAIL_TOKEN, from);
         try {
-            final javax.mail.Message msg = new MimeMessage(session);
-            msg.setFrom(new InternetAddress("myles@getlantern.org"));
-            msg.addRecipient(javax.mail.Message.RecipientType.TO,
-                new InternetAddress(email));
-            msg.setSubject(from + " has invited you to join the Lantern trust network...");
-            
-            // Unformatted text version
-            final MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setText(body);
-            // HTML version
-            final MimeBodyPart htmlPart = new MimeBodyPart();
-            htmlPart.setContent(html, "text/html");
-            htmlPart.setDisposition("inline");
-            // Create the Multipart.  Add BodyParts to it.
-            final Multipart mp = new MimeMultipart();
-            mp.addBodyPart(textPart);
-            mp.addBodyPart(htmlPart);
-            // Set Multipart as the message's content
-            msg.setContent(mp);
-            
-            Transport.send(msg);
-            dao.addInvite(from, email);
-        } catch (final AddressException e) {
-            log.warning("Address error? "+e);
-            e.printStackTrace();
-        } catch (final MessagingException e) {
-            log.warning("Messaging error? "+e);
-            e.printStackTrace();
+            MandrillEmailer.sendInvite(inviterName, inviterEmail, invited_email);
+        } catch (final IOException e) {
+            log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
+        
     }
 
     private boolean isInvite(final Presence presence) {
         final String stanza = presence.getStanza();
-        return stanza.contains(INVITE);
+        return stanza.contains("<property><name>"+LanternConstants.INVITE_KEY);
     }
 
     private String userId(final Presence presence, final boolean isGiveMode) {
@@ -197,7 +121,7 @@ public class XmppAvailableServlet extends HttpServlet {
         } else {
             // We hash the ID of users in censored countries and just count them
             // as a generic number. We only look at the JID at all to avoid 
-            // overcounting.
+            // over counting.
             return Sha1Hasher.hash(LanternControllerUtils.userId(presence));
         }
     }
