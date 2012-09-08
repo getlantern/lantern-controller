@@ -1,0 +1,8 @@
+.DS_Store
+*.swp
+*.un~
+*.*~
+*.settings
+*.classpath
+*.project
+war/WEB-INF/classes
