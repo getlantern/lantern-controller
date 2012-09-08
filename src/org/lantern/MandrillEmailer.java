@@ -33,7 +33,7 @@ public class MandrillEmailer {
         Logger.getLogger(MandrillEmailer.class.getName());
     
     /**
-     * Sends a Lantern invite e-mail using the Mandill API.
+     * Sends a Lantern invite e-mail using the Mandrill API.
      * 
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
