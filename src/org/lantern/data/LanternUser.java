@@ -30,6 +30,8 @@ public class LanternUser {
 
     private int degree = Integer.MAX_VALUE;
     
+    private boolean invited = false;
+    
     public LanternUser() {
         super();
     }
@@ -122,5 +124,13 @@ public class LanternUser {
 
     public int getDegree() {
         return degree;
+    }
+
+    public boolean isInvited() {
+        return invited;
+    }
+
+    public void setInvited(boolean invited) {
+        this.invited = invited;
     }
 }
