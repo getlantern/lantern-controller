@@ -43,6 +43,7 @@ public class MandrillEmailer {
      */
     public static void sendInvite(final String inviterName, 
         final String inviterEmail, final String invitedEmail) throws IOException {
+        log.info("Sending invite to "+invitedEmail);
         if (StringUtils.isBlank(invitedEmail)) {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
@@ -122,8 +123,8 @@ public class MandrillEmailer {
             return;
         }
 
-        final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults();
-        fetchOptions.followRedirects().validateCertificate().setDeadline(60d);
+        final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults().
+            followRedirects().validateCertificate().setDeadline(60d);
         log.warning("Sending paylaod:\n"+payload);
         final HTTPRequest request = 
             new HTTPRequest(url, HTTPMethod.POST, fetchOptions);

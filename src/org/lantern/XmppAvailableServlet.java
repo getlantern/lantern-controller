@@ -45,11 +45,21 @@ public class XmppAvailableServlet extends HttpServlet {
             log.severe("Could not parse presence: "+e.getMessage());
             return;
         }
+
+        final Map<String,Object> responseJson = 
+                new LinkedHashMap<String,Object>();
+        final Dao dao = new Dao();
+        final String from = LanternControllerUtils.userId(presence);
+        if (!dao.isInvited(from)) {
+            log.info(from+" not invited!!");
+            //processNotInvited(presence, xmpp, responseJson);
+            //return;
+        } else {
+            responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
+        }
         
         if (isInvite(presence)) {
-            
-            final String from = LanternControllerUtils.userId(presence);
-            final Dao dao = new Dao();
+            log.info("Got invite in stanza: "+presence.getStanza());
             if (!dao.hasMoreInvites(from)) {
                 log.severe("No more invites for user: "+from);
                 return;
@@ -64,19 +74,13 @@ public class XmppAvailableServlet extends HttpServlet {
         //final boolean lan = LanternControllerUtils.isLantern(id);
         log.info("Got presence "+available);
         
-        log.info("Status: '"+presence.getStatus()+"'");
-        final String stanza = presence.getStanza();
-        log.info("Stanza: "+stanza);
-        final String stats = StringUtils.substringBetween(stanza, 
-            "<property><name>stats</name><value type=\"string\">", "</value></property>");
+        final String stats = 
+            LanternControllerUtils.getProperty(presence, "stats");
+        
         //log.info("Stats JSON: "+stats);
         
         final boolean isGiveMode = 
             LanternControllerUtils.isLantern(presence.getFromJid().getId());
-        
-        
-        final Map<String,Object> responseJson = 
-            new LinkedHashMap<String,Object>();
         final String userId = userId(presence, isGiveMode);
         processClientInfo(presence, stats, responseJson, userId);
         if (isGiveMode) {
@@ -99,11 +103,13 @@ public class XmppAvailableServlet extends HttpServlet {
         } else {
             inviterName = inviterNameTmp;
         }
-        final String invited_email = 
+        final String invitedEmail = 
             LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_KEY);
 
+        final Dao dao = new Dao();
+        dao.addInvite(inviterEmail, invitedEmail);
         try {
-            MandrillEmailer.sendInvite(inviterName, inviterEmail, invited_email);
+            MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
@@ -111,8 +117,9 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private boolean isInvite(final Presence presence) {
-        final String stanza = presence.getStanza();
-        return stanza.contains("<property><name>"+LanternConstants.INVITE_KEY);
+        final String invite = LanternControllerUtils.getProperty(presence, 
+            LanternConstants.INVITE_KEY);
+        return invite != null;
     }
 
     private String userId(final Presence presence, final boolean isGiveMode) {
@@ -161,9 +168,18 @@ public class XmppAvailableServlet extends HttpServlet {
         final Dao dao = new Dao();
         dao.setInstanceAvailable(instanceId, available);
     }
+    
+
+    private void processNotInvited(final Presence presence, 
+        final XMPPService xmpp, final Map<String, Object> responseJson) {
+        responseJson.put(LanternConstants.INVITED, Boolean.FALSE);
+        log.info("Not allowing uninvited user.");
+        sendResponse(presence, xmpp, responseJson);
+    }
 
     private void processClientInfo(final Presence presence, 
-        final String stats, final Map<String, Object> responseJson, final String idToUse) {
+        final String stats, final Map<String, Object> responseJson, 
+        final String idToUse) {
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;

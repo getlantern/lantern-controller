@@ -188,12 +188,15 @@ public class Dao extends DAOBase {
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, sponsor);
         if (user == null) {
+            log.warning("Could not find sponsor sending invite: " +sponsor);
             return;
         }
+        log.info("Adding invite to database");
         final Invite invite = new Invite(email);
         invite.setDegree(user.getDegree());
         invite.setSponsor(sponsor);
         ofy.put(invite);
+        log.info("Finished adding invite...");
     }
     
     public void decrementInvites(final String userId) {
