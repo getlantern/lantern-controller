@@ -79,7 +79,7 @@ public class MandrillEmailer {
         to.put("email", invitedEmail);
         msg.put("to", Arrays.asList(to));
         msg.put("track_opens", true);
-        msg.put("track_clicks", true);
+        msg.put("track_clicks", false);
         msg.put("auto_text", true);
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
