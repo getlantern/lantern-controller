@@ -106,6 +106,16 @@ public class XmppAvailableServlet extends HttpServlet {
         final String invitedEmail = 
             LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_KEY);
 
+        if (StringUtils.isBlank(invitedEmail)) {
+            log.severe("No e-mail to invite?");
+            return;
+        }
+        if (invitedEmail.contains("public.talk.google.com")) {
+            // This is a google talk JID and not an e-mail address -- we 
+            // can't use it!.
+            log.info("Can't e-mail a Google Talk ID. Ignoring.");
+            return;
+        }
         final Dao dao = new Dao();
         dao.addInvite(inviterEmail, invitedEmail);
         try {
