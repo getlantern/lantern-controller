@@ -26,7 +26,7 @@ public class LanternControllerUtils {
     }
     
     public static String invitedName(final Presence presence) {
-        return getProperty(presence, LanternConstants.INVITE_NAME);
+        return getProperty(presence, LanternConstants.INVITEE_NAME);
     }
     
     public static String getProperty(final Presence presence, 

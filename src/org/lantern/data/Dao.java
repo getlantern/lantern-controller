@@ -193,7 +193,7 @@ public class Dao extends DAOBase {
         }
         log.info("Adding invite to database");
         final Invite invite = new Invite(email);
-        invite.setDegree(user.getDegree());
+        invite.setDegree(user.getDegree()+1);
         invite.setSponsor(sponsor);
         ofy.put(invite);
         log.info("Finished adding invite...");

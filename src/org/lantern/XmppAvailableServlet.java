@@ -52,7 +52,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final String from = LanternControllerUtils.userId(presence);
         if (!dao.isInvited(from)) {
             log.info(from+" not invited!!");
-            //processNotInvited(presence, xmpp, responseJson);
+            processNotInvited(presence, xmpp, responseJson);
             //return;
         } else {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
@@ -97,14 +97,16 @@ public class XmppAvailableServlet extends HttpServlet {
         final String inviterEmail = LanternControllerUtils.userId(presence); 
         final String inviterName;
         final String inviterNameTmp = 
-            LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_NAME);
+            LanternControllerUtils.getProperty(presence, 
+                LanternConstants.INVITER_NAME);
         if (StringUtils.isBlank(inviterNameTmp)) {
             inviterName = inviterEmail;
         } else {
             inviterName = inviterNameTmp;
         }
         final String invitedEmail = 
-            LanternControllerUtils.getProperty(presence, LanternConstants.INVITE_KEY);
+            LanternControllerUtils.getProperty(presence, 
+                LanternConstants.INVITED_EMAIL);
 
         if (StringUtils.isBlank(invitedEmail)) {
             log.severe("No e-mail to invite?");
@@ -128,7 +130,12 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private boolean isInvite(final Presence presence) {
         final String invite = LanternControllerUtils.getProperty(presence, 
-            LanternConstants.INVITE_KEY);
+            LanternConstants.INVITED_EMAIL);
+        if (invite != null) {
+            log.info("FOUND INVITE IN: "+presence.getStanza());
+        } else {
+            log.info("NO INVITE IN: "+presence.getStanza());
+        }
         return invite != null;
     }
 
