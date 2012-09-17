@@ -55,6 +55,7 @@ public class XmppAvailableServlet extends HttpServlet {
             processNotInvited(presence, xmpp, responseJson);
             return;
         } else {
+            log.info("User is invited");
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
         
