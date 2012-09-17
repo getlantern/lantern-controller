@@ -53,7 +53,7 @@ public class XmppAvailableServlet extends HttpServlet {
         if (!dao.isInvited(from)) {
             log.info(from+" not invited!!");
             processNotInvited(presence, xmpp, responseJson);
-            //return;
+            return;
         } else {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
