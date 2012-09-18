@@ -180,9 +180,10 @@ public class MailChimpApi {
         builder.setHost(MAILCHIMP_API_BASE_URL);
         builder.setPath("/1.3/");
         builder.setParameter("method", "listSubscribe");
-        builder.setParameter("id", "23d57f6c76");
+        builder.setParameter("id", "92dbb7b3ae");
         builder.setParameter("email_address", invitedEmail);
         builder.setParameter("apikey", MAILCHIMP_API_KEY);
+        builder.setParameter("double_optin", "false");
         //builder.setParameter("", "");
         
         final URI url;

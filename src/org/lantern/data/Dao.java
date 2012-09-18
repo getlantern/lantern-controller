@@ -350,4 +350,26 @@ public class Dao extends DAOBase {
             entry.setCountryCode(countryCode);
         }
     }
+
+
+    public boolean isSubscribed(final String email) {
+        final Objectify ofy = ofy();
+        final Invite invite = ofy.find(Invite.class, email);
+        if (invite == null) {
+            log.severe("No corresponding invite for "+email);
+            return false;
+        }
+        return invite.isSubscribed();
+    }
+
+    public void subscribed(final String email) {
+        final Objectify ofy = ofy();
+        final Invite invite = ofy.find(Invite.class, email);
+        if (invite == null) {
+            log.severe("No corresponding invite for "+email);
+            return;
+        }
+        invite.setSubscribed(true);
+        ofy.put(invite);
+    }
 }
