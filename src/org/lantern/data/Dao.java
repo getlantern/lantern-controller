@@ -206,7 +206,15 @@ public class Dao extends DAOBase {
         if (user == null) {
             return;
         } 
-        user.setInvites(user.getInvites()-1);
+        final int curInvites = user.getInvites();
+        final int newInvites;
+        if (curInvites < 1) {
+            log.severe("Decrementing invites on user with no invites");
+            newInvites = 0;
+        } else {
+            newInvites = curInvites - 1;
+        }
+        user.setInvites(newInvites);
         ofy.put(user);
     }
     
