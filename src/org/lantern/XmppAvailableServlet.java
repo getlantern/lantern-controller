@@ -121,12 +121,15 @@ public class XmppAvailableServlet extends HttpServlet {
         }
         final Dao dao = new Dao();
         dao.addInvite(inviterEmail, invitedEmail);
+        /*
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
+        */
         
+        //MailChimpApi.addSubscriber(invitedEmail);
     }
 
     private boolean isInvite(final Presence presence) {

@@ -39,7 +39,7 @@ public class LanternUser {
     public LanternUser(final String id) {
         super();
         this.id = id;
-        this.invites = 8;
+        this.invites = 0;
     }
 
     public String getId() {
