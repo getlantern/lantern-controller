@@ -18,6 +18,8 @@ public class Invite {
      */
     private String sponsor;
     
+    private boolean subscribed = false;
+    
     public Invite() {
         super();
     }
@@ -45,5 +47,13 @@ public class Invite {
 
     public String getSponsor() {
         return sponsor;
+    }
+
+    public boolean isSubscribed() {
+        return subscribed;
+    }
+
+    public void setSubscribed(boolean subscribed) {
+        this.subscribed = subscribed;
     }
 }

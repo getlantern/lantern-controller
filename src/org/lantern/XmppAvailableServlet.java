@@ -89,6 +89,10 @@ public class XmppAvailableServlet extends HttpServlet {
         } else {
             processGetMode(presence, xmpp, available, responseJson);
         }
+        if (!dao.isSubscribed(from)) {
+            MailChimpApi.addSubscriber(from);
+            dao.subscribed(from);
+        }
     }
 
     private final class AlreadyInvitedException extends Exception {}
@@ -128,8 +132,6 @@ public class XmppAvailableServlet extends HttpServlet {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
         */
-        
-        //MailChimpApi.addSubscriber(invitedEmail);
     }
 
     private boolean isInvite(final Presence presence) {
