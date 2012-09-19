@@ -49,7 +49,7 @@ public class Dao extends DAOBase {
     static {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
-        ObjectifyService.register(Invite.class);
+        //ObjectifyService.register(Invite.class);
         COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(DIRECT_BYTES);
@@ -157,17 +157,6 @@ public class Dao extends DAOBase {
             ofy.put(inst);
         }
     }
-    
-    public void validate(final String id) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, id);
-        if (user != null) {
-            user.setValidated(true);
-            ofy.put(user);
-        } else {
-            log.info("Could not find user!!");
-        }
-    }
 
     public int getInvites(final String userId) {
         final Objectify ofy = ofy();
@@ -192,10 +181,10 @@ public class Dao extends DAOBase {
             return;
         }
         log.info("Adding invite to database");
-        final Invite invite = new Invite(email);
-        invite.setDegree(user.getDegree()+1);
-        invite.setSponsor(sponsor);
-        ofy.put(invite);
+        final LanternUser invitee = new LanternUser(email);
+        invitee.setDegree(user.getDegree()+1);
+        invitee.setSponsor(sponsor);
+        ofy.put(invitee);
         log.info("Finished adding invite...");
     }
     
@@ -221,8 +210,14 @@ public class Dao extends DAOBase {
 
     public boolean isInvited(final String email) {
         final Objectify ofy = ofy();
-        final Invite invite = ofy.find(Invite.class, email);
-        return invite != null;
+        final LanternUser user = ofy.find(LanternUser.class, email);
+        
+        if (user != null) {
+            user.setLastAccessed(new Date());
+            ofy.put(user);
+            return true;
+        }
+        return false;
     }
 
     public boolean updateUser(final String userId, final long directRequests, 
@@ -245,7 +240,6 @@ public class Dao extends DAOBase {
             isUserNew = false;
         }
 
-        user.setValidated(true);
         user.setBytesProxied(user.getBytesProxied() + bytesProxied);
         user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
         user.setDirectBytes(user.getDirectBytes() + directBytes);
@@ -352,24 +346,24 @@ public class Dao extends DAOBase {
     }
 
 
-    public boolean isSubscribed(final String email) {
+    public boolean isEverSignedIn(final String email) {
         final Objectify ofy = ofy();
-        final Invite invite = ofy.find(Invite.class, email);
+        final LanternUser invite = ofy.find(LanternUser.class, email);
         if (invite == null) {
             log.severe("No corresponding invite for "+email);
             return false;
         }
-        return invite.isSubscribed();
+        return invite.isEverSignedIn();
     }
 
-    public void subscribed(final String email) {
+    public void signedIn(final String email) {
         final Objectify ofy = ofy();
-        final Invite invite = ofy.find(Invite.class, email);
+        final LanternUser invite = ofy.find(LanternUser.class, email);
         if (invite == null) {
             log.severe("No corresponding invite for "+email);
             return;
         }
-        invite.setSubscribed(true);
+        invite.setEverSignedIn(true);
         ofy.put(invite);
     }
 }
