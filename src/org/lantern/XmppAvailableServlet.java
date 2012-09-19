@@ -89,9 +89,9 @@ public class XmppAvailableServlet extends HttpServlet {
         } else {
             processGetMode(presence, xmpp, available, responseJson);
         }
-        if (!dao.isSubscribed(from)) {
+        if (!dao.isEverSignedIn(from)) {
             MailChimpApi.addSubscriber(from);
-            dao.subscribed(from);
+            dao.signedIn(from);
         }
     }
 
@@ -125,13 +125,11 @@ public class XmppAvailableServlet extends HttpServlet {
         }
         final Dao dao = new Dao();
         dao.addInvite(inviterEmail, invitedEmail);
-        /*
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
-        */
     }
 
     private boolean isInvite(final Presence presence) {

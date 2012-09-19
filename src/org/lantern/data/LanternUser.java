@@ -10,8 +10,6 @@ public class LanternUser {
     @Id
     private String id;
     
-    private boolean validated;
-    
     private long directBytes;
     
     private long bytesProxied;
@@ -20,17 +18,26 @@ public class LanternUser {
     
     private long requestsProxied;
     
-    private int numContacts;
-    
     private Date created = new Date();
     
     private Set<String> countryCodes;
     
     private int invites;
 
-    private int degree = Integer.MAX_VALUE;
+    /**
+     * This is the number of degrees this user is from the original core of
+     * Lantern developers.
+     */
+    private int degree;
     
-    private boolean invited = false;
+    /**
+     * This is the user who invited this user to the network.
+     */
+    private String sponsor;
+    
+    private boolean everSignedIn = false;
+    
+    private Date lastAccessed = new Date();
     
     public LanternUser() {
         super();
@@ -44,14 +51,6 @@ public class LanternUser {
 
     public String getId() {
         return id;
-    }
-
-    public void setValidated(final boolean validated) {
-        this.validated = validated;
-    }
-
-    public boolean isValidated() {
-        return validated;
     }
 
     public void setCreated(final Date created) {
@@ -102,14 +101,6 @@ public class LanternUser {
         this.requestsProxied = requestsProxied;
     }
 
-    public void setNumContacts(int numContacts) {
-        this.numContacts = numContacts;
-    }
-
-    public int getNumContacts() {
-        return numContacts;
-    }
-
     public void setInvites(int invites) {
         this.invites = invites;
     }
@@ -126,11 +117,27 @@ public class LanternUser {
         return degree;
     }
 
-    public boolean isInvited() {
-        return invited;
+    public String getSponsor() {
+        return sponsor;
     }
 
-    public void setInvited(boolean invited) {
-        this.invited = invited;
+    public void setSponsor(String sponsor) {
+        this.sponsor = sponsor;
+    }
+
+    public boolean isEverSignedIn() {
+        return everSignedIn;
+    }
+
+    public void setEverSignedIn(boolean everSignedIn) {
+        this.everSignedIn = everSignedIn;
+    }
+
+    public Date getLastAccessed() {
+        return lastAccessed;
+    }
+
+    public void setLastAccessed(Date lastAccessed) {
+        this.lastAccessed = lastAccessed;
     }
 }
