@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -13,6 +14,7 @@ import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -188,6 +190,41 @@ public class Dao extends DAOBase {
         log.info("Finished adding invite...");
     }
     
+
+    public void resaveUser(final String email) {
+        final Objectify ofy = ofy();
+        Iterable<Key<LanternUser>> allKeys = ofy.query(LanternUser.class).fetchKeys();
+        final Map<Key<LanternUser>, LanternUser> all = ofy.get(allKeys);
+        final Set<Entry<Key<LanternUser>, LanternUser>> entries = all.entrySet();
+        for (final Entry<Key<LanternUser>, LanternUser> entry : entries) {
+            final LanternUser user = entry.getValue();
+            System.out.println(user.getSponsor());
+            user.setDegree(1);
+            user.setEverSignedIn(true);
+            user.setInvites(5);
+            user.setSponsor("adamfisk@gmail.com");
+            ofy.put(user);
+        }
+        
+        /*
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, email);
+        
+        if (user == null) {
+            log.warning("Could not find sponsor sending invite: " +user);
+            return;
+        }
+        //invitee.setDegree(user.getDegree()+1);
+        //invitee.setSponsor(sponsor);
+        user.setDegree(1);
+        user.setEverSignedIn(true);
+        user.setInvites(5);
+        user.setSponsor("adamfisk@gmail");
+        ofy.put(user);
+        log.info("Finished adding invite...");
+        */
+    }
+    
     public void decrementInvites(final String userId) {
         log.info("Decrementing invites for "+userId);
         final Objectify ofy = ofy();
@@ -218,6 +255,16 @@ public class Dao extends DAOBase {
             return true;
         }
         return false;
+    }
+    
+    public void updateLastAccessed(final String email) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, email);
+        
+        if (user != null) {
+            user.setLastAccessed(new Date());
+            ofy.put(user);
+        }
     }
 
     public boolean updateUser(final String userId, final long directRequests, 

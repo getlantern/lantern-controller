@@ -56,6 +56,7 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         } else {
             log.info("User is invited");
+            dao.updateLastAccessed(from);
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
         
@@ -124,6 +125,10 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         final Dao dao = new Dao();
+        if (dao.isInvited(invitedEmail)) {
+            log.info("Not re-sending e-mail since user is already invited");
+            return;
+        }
         dao.addInvite(inviterEmail, invitedEmail);
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
