@@ -125,7 +125,7 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         final Dao dao = new Dao();
-        if (dao.isInvited(invitedEmail)) {
+        if (dao.alreadyInvitedBy(inviterEmail, invitedEmail)) {
             log.info("Not re-sending e-mail since user is already invited");
             return;
         }
