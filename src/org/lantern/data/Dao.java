@@ -244,17 +244,21 @@ public class Dao extends DAOBase {
         ofy.put(user);
     }
     
+    public boolean alreadyInvitedBy(final String inviterEmail, 
+        final String invitedEmail) {
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, invitedEmail);
+        if (user != null) {
+            final String sponsor = user.getSponsor();
+            return sponsor.equalsIgnoreCase(inviterEmail.trim());
+        }
+        return false;
+    }
 
     public boolean isInvited(final String email) {
         final Objectify ofy = ofy();
         final LanternUser user = ofy.find(LanternUser.class, email);
-        
-        if (user != null) {
-            user.setLastAccessed(new Date());
-            ofy.put(user);
-            return true;
-        }
-        return false;
+        return user != null;
     }
     
     public void updateLastAccessed(final String email) {
