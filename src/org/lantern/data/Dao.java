@@ -201,7 +201,7 @@ public class Dao extends DAOBase {
             System.out.println(user.getSponsor());
             user.setDegree(1);
             user.setEverSignedIn(true);
-            user.setInvites(5);
+            user.setInvites(0);
             user.setSponsor("adamfisk@gmail.com");
             ofy.put(user);
         }
