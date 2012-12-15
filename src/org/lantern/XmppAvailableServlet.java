@@ -91,7 +91,6 @@ public class XmppAvailableServlet extends HttpServlet {
             processGetMode(presence, xmpp, available, responseJson);
         }
         if (!dao.isEverSignedIn(from)) {
-            MailChimpApi.addSubscriber(from);
             dao.signedIn(from);
         }
     }
@@ -100,6 +99,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processInvite(final Presence presence) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
+        log.severe("INVITING");
         final String inviterEmail = LanternControllerUtils.userId(presence); 
         final String inviterName;
         final String inviterNameTmp = 
@@ -124,17 +124,12 @@ public class XmppAvailableServlet extends HttpServlet {
             log.info("Can't e-mail a Google Talk ID. Ignoring.");
             return;
         }
-        final Dao dao = new Dao();
-        if (dao.alreadyInvitedBy(inviterEmail, invitedEmail)) {
-            log.info("Not re-sending e-mail since user is already invited");
-            return;
-        }
-        dao.addInvite(inviterEmail, invitedEmail);
-        try {
-            MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
-        } catch (final IOException e) {
-            log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
-        }
+        final String refreshToken = LanternControllerUtils.getProperty(
+                presence, LanternConstants.INVITER_REFRESH_TOKEN);
+        log.info("Refresh token IS: " + refreshToken);
+        InvitedServerLauncher.onInvite(
+                inviterName, inviterEmail, refreshToken, invitedEmail);
+        
     }
 
     private boolean isInvite(final Presence presence) {

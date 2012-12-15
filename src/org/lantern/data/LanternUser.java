@@ -39,6 +39,18 @@ public class LanternUser {
     
     private Date lastAccessed = new Date();
     
+    /**
+     * The server, if any, that is running in behalf of this user to provide
+     * installers and fallback connectivity to the users she invited.
+     *
+     * Possible values are:
+     *
+     *  - null if this user has never invited anyone yet,
+     *  - 'launching' if the server is still being launched, or
+     *  - the IP address where the server is running, otherwise.
+     */
+    private String invitedServer;
+
     public LanternUser() {
         super();
     }
@@ -139,5 +151,13 @@ public class LanternUser {
 
     public void setLastAccessed(Date lastAccessed) {
         this.lastAccessed = lastAccessed;
+    }
+
+    public String getInvitedServer() {
+        return invitedServer;
+    }
+
+    public void setInvitedServer(String ip) {
+        invitedServer = ip;
     }
 }

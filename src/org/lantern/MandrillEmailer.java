@@ -38,18 +38,20 @@ public class MandrillEmailer {
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
      * @param invitedEmail The email of the person to invite. 
+     * @param address The host address for the download links.
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
     public static void sendInvite(final String inviterName, 
-        final String inviterEmail, final String invitedEmail) throws IOException {
+        final String inviterEmail, final String invitedEmail,
+        final String address) throws IOException {
         log.info("Sending invite to "+invitedEmail);
         if (StringUtils.isBlank(invitedEmail)) {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
         }
         final String json = 
-            mandrillJson(inviterName, inviterEmail, invitedEmail);
+            mandrillJson(inviterName, inviterEmail, invitedEmail, address);
         sendEmail(json);
     }
     
@@ -59,11 +61,13 @@ public class MandrillEmailer {
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
      * @param invitedEmail The email of the person to invite. 
+     * @param address The host address for the download links.
      * @return The generated JSON to send to Mandrill.
      * @throws IOException If there's an error generating the JSON.
      */
     public static String mandrillJson(final String inviterName, 
-        final String inviterEmail, final String invitedEmail) throws IOException {
+        final String inviterEmail, final String invitedEmail,
+        final String address) throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("key", LanternControllerConstants.MANDRILL_API_KEY);
@@ -93,12 +97,19 @@ public class MandrillEmailer {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
         mergeVars.add(mergeVar("ACCESSKEY", LanternControllerConstants.ACCESSKEY));
+
+        //XXX: Catch empty address to support invites by old clients.
+        final String host = (address == null) ? 
+            LanternControllerConstants.FALLBACK_INSTALLER_HOST : address;
+
+        //XXX: These are not the ones I really want to update, but this lets
+        // me test stuff while I can't get my hands on the Mandrill template.
         mergeVars.add(mergeVar("INSTALLER_URL_DMG", 
-            LanternControllerConstants.INSTALLER_URL_DMG));
+            host + LanternControllerConstants.INSTALLER_URL_DMG));
         mergeVars.add(mergeVar("INSTALLER_URL_EXE", 
-            LanternControllerConstants.INSTALLER_URL_EXE));
+            host + LanternControllerConstants.INSTALLER_URL_EXE));
         mergeVars.add(mergeVar("INSTALLER_URL_DEB", 
-            LanternControllerConstants.INSTALLER_URL_DEB));
+            host + LanternControllerConstants.INSTALLER_URL_DEB32));
         msg.put("global_merge_vars", mergeVars);
         
         data.put("message", msg);

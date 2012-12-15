@@ -30,7 +30,7 @@ public class LanternControllerConstants {
     public static final Map<String, String> UPDATE_URLS = 
         new HashMap<String, String>();
     
-    public static final double LATEST_VERSION = 0.96;
+    public static final double LATEST_VERSION = 0.20;
     
     private static final String URL_BASE = 
         "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION;
@@ -43,12 +43,12 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
     }
 
-    
-    // XXX dynamically generate random s3 bucket for this:
-    static final String INSTALLER_BASE_URL = "http://s3.amazonaws.com/lantern/latest.";
-    static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + "dmg";
-    static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + "exe";
-    static final String INSTALLER_URL_DEB = INSTALLER_BASE_URL + "deb";
+    static final String FALLBACK_INSTALLER_HOST = "http://s3.amazonaws.com";
+    static final String INSTALLER_BASE_URL = "/lantern/" + LATEST_VERSION;
+    static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + ".dmg";
+    static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + ".exe";
+    static final String INSTALLER_URL_DEB32 = INSTALLER_BASE_URL + "-32-bit.deb";
+    static final String INSTALLER_URL_DEB64 = INSTALLER_BASE_URL + "-64-bit.deb";
 
     
     /**

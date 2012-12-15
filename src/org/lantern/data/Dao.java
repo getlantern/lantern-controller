@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,10 +11,15 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.lantern.CensoredUtils;
+import org.lantern.InvitedServerLauncher;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.QueryResultIterator;
+//import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Transaction;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
@@ -175,21 +181,47 @@ public class Dao extends DAOBase {
     }
     
 
-    public void addInvite(final String sponsor, final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, sponsor);
-        if (user == null) {
-            log.warning("Could not find sponsor sending invite: " +sponsor);
-            return;
+    public void addInvite(final String inviterEmail, 
+                          final String invitedEmail) throws AlreadyInvitedException{
+    	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    	Transaction txn = datastore.beginTransaction();
+        while (true) {
+            try {
+                final LanternUser inviter = ofy().find(LanternUser.class,
+                        inviterEmail);
+                if (inviter == null) {
+                    log.warning("Could not find sponsor sending invite: " 
+                            + inviterEmail);
+                    return;
+                }
+                LanternUser invited = ofy().find(LanternUser.class,
+                        invitedEmail);
+                if (invited == null) {
+                    log.info("Adding invite to database");
+                    invited = new LanternUser(invitedEmail);
+                    invited.setDegree(inviter.getDegree()+1);
+                    invited.setSponsor(inviterEmail);
+                    ofy().put(invited);
+                    log.info("Finished adding invite...");
+                    txn.commit();
+                    return;
+                } else if (emailsMatch(invited.getSponsor(), inviterEmail)) {
+                    throw new AlreadyInvitedException();
+                }
+            } catch (final ConcurrentModificationException e) {
+            	continue;
+            } finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }          	
+            }
         }
-        log.info("Adding invite to database");
-        final LanternUser invitee = new LanternUser(email);
-        invitee.setDegree(user.getDegree()+1);
-        invitee.setSponsor(sponsor);
-        ofy.put(invitee);
-        log.info("Finished adding invite...");
     }
     
+    //XXX: This could be useful as an utility function elsewhere.
+    private boolean emailsMatch(final String one, final String other) {
+        return one.trim().equalsIgnoreCase(other.trim());
+    }
 
     public void resaveUser(final String email) {
         final Objectify ofy = ofy();
@@ -250,7 +282,7 @@ public class Dao extends DAOBase {
         final LanternUser user = ofy.find(LanternUser.class, invitedEmail);
         if (user != null) {
             final String sponsor = user.getSponsor();
-            return sponsor.equalsIgnoreCase(inviterEmail.trim());
+            return emailsMatch(sponsor, inviterEmail);
         }
         return false;
     }
@@ -416,5 +448,67 @@ public class Dao extends DAOBase {
         }
         invite.setEverSignedIn(true);
         ofy.put(invite);
+    }
+
+    public String getAndSetInvitedServer(final String email) {
+    	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    	Transaction txn = datastore.beginTransaction();
+    	while (true) {
+    		try {
+                LanternUser user = ofy().find(LanternUser.class, email);
+                String old = user.getInvitedServer();
+                if (old == null) {
+                    user.setInvitedServer(InvitedServerLauncher.LAUNCHING);
+                    ofy().put(user);
+                }
+                txn.commit();
+                return old;
+    		} catch (final ConcurrentModificationException e) {
+    			continue;
+    		} finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }
+    		}
+    	}
+    }
+
+    public Collection<String> setInvitedServerAndGetInvitees(
+            final String inviterEmail, final String address) 
+            throws UnknownUserException {
+    	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    	Transaction txn = datastore.beginTransaction();
+    	while (true) {
+            try {
+                LanternUser user = ofy().find(LanternUser.class, inviterEmail);
+                if (user == null) {
+                    throw new UnknownUserException(inviterEmail);
+                }
+                user.setInvitedServer(address);
+                ofy().put(user);
+
+                final Query<LanternUser> instances = 
+                    ofy().query(LanternUser.class)
+                         .filter("sponsor", inviterEmail);
+                final Collection<String> results = new HashSet<String>(20);
+                final QueryResultIterator<LanternUser> iter = instances.iterator();
+                while (iter.hasNext()) {
+                	LanternUser invitee = iter.next();
+                	final String invitedEmail = invitee.getId();
+                    if (!emailsMatch(invitedEmail, inviterEmail)) {
+                    	results.add(invitedEmail);
+                    }
+                }
+                txn.commit();
+                log.info("Returning instances: "+results);
+                return results;
+            } catch (final ConcurrentModificationException e) {
+    			continue;
+    		} finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }
+    		}
+    	}
     }
 }

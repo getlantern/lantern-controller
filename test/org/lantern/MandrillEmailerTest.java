@@ -20,6 +20,8 @@ public class MandrillEmailerTest {
     
     private final String invitedEmail = "";
     
+    private final String address = "";
+    
     @Test
     public void test() throws Exception {
         if (StringUtils.isBlank(inviterName) ||
@@ -28,7 +30,7 @@ public class MandrillEmailerTest {
             return;
         }
         final String payload = MandrillEmailer.mandrillJson(inviterName, 
-            inviterEmail, invitedEmail);
+            inviterEmail, invitedEmail, address);
         final HttpPost post = new HttpPost(
             LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));
