@@ -49,8 +49,8 @@ public class InvitedServerLauncher {
                      + inviterEmail);
             final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
-            map.put("request", "launch-instance");
-            map.put("inviter", inviterEmail);
+            map.put("subject", "launch-instance");
+            map.put("user", inviterEmail);
             map.put("refresh-token", refreshToken);
             final String body = LanternUtils.jsonify(map);
             Message msg = new MessageBuilder()

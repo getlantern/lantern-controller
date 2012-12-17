@@ -42,18 +42,18 @@ public class XmppReceiverServlet extends HttpServlet {
                 log.warning("Got JSON chat with no subject.");
                 return;
             }
-            if (!subject.equals("invited-server-up")) {
+            if (!subject.equals("invsrv-up")) {
                 log.warning("Unrecognized subject: " + subject);
                 return;
             }
             final String inviterEmail = (String)m.get("user");
             if (inviterEmail == null) {
-                log.severe("invited-server-up with no inviter e-mail.");
+                log.severe("invsrv-up with no inviter e-mail.");
                 return;
             }
             final String address = (String)m.get("address");
             if (address == null) {
-                log.severe(inviterEmail + " sent invited-server-up with no address.");
+                log.severe(inviterEmail + " sent invsrv-up with no address.");
                 return;
             }
             InvitedServerLauncher.onInvitedServerUp(inviterEmail, address);
