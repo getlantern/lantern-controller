@@ -102,14 +102,16 @@ public class MandrillEmailer {
         final String host = (address == null) ? 
             LanternControllerConstants.FALLBACK_INSTALLER_HOST : address;
 
+        mergeVars.add(mergeVar("INSTALLER_HOST", host));
+
         //XXX: These are not the ones I really want to update, but this lets
         // me test stuff while I can't get my hands on the Mandrill template.
         mergeVars.add(mergeVar("INSTALLER_URL_DMG", 
-            host + LanternControllerConstants.INSTALLER_URL_DMG));
+            LanternControllerConstants.INSTALLER_URL_DMG));
         mergeVars.add(mergeVar("INSTALLER_URL_EXE", 
-            host + LanternControllerConstants.INSTALLER_URL_EXE));
+            LanternControllerConstants.INSTALLER_URL_EXE));
         mergeVars.add(mergeVar("INSTALLER_URL_DEB", 
-            host + LanternControllerConstants.INSTALLER_URL_DEB32));
+            LanternControllerConstants.INSTALLER_URL_DEB32));
         msg.put("global_merge_vars", mergeVars);
         
         data.put("message", msg);

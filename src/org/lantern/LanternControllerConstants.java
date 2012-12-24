@@ -11,7 +11,7 @@ public class LanternControllerConstants {
     static final String MANDRILL_API_KEY = "secret"; // keep this secret
     static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
-    static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-notification";
+    static final String INVITE_EMAIL_TEMPLATE_NAME = "cloud-invite";
     static final String INVITE_EMAIL_SUBJECT = "You have been invited to Lantern";
     static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
     static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
@@ -30,10 +30,11 @@ public class LanternControllerConstants {
     public static final Map<String, String> UPDATE_URLS = 
         new HashMap<String, String>();
     
-    public static final double LATEST_VERSION = 0.20;
+    public static final double LATEST_VERSION = 0.202;
+    public static final String LATEST_VERSION_STRING = "0.20.2";
     
     private static final String URL_BASE = 
-        "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION;
+        "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION_STRING;
     
     static {
         UPDATE_URLS.put("macos", URL_BASE+".exe");
@@ -44,11 +45,11 @@ public class LanternControllerConstants {
     }
 
     static final String FALLBACK_INSTALLER_HOST = "http://s3.amazonaws.com";
-    static final String INSTALLER_BASE_URL = "/lantern/" + LATEST_VERSION;
+    static final String INSTALLER_BASE_URL = FALLBACK_INSTALLER_HOST + "/lantern-" + LATEST_VERSION_STRING;
     static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + ".dmg";
     static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + ".exe";
-    static final String INSTALLER_URL_DEB32 = INSTALLER_BASE_URL + "-32-bit.deb";
-    static final String INSTALLER_URL_DEB64 = INSTALLER_BASE_URL + "-64-bit.deb";
+    static final String INSTALLER_URL_DEB32 = INSTALLER_BASE_URL + "-32.deb";
+    static final String INSTALLER_URL_DEB64 = INSTALLER_BASE_URL + "-64.deb";
 
     
     /**
@@ -85,7 +86,7 @@ public class LanternControllerConstants {
     //public static final String UPDATE_MESSAGE_KEY = "message";
     
     public static final String UPDATE_MESSAGE = 
-        "Lantern "+LATEST_VERSION+" is now available with many new performance and usability improvements.";
+        "Lantern "+LATEST_VERSION_STRING+" is now available with many new performance and usability improvements.";
     
     public static final String VERSION_KEY = "v";
     
