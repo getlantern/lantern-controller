@@ -209,6 +209,7 @@ public class Dao extends DAOBase {
                     throw new AlreadyInvitedException();
                 }
             } catch (final ConcurrentModificationException e) {
+                log.info("addInvite: Concurrent modification! Retrying transaction...");
             	continue;
             } finally {
                 if (txn.isActive()) {
@@ -464,6 +465,7 @@ public class Dao extends DAOBase {
                 txn.commit();
                 return old;
     		} catch (final ConcurrentModificationException e) {
+                log.info("getAndSetInvitedServer: Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
                 if (txn.isActive()) {
@@ -503,6 +505,7 @@ public class Dao extends DAOBase {
                 log.info("Returning instances: "+results);
                 return results;
             } catch (final ConcurrentModificationException e) {
+                log.info("setInvitedServerAndGetInvites: Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
                 if (txn.isActive()) {
