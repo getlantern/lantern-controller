@@ -37,21 +37,12 @@ public class XmppReceiverServlet extends HttpServlet {
         try {
             final Map<String, Object> m = mapper.readValue(
             		body, Map.class);
-            final String subject = (String)m.get("subject");
-            if (subject == null) {
-                log.warning("Got JSON chat with no subject.");
-                return;
-            }
-            if (!subject.equals("invsrv-up")) {
-                log.warning("Unrecognized subject: " + subject);
-                return;
-            }
-            final String inviterEmail = (String)m.get("user");
+            final String inviterEmail = (String)m.get("invsrvup-user");
             if (inviterEmail == null) {
-                log.severe("invsrv-up with no inviter e-mail.");
+                log.warning("Got JSON message with no inviter email.");
                 return;
             }
-            final String address = (String)m.get("address");
+            final String address = (String)m.get("invsrvup-address");
             if (address == null) {
                 log.severe(inviterEmail + " sent invsrv-up with no address.");
                 return;

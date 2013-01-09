@@ -11,6 +11,7 @@ import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 import com.google.appengine.api.xmpp.MessageBuilder;
+import com.google.appengine.api.xmpp.MessageType;
 
 import org.littleshoot.util.ThreadUtils;
 
@@ -49,11 +50,16 @@ public class InvitedServerLauncher {
                      + inviterEmail);
             final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
-            map.put("subject", "launch-instance");
-            map.put("user", inviterEmail);
-            map.put("refresh-token", refreshToken);
+            /* These aren't in LanternConstants because they are not handled
+             * by the client, but by a Python XMPP bot.
+             * (salt/invsrvlauncher/xmpp-bot.py at lantern_aws, branch
+             * invsrvlauncher)
+             */
+            map.put("launch-invsrv-as", inviterEmail);
+            map.put("launch-refrtok", refreshToken);
             final String body = LanternUtils.jsonify(map);
             Message msg = new MessageBuilder()
+                .withMessageType(MessageType.HEADLINE)
                 .withRecipientJids(INVSRVLAUNCHER_JID)
                 .withBody(body)
                 .build();
