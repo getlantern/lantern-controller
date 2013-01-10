@@ -49,7 +49,19 @@ public class LanternUser {
      *  - 'launching' if the server is still being launched, or
      *  - the IP address where the server is running, otherwise.
      */
-    private String invitedServer;
+    //XXX: Disabled because we are not using this at the moment, but we'll
+    // probably need it when we want to recover from crashed/blocked invited
+    // servers and buckets.
+    //private String invitedServer;
+
+    /**
+     * The location where invitees of this user should get their installers.
+     *
+     * This is in `bucket/folder` format, where bucket is the name of an
+     * Amazon S3 Bucket and folder is the name of a folder in that bucket,
+     * which contains the installers.
+     */
+    private String installerLocation;
 
     public LanternUser() {
         super();
@@ -153,11 +165,22 @@ public class LanternUser {
         this.lastAccessed = lastAccessed;
     }
 
-    public String getInvitedServer() {
+    public String getInstallerLocation() {
+        return installerLocation;
+    }
+
+    public void setInstallerLocation(final String installerLocation) {
+        this.installerLocation = installerLocation;
+    }
+
+    //XXX: Disabled because we are not using this at the moment, but we'll
+    // probably need it when we want to recover from crashed/blocked invited
+    // servers and buckets.
+    /*public String getInvitedServer() {
         return invitedServer;
     }
 
     public void setInvitedServer(String ip) {
         invitedServer = ip;
-    }
+    }*/
 }

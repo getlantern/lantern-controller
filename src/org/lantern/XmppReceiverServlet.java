@@ -2,6 +2,7 @@ package org.lantern;
 
 import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServlet;
@@ -18,6 +19,8 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 
+import org.lantern.data.Dao;
+
 @SuppressWarnings("serial")
 public class XmppReceiverServlet extends HttpServlet {
     
@@ -31,23 +34,52 @@ public class XmppReceiverServlet extends HttpServlet {
         
         final JID fromJid = msg.getFromJid();
         final String body = msg.getBody();
-        log.info("Received "+fromJid+" body:\n"+body);
+        log.info("Received " + fromJid + " body:\n" + body);
 
         final ObjectMapper mapper = new ObjectMapper();
+
         try {
             final Map<String, Object> m = mapper.readValue(
             		body, Map.class);
+
+            /*
+             * DRY Warning: The key strings in these messages are not in
+             * LanternConstants because they are shared with Python code.
+             */
+
+            // Invitee server reports it's up and running.
             final String inviterEmail = (String)m.get("invsrvup-user");
-            if (inviterEmail == null) {
-                log.warning("Got JSON message with no inviter email.");
+            if (inviterEmail != null) {
+                final String installerLocation = (String)m.get("invsrvup-insloc");
+                if (installerLocation == null) {
+                    log.severe(inviterEmail
+                               + " sent invsrv-up with no installer location.");
+                    return;
+                }
+                InvitedServerLauncher.onInvitedServerUp(inviterEmail,
+                                                        installerLocation);
                 return;
             }
-            final String address = (String)m.get("invsrvup-address");
-            if (address == null) {
-                log.severe(inviterEmail + " sent invsrv-up with no address.");
+
+            // New buckets for installers have been created.
+            final List<String> bucketList = (List<String>)m.get("register-buckets");
+            if (bucketList != null) {
+                if (!fromJid.getId().startsWith(
+                        InvitedServerLauncher.INVSRVLAUNCHER_EMAIL)) {
+                    log.warning("Unauthorized user "
+                                + fromJid
+                                + " tried to register buckets.");
+                    return;
+                }
+                final Dao dao = new Dao();
+                for (String bucketName : bucketList) {
+                    dao.addInstallerBucket(bucketName);
+                }
                 return;
             }
-            InvitedServerLauncher.onInvitedServerUp(inviterEmail, address);
+
+            log.warning(fromJid + " sent us an unknown JSON message: " + body);
+
         } catch (final JsonParseException e) {
             log.warning("Error parsing chat: "+e.getMessage());
             return;
@@ -58,6 +90,5 @@ public class XmppReceiverServlet extends HttpServlet {
             log.warning("Error parsing chat: "+e.getMessage());
             return;
         }
-
     }
 }

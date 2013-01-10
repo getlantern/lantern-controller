@@ -57,6 +57,7 @@ public class Dao extends DAOBase {
     static {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
+        ObjectifyService.register(InstallerBucket.class);
         //ObjectifyService.register(Invite.class);
         COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
         COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
@@ -451,21 +452,21 @@ public class Dao extends DAOBase {
         ofy.put(invite);
     }
 
-    public String getAndSetInvitedServer(final String email) {
+    public String getAndSetInstallerLocation(final String email) {
     	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     	Transaction txn = datastore.beginTransaction();
     	while (true) {
     		try {
                 LanternUser user = ofy().find(LanternUser.class, email);
-                String old = user.getInvitedServer();
+                String old = user.getInstallerLocation();
                 if (old == null) {
-                    user.setInvitedServer(InvitedServerLauncher.LAUNCHING);
+                    user.setInstallerLocation(InvitedServerLauncher.PENDING);
                     ofy().put(user);
                 }
                 txn.commit();
                 return old;
     		} catch (final ConcurrentModificationException e) {
-                log.info("getAndSetInvitedServer: Concurrent modification! Retrying transaction...");
+                log.info("Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
                 if (txn.isActive()) {
@@ -475,8 +476,8 @@ public class Dao extends DAOBase {
     	}
     }
 
-    public Collection<String> setInvitedServerAndGetInvitees(
-            final String inviterEmail, final String address) 
+    public Collection<String> setInstallerLocationAndGetInvitees(
+            final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
     	DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     	Transaction txn = datastore.beginTransaction();
@@ -486,10 +487,10 @@ public class Dao extends DAOBase {
                 if (user == null) {
                     throw new UnknownUserException(inviterEmail);
                 }
-                user.setInvitedServer(address);
+                user.setInstallerLocation(installerLocation);
                 ofy().put(user);
 
-                final Query<LanternUser> instances = 
+                final Query<LanternUser> instances =
                     ofy().query(LanternUser.class)
                          .filter("sponsor", inviterEmail);
                 final Collection<String> results = new HashSet<String>(20);
@@ -505,7 +506,7 @@ public class Dao extends DAOBase {
                 log.info("Returning instances: "+results);
                 return results;
             } catch (final ConcurrentModificationException e) {
-                log.info("setInvitedServerAndGetInvites: Concurrent modification! Retrying transaction...");
+                log.info("Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
                 if (txn.isActive()) {
@@ -513,5 +514,37 @@ public class Dao extends DAOBase {
                 }
     		}
     	}
+    }
+
+    public void addInstallerBucket(final String name) {
+        final Objectify ofy = ofy();
+        final InstallerBucket bucket = ofy.find(InstallerBucket.class, name);
+        if (bucket != null) {
+            log.severe("Tried to add existing bucket?");
+            return;
+        }
+        ofy.put(new InstallerBucket(name));
+    }
+
+    public String getAndIncrementLeastUsedBucket() {
+        // Probably not worth wrapping this in a transaction; we don't need
+        // perfect balance, just roughly spread users around.
+        final Objectify ofy = ofy();
+        final Query<InstallerBucket> buckets = ofy.query(InstallerBucket.class);
+        final QueryResultIterator<InstallerBucket> iter = buckets.iterator();
+        if (!iter.hasNext()) {
+            return null;
+        }
+        InstallerBucket leastUsed = iter.next();
+        while (iter.hasNext()) {
+            InstallerBucket next = iter.next();
+            if (next.getInstallerLocations()
+                < leastUsed.getInstallerLocations()) {
+                leastUsed = next;
+            }
+        }
+        leastUsed.setInstallerLocations(leastUsed.getInstallerLocations() + 1);
+        ofy.put(leastUsed);
+        return leastUsed.getId();
     }
 }

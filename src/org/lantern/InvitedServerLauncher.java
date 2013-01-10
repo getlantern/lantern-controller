@@ -19,12 +19,13 @@ import org.lantern.data.AlreadyInvitedException;
 import org.lantern.data.UnknownUserException;
 import org.lantern.data.Dao;
 
+
 public class InvitedServerLauncher {
 
     private static final transient Logger log = 
         Logger.getLogger(InvitedServerLauncher.class.getName());
 
-    public static final String LAUNCHING = "launching";
+    public static final String PENDING = "pending";
     public static final String INVSRVLAUNCHER_EMAIL = "invsrvlauncher@gmail.com";
     private static final JID INVSRVLAUNCHER_JID = new JID(INVSRVLAUNCHER_EMAIL);
 
@@ -43,11 +44,16 @@ public class InvitedServerLauncher {
             return;
         } 
         
-        String invitedServer = dao.getAndSetInvitedServer(inviterEmail);
-        if (invitedServer == null && refreshToken != null) {
+        String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
+        if (installerLocation == null && refreshToken != null) {
             // Ask invsrvlauncher to create an instance for this user.
-            log.info("Ordering launch of new invitedServer for " 
+            log.info("Ordering launch of new invited server for "
                      + inviterEmail);
+            final String bucket = dao.getAndIncrementLeastUsedBucket();
+            if (bucket == null) {
+                log.severe("I have no buckets to store installers for invitees!");
+                return;
+            }
             final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
@@ -57,6 +63,7 @@ public class InvitedServerLauncher {
              */
             map.put("launch-invsrv-as", inviterEmail);
             map.put("launch-refrtok", refreshToken);
+            map.put("launch-bucket", bucket);
             final String body = LanternUtils.jsonify(map);
             Message msg = new MessageBuilder()
                 .withMessageType(MessageType.HEADLINE)
@@ -65,18 +72,18 @@ public class InvitedServerLauncher {
                 .build();
             xmpp.sendMessage(msg);
 
-        } else if (!invitedServer.equals(LAUNCHING)) {
-            sendInvite(inviterName, inviterEmail, invitedEmail, invitedServer);
+        } else if (!installerLocation.equals(PENDING)) {
+            sendInvite(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
     }
 
     public static void onInvitedServerUp(final String inviterEmail, 
-                                         final String address) {
+                                         final String installerLocation) {
         final Dao dao = new Dao();
         try {
-            final Collection<String> invitees = dao.setInvitedServerAndGetInvitees(inviterEmail, address);
+            final Collection<String> invitees = dao.setInstallerLocationAndGetInvitees(inviterEmail, installerLocation);
             for (String invitedEmail : invitees) {
-                sendInvite(inviterEmail, inviterEmail, invitedEmail, address);
+                sendInvite(inviterEmail, inviterEmail, invitedEmail, installerLocation);
             }
         } catch (final UnknownUserException e) {
             log.severe("Server up for unknown inviter " + inviterEmail);
