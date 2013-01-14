@@ -44,14 +44,6 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
     }
 
-    static final String FALLBACK_INSTALLER_HOST = "http://s3.amazonaws.com";
-    static final String INSTALLER_BASE_URL = FALLBACK_INSTALLER_HOST + "/lantern-" + LATEST_VERSION_STRING;
-    static final String INSTALLER_URL_DMG = INSTALLER_BASE_URL + ".dmg";
-    static final String INSTALLER_URL_EXE = INSTALLER_BASE_URL + ".exe";
-    static final String INSTALLER_URL_DEB32 = INSTALLER_BASE_URL + "-32.deb";
-    static final String INSTALLER_URL_DEB64 = INSTALLER_BASE_URL + "-64.deb";
-
-    
     /**
      * This is the local proxy port data is relayed to on the "server" side
      * of P2P connections.

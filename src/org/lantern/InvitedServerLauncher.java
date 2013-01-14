@@ -90,10 +90,22 @@ public class InvitedServerLauncher {
         }
     }
 
-    private static void sendInvite(final String inviterName, final String inviterEmail, final String invitedEmail,
-                            final String invitedServer) {
+    private static void sendInvite(final String inviterName,
+                                   final String inviterEmail,
+                                   final String invitedEmail,
+                                   final String installerLocation) {
+        final String[] parts = installerLocation.split("/");
+        assert parts.length == 2;
+        final String bucket = parts[0];
+        final String folder = parts[1];
+        final String baseUrl =
+            "https://" + bucket + ".s3.amazonaws.com/" + folder
+            + "/lantern-" + LanternControllerConstants.LATEST_VERSION_STRING;
+
         try {
-            MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail, invitedServer);
+            MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
+                baseUrl + ".dmg", baseUrl + ".exe",
+                baseUrl + "-32.deb", baseUrl + "-64.deb");
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
