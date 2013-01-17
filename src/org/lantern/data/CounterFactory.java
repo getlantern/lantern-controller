@@ -26,10 +26,9 @@ public class CounterFactory {
      * Creates the sharded counter if it does not yet exist.
      */
     public ShardedCounter getOrCreateCounter(final String name) {
-        final CounterFactory factory = new CounterFactory();
-        ShardedCounter counter = factory.getCounter(name);
+        ShardedCounter counter = getCounter(name);
         if (counter == null) {
-            counter = factory.createCounter(name);
+            counter = createCounter(name);
             counter.addShard();
         }
         return counter;
