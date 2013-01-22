@@ -1,14 +1,17 @@
 package org.lantern.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.StringUtils;
 import org.lantern.CensoredUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
@@ -57,11 +60,17 @@ public class Dao extends DAOBase {
     private static final String CENSORED_USERS = "CENSORED_USERS";
     private static final String UNCENSORED_USERS = "UNCENSORED_USERS";
     private static final String TOTAL_USERS = "TOTAL_USERS";
-    private static final String ONLINE = "ONLINE";
+    private static final String ONLINE = "online";
+    private static final String NUSERS = "nusers";
+    private static final String NPEERS = "npeers";
+    private static final String EVER = "ever";
+    private static final String GIVE = "give";
+    private static final String GET = "get";
 
     private static final CounterFactory COUNTER_FACTORY = new CounterFactory();
     //private static final Logger LOG = 
     //    Logger.getLogger(Dao.class.getName());
+
     
     static {
         ObjectifyService.register(LanternUser.class);
@@ -117,27 +126,55 @@ public class Dao extends DAOBase {
         return results;
     }
 
-    public void setInstanceAvailable(final String id, final boolean available) {
+    public void setInstanceAvailable(final String id, final boolean available,
+            final String countryCode, final boolean isGiveMode) {
         final Objectify ofy = ofy();
         final LanternInstance instance = ofy.find(LanternInstance.class, id);
-        final boolean originalAvailable;
         if (instance != null) {
             log.info("Setting availability to "+available+" for "+id);
-            originalAvailable = instance.getAvailable();
+
+            final boolean originalAvailable = instance.isAvailable();
+
+            //handle the online counters
+            List<String> counters = new ArrayList<String>();
+            counters.add(ONLINE);
+            String giveStr = isGiveMode ? "give" : "get";
+            counters.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+
             if (originalAvailable && !available) {
                 log.info("Decrementing online count");
-                COUNTER_FACTORY.getCounter(ONLINE).decrement();
+                //fixme: need to consider concurrency here?  -lxs
+                //fixme: also, does the user get saved when the instance gets saved? 
+                //or is @Embedded really what we want?
+                instance.setAvailable(false);
+                if (instance.getUser().anyInstancesSignedIn()) {
+                    counters.add(dottedPath(countryCode, NUSERS, ONLINE));
+                }
+
+                for (String counter : counters) {
+                    COUNTER_FACTORY.getOrCreateCounter(counter).decrement();
+                }
             } else if (!originalAvailable && available) {
                 log.info("Incrementing online count");
-                COUNTER_FACTORY.getCounter(ONLINE).increment();
+                //notice that we check for any signed in before we set this instance
+                //available
+                //see fixme above -lxs
+                if (!instance.getUser().anyInstancesSignedIn()) {
+                    counters.add(dottedPath(countryCode, NUSERS, ONLINE));
+                }
+                instance.setAvailable(true);
+
+                for (String counter : counters) {
+                    COUNTER_FACTORY.getCounter(counter).decrement();
+                }
             }
+
             if (!available) {
                 log.info("Deleting instance");
                 ofy.delete(instance);
                 return;
             }
             
-            instance.setAvailable(available);
             instance.setLastUpdated(new Date());
             final LanternUser user = instance.getUser();
             if (user == null) {
@@ -173,6 +210,10 @@ public class Dao extends DAOBase {
             // about it anyway, presumably. That should generally not happen.
             ofy.put(inst);
         }
+    }
+
+    private String dottedPath(String ... strings) {
+        return StringUtils.join(strings, ".");
     }
 
     public int getInvites(final String userId) {
@@ -288,7 +329,8 @@ public class Dao extends DAOBase {
 
     public boolean updateUser(final String userId, final long directRequests, 
         final long directBytes, final long requestsProxied,
-        final long bytesProxied, final String countryCode) {
+        final long bytesProxied, final String countryCode,
+        final String instanceId, boolean isGiveMode) {
         log.info(
             "Updating user with stats: dr: "+directRequests+" db: "+
             directBytes+" bytesProxied: "+bytesProxied);
@@ -310,34 +352,39 @@ public class Dao extends DAOBase {
         user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
         user.setDirectBytes(user.getDirectBytes() + directBytes);
         user.setDirectRequests(user.getDirectRequests() + directRequests);
-        Set<String> newCodes = user.getCountryCodes();
-        if (newCodes == null) {
-            newCodes = new HashSet<String>();
-        }
-        newCodes.add(countryCode);
-        user.setCountryCodes(newCodes);
-        
+
         // Never store censored users.
         if (!CensoredUtils.isCensored(countryCode)) {
             ofy.put(user);
         }
-        
+
         log.info("Really bumping stats...");
-        COUNTER_FACTORY.getCounter(BYTES_PROXIED).increment(bytesProxied);
-        COUNTER_FACTORY.getCounter(REQUESTS_PROXIED).increment(requestsProxied);
-        COUNTER_FACTORY.getCounter(DIRECT_BYTES).increment(directBytes);
-        COUNTER_FACTORY.getCounter(DIRECT_REQUESTS).increment(directRequests);
+
+        String giveStr = isGiveMode ? "give" : "get";
+        if (!user.instanceIdSeen(instanceId)) {
+            incrementCounter(dottedPath(NPEERS, EVER, giveStr));
+        }
+        if (!user.countrySeen(countryCode)) {
+            incrementCounter(dottedPath(countryCode, NUSERS, EVER, giveStr));
+        }
+        if (!user.instanceIdSeenFromCountry(instanceId, countryCode)) {
+            incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+        }
+
+        incrementCounter(dottedPath(countryCode, BYTES_PROXIED), bytesProxied);
+        incrementCounter(BYTES_PROXIED, bytesProxied);
+        incrementCounter(REQUESTS_PROXIED, requestsProxied);
+        incrementCounter(DIRECT_BYTES, directBytes);
+        incrementCounter(DIRECT_REQUESTS, directRequests);
         if (isUserNew) {
             COUNTER_FACTORY.getCounter(TOTAL_USERS).increment();
             if (CensoredUtils.isCensored(countryCode)) {
-                COUNTER_FACTORY.getCounter(CENSORED_USERS).increment();
+                incrementCounter(CENSORED_USERS);
             } else {
                 log.info("Incrementing uncensored count");
-                COUNTER_FACTORY.getCounter(UNCENSORED_USERS).increment();
+                incrementCounter(UNCENSORED_USERS);
             }
-            final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getOrCreateCounter(countryCode);
-            countryCounter.increment();
+            incrementCounter(countryCode + ".nusers.ever");
             /*
             final ShardedCounter countryBytesCounter = 
                 COUNTER_FACTORY.getOrCreateCounter(countryCode+"-b");
@@ -354,6 +401,14 @@ public class Dao extends DAOBase {
         return isUserNew;
     }
 
+    private void incrementCounter(String counter) {
+        COUNTER_FACTORY.getOrCreateCounter(counter).increment();
+    }
+
+    private void incrementCounter(String counter, long count) {
+        COUNTER_FACTORY.getOrCreateCounter(counter).increment(count);
+    }
+
     public String getStats() {
         final Map<String, Object> data = new HashMap<String, Object>();
         add(data, BYTES_PROXIED);
@@ -367,19 +422,55 @@ public class Dao extends DAOBase {
 
         final Map<String, Object> countriesData = new HashMap<String, Object>();
         for (final String country : countries) {
-            add(countriesData, country);
-        }
+            add(countriesData, dottedPath(country, BYTES_PROXIED));
+            add(countriesData, dottedPath(country, NUSERS, ONLINE));
+            add(countriesData, dottedPath(country, NUSERS, EVER));
 
+            add(countriesData, dottedPath(country, NPEERS, ONLINE, GIVE));
+            add(countriesData, dottedPath(country, NPEERS, ONLINE, GET));
+            add(countriesData, dottedPath(country, NPEERS, EVER, GIVE));
+            add(countriesData, dottedPath(country, NPEERS, EVER, GET));
+        }
+        data.put("countries", countriesData);
         return LanternUtils.jsonify(data);
     }
 
+    /**
+     * Take a counter name of the form a.b.c...y.z, and add it to data
+     * recursively, so that data will contain an entry for a which contains an
+     * entry for b, and so on down to the last level. The value of the counter
+     * with the full dotted name will be put into z entry of the y container.
+     * 
+     * @param data
+     * @param key a counter name in the form a.b.c...
+     */
     private void add(final Map<String, Object> data, final String key) {
-        final ShardedCounter counter = COUNTER_FACTORY.getCounter(key);
-        if (counter == null) {
-            add(data, key, 0);
+        add(data, key, key);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void add(final Map<String, Object> data, final String key, final String counterName) {
+        if (key.contains(".")) {
+            String[] parts = key.split("\\.", 2);
+            String containerName = parts[0];
+            String remainder = parts[1];
+            Object existing = data.get(containerName);
+            Map<String, Object> container;
+            if (existing == null) {
+                container = new HashMap<String, Object>();
+                data.put(containerName, container);
+            } else {
+                container = (Map<String, Object>) existing;
+            }
+            add(container, remainder, counterName);
         } else {
-            final long count = counter.getCount();
-            add(data, key, count);
+            final ShardedCounter counter = COUNTER_FACTORY.getCounter(counterName);
+            if (counter == null) {
+                add(data, key, 0);
+            } else {
+                final long count = counter.getCount();
+                add(data, key, count);
+            }
         }
     }
 

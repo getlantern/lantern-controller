@@ -34,6 +34,10 @@ public class LanternInstance {
 
     public void setAvailable(final boolean available) {
         this.available = available;
+        if (available)
+            user.incrementInstancesSignedIn();
+        else
+            user.decrementInstancesSignedIn();
     }
     
     public boolean getAvailable() {
