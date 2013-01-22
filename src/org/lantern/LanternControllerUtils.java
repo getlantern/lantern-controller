@@ -54,4 +54,8 @@ public class LanternControllerUtils {
     public static String jidToInstanceId(final String fullId) {
         return fullId.split("/", 2)[1];
     }
+
+    public static String instanceId(Presence presence) {
+        return jidToInstanceId(presence.getFromJid().getId());
+    }
 }
