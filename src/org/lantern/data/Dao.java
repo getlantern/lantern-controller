@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -17,7 +15,6 @@ import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -76,14 +73,26 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
         //ObjectifyService.register(Invite.class);
-        COUNTER_FACTORY.getOrCreateCounter(BYTES_PROXIED);
-        COUNTER_FACTORY.getOrCreateCounter(REQUESTS_PROXIED);
-        COUNTER_FACTORY.getOrCreateCounter(DIRECT_BYTES);
-        COUNTER_FACTORY.getOrCreateCounter(DIRECT_REQUESTS);
-        COUNTER_FACTORY.getOrCreateCounter(CENSORED_USERS);
-        COUNTER_FACTORY.getOrCreateCounter(UNCENSORED_USERS);
-        COUNTER_FACTORY.getOrCreateCounter(TOTAL_USERS);
-        COUNTER_FACTORY.getOrCreateCounter(ONLINE);
+        COUNTER_FACTORY.getCounterUnchecked(BYTES_PROXIED);
+        COUNTER_FACTORY.getCounterUnchecked(REQUESTS_PROXIED);
+        COUNTER_FACTORY.getCounterUnchecked(DIRECT_BYTES);
+        COUNTER_FACTORY.getCounterUnchecked(DIRECT_REQUESTS);
+        COUNTER_FACTORY.getCounterUnchecked(CENSORED_USERS);
+        COUNTER_FACTORY.getCounterUnchecked(UNCENSORED_USERS);
+        COUNTER_FACTORY.getCounterUnchecked(TOTAL_USERS);
+        COUNTER_FACTORY.getCounterUnchecked(ONLINE);
+
+        for (final String country : countries) {
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, BYTES_PROXIED));
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NUSERS, ONLINE));
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NUSERS, EVER));
+
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, ONLINE, GIVE));
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, ONLINE, GET));
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, EVER, GIVE));
+            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, EVER, GET));
+        }
+
     }
     
     public boolean exists(final String id) {
@@ -152,7 +161,7 @@ public class Dao extends DAOBase {
                 }
 
                 for (String counter : counters) {
-                    COUNTER_FACTORY.getOrCreateCounter(counter).decrement();
+                    COUNTER_FACTORY.getCounterUnchecked(counter).decrement();
                 }
             } else if (!originalAvailable && available) {
                 log.info("Incrementing online count");
@@ -212,7 +221,7 @@ public class Dao extends DAOBase {
         }
     }
 
-    private String dottedPath(String ... strings) {
+    private static String dottedPath(String ... strings) {
         return StringUtils.join(strings, ".");
     }
 
@@ -387,14 +396,14 @@ public class Dao extends DAOBase {
             incrementCounter(countryCode + ".nusers.ever");
             /*
             final ShardedCounter countryBytesCounter = 
-                COUNTER_FACTORY.getOrCreateCounter(countryCode+"-b");
+                COUNTER_FACTORY.getCounterUnchecked(countryCode+"-b");
             countryBytesCounter.increment(bytesProxied);
             final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+                COUNTER_FACTORY.getCounterUnchecked(countryCode);
             final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+                COUNTER_FACTORY.getCounterUnchecked(countryCode);
             final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getOrCreateCounter(countryCode);
+                COUNTER_FACTORY.getCounterUnchecked(countryCode);
                 */
         }
         
@@ -402,11 +411,11 @@ public class Dao extends DAOBase {
     }
 
     private void incrementCounter(String counter) {
-        COUNTER_FACTORY.getOrCreateCounter(counter).increment();
+        COUNTER_FACTORY.getCounterUnchecked(counter).increment();
     }
 
     private void incrementCounter(String counter, long count) {
-        COUNTER_FACTORY.getOrCreateCounter(counter).increment(count);
+        COUNTER_FACTORY.getCounterUnchecked(counter).increment(count);
     }
 
     public String getStats() {

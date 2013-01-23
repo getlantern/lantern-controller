@@ -43,6 +43,10 @@ public class CounterFactory {
         }
     }
     
+    public ShardedCounter getCounterUnchecked(final String name) {
+        final ShardedCounter counter = new ShardedCounter(name);
+        return counter;
+    }
 
     public ShardedCounter createCounter(final String name) {
         final ShardedCounter counter = new ShardedCounter(name);
