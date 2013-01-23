@@ -50,7 +50,6 @@ public class ShardedCounter {
         try {
             cache = CacheManager.getInstance().getCacheFactory()
                     .createCache(Collections.emptyMap());
-            cache.clear();
         } catch (final CacheException e) {
             e.printStackTrace();
         }
