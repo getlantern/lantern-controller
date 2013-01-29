@@ -27,7 +27,7 @@ public class RemoteApi {
         
         try {
             final Dao dao = new Dao();
-            dao.resaveUser("adamfisk@gmail.com");
+            /* Trigger your hacks here.*/
         } finally {
             installer.uninstall();
         }
