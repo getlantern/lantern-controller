@@ -254,42 +254,7 @@ public class Dao extends DAOBase {
         ofy.put(invitee);
         log.info("Finished adding invite...");
     }
-    
-
-    public void resaveUser(final String email) {
-        final Objectify ofy = ofy();
-        Iterable<Key<LanternUser>> allKeys = ofy.query(LanternUser.class).fetchKeys();
-        final Map<Key<LanternUser>, LanternUser> all = ofy.get(allKeys);
-        final Set<Entry<Key<LanternUser>, LanternUser>> entries = all.entrySet();
-        for (final Entry<Key<LanternUser>, LanternUser> entry : entries) {
-            final LanternUser user = entry.getValue();
-            System.out.println(user.getSponsor());
-            user.setDegree(1);
-            user.setEverSignedIn(true);
-            user.setInvites(0);
-            user.setSponsor("adamfisk@gmail.com");
-            ofy.put(user);
-        }
         
-        /*
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, email);
-        
-        if (user == null) {
-            log.warning("Could not find sponsor sending invite: " +user);
-            return;
-        }
-        //invitee.setDegree(user.getDegree()+1);
-        //invitee.setSponsor(sponsor);
-        user.setDegree(1);
-        user.setEverSignedIn(true);
-        user.setInvites(5);
-        user.setSponsor("adamfisk@gmail");
-        ofy.put(user);
-        log.info("Finished adding invite...");
-        */
-    }
-    
     public void decrementInvites(final String userId) {
         log.info("Decrementing invites for "+userId);
         final Objectify ofy = ofy();
