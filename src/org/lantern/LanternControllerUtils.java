@@ -1,6 +1,14 @@
 package org.lantern;
 
-import org.apache.commons.lang.StringUtils;
+import java.io.StringReader;
+import java.util.Iterator;
+
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
+import org.xml.sax.InputSource;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.Presence;
@@ -31,12 +39,39 @@ public class LanternControllerUtils {
     
     public static String getProperty(final Presence presence, 
         final String key) {
-        final String start = 
-            "<property><name>" + key + 
-            "</name><value type=\"string\">";
-        final String stanza = presence.getStanza();
-        return StringUtils.substringBetween(stanza, start, 
-            "</value></property>");
+        try {
+            StringReader reader = new StringReader(presence.getStanza());
+            InputSource inputSource = new InputSource(reader);
+            XPath xpath = XPathFactory.newInstance().newXPath();
+
+            NamespaceContext ctx = new NamespaceContext() {
+                public String getNamespaceURI(String prefix) {
+                    String uri;
+                    if (prefix.equals("ns1"))
+                        uri = "http://www.jivesoftware.com/xmlns/xmpp/properties";
+                    else
+                        uri = "jabber:client";
+                    return uri;
+                }
+
+                @Override
+                public String getPrefix(String arg0) {
+                    return null;
+                }
+
+                @Override
+                public Iterator<?> getPrefixes(String arg0) {
+                    return null;
+                }
+
+            };
+            xpath.setNamespaceContext(ctx);
+            String expression = "/jabber:client:presence/ns1:properties/ns1:property[ns1:name='"
+                    + key + "']/ns1:value";
+            return xpath.evaluate(expression, inputSource);
+        } catch (XPathExpressionException e) {
+            throw new RuntimeException(e);
+        }
     }
     
     public static String instanceId(final Message message) {

@@ -142,12 +142,13 @@ public class XmppAvailableServlet extends HttpServlet {
     private boolean isInvite(final Presence presence) {
         final String invite = LanternControllerUtils.getProperty(presence, 
             LanternConstants.INVITED_EMAIL);
-        if (invite != null) {
+        boolean isInvite = !StringUtils.isBlank(invite);
+        if (isInvite) {
             log.info("FOUND INVITE IN: "+presence.getStanza());
         } else {
             log.info("NO INVITE IN: "+presence.getStanza());
         }
-        return invite != null;
+        return isInvite;
     }
 
     private String userId(final Presence presence, final boolean isGiveMode) {

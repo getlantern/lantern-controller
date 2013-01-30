@@ -10,12 +10,11 @@ import com.google.appengine.tools.remoteapi.RemoteApiOptions;
 public class RemoteApi {
 
     public static void main(final String[] args) {
-        //String username = System.console().readLine("username: ");
-        //String password = 
-        //    new String(System.console().readPassword("password: "));
+        String username = System.console().readLine("username: ");
+        String password = new String(System.console().readPassword("password: "));
         RemoteApiOptions options = new RemoteApiOptions()
             .server("lanternctrl.appspot.com", 443)
-            .credentials("", "");
+            .credentials(username, password);
         RemoteApiInstaller installer = new RemoteApiInstaller();
         try {
             installer.install(options);
