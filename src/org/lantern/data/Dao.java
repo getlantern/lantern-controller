@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
@@ -15,6 +17,7 @@ import org.lantern.LanternControllerConstants;
 import org.lantern.LanternUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -63,8 +66,9 @@ public class Dao extends DAOBase {
     private static final String EVER = "ever";
     private static final String GIVE = "give";
     private static final String GET = "get";
+    private static final String BPS = "bps";
 
-    private static final CounterFactory COUNTER_FACTORY = new CounterFactory();
+    private static final ShardedCounterManager COUNTER_MANAGER = new ShardedCounterManager();
     //private static final Logger LOG = 
     //    Logger.getLogger(Dao.class.getName());
 
@@ -72,27 +76,39 @@ public class Dao extends DAOBase {
     static {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
-        //ObjectifyService.register(Invite.class);
-        COUNTER_FACTORY.getCounterUnchecked(BYTES_PROXIED);
-        COUNTER_FACTORY.getCounterUnchecked(REQUESTS_PROXIED);
-        COUNTER_FACTORY.getCounterUnchecked(DIRECT_BYTES);
-        COUNTER_FACTORY.getCounterUnchecked(DIRECT_REQUESTS);
-        COUNTER_FACTORY.getCounterUnchecked(CENSORED_USERS);
-        COUNTER_FACTORY.getCounterUnchecked(UNCENSORED_USERS);
-        COUNTER_FACTORY.getCounterUnchecked(TOTAL_USERS);
-        COUNTER_FACTORY.getCounterUnchecked(ONLINE);
+
+        // Precreate all counters, if necessary
+        ArrayList<String> counters = new ArrayList<String>();
+        ArrayList<String> timedCounters = new ArrayList<String>();
+
+        counters.add(BYTES_PROXIED);
+        counters.add(REQUESTS_PROXIED);
+        counters.add(DIRECT_BYTES);
+        counters.add(DIRECT_REQUESTS);
+        counters.add(CENSORED_USERS);
+        counters.add(UNCENSORED_USERS);
+        counters.add(TOTAL_USERS);
+        counters.add(ONLINE);
+        counters.add(dottedPath(NPEERS, ONLINE, GIVE));
+        counters.add(dottedPath(NPEERS, ONLINE, GET));
+        counters.add(dottedPath(NPEERS, EVER, GIVE));
+        counters.add(dottedPath(NPEERS, EVER, GET));
+
+        timedCounters.add(BPS);
 
         for (final String country : countries) {
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, BYTES_PROXIED));
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NUSERS, ONLINE));
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NUSERS, EVER));
+            counters.add(dottedPath(country, BYTES_PROXIED));
+            counters.add(dottedPath(country, NUSERS, ONLINE));
+            counters.add(dottedPath(country, NUSERS, EVER));
 
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, ONLINE, GIVE));
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, ONLINE, GET));
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, EVER, GIVE));
-            COUNTER_FACTORY.getCounterUnchecked(dottedPath(country, NPEERS, EVER, GET));
+            counters.add(dottedPath(country, NPEERS, ONLINE, GIVE));
+            counters.add(dottedPath(country, NPEERS, ONLINE, GET));
+            counters.add(dottedPath(country, NPEERS, EVER, GIVE));
+            counters.add(dottedPath(country, NPEERS, EVER, GET));
+            timedCounters.add(dottedPath(country, BPS));
         }
-
+        COUNTER_MANAGER.initCounters(counters, false);
+        COUNTER_MANAGER.initCounters(timedCounters, true);
     }
     
     public boolean exists(final String id) {
@@ -153,8 +169,14 @@ public class Dao extends DAOBase {
             //handle the online counters
             List<String> counters = new ArrayList<String>();
             counters.add(ONLINE);
-            String giveStr = isGiveMode ? "give" : "get";
+            String giveStr = isGiveMode ? GIVE : GET;
             counters.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+
+            //and the ever-seen
+            if (!instance.getSeenFromCountry(countryCode)) {
+                instance.addSeenFromCountry(countryCode);
+                incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+            }
 
             if (originalAvailable && !available) {
                 log.info("Decrementing online count");
@@ -167,7 +189,7 @@ public class Dao extends DAOBase {
                 }
 
                 for (String counter : counters) {
-                    COUNTER_FACTORY.getCounterUnchecked(counter).decrement();
+                    COUNTER_MANAGER.decrement(counter);
                 }
             } else if (!originalAvailable && available) {
                 log.info("Incrementing online count");
@@ -180,7 +202,7 @@ public class Dao extends DAOBase {
                 instance.setAvailable(true);
 
                 for (String counter : counters) {
-                    COUNTER_FACTORY.getCounter(counter).decrement();
+                    COUNTER_MANAGER.decrement(counter);
                 }
             }
 
@@ -219,7 +241,7 @@ public class Dao extends DAOBase {
             inst.setUser(lu);
             if (available) {
                 log.info("DAO incrementing online count");
-                COUNTER_FACTORY.getCounter(ONLINE).increment();
+                COUNTER_MANAGER.increment(ONLINE);
             }
             // We don't decrement if it's not available since we never knew
             // about it anyway, presumably. That should generally not happen.
@@ -259,8 +281,42 @@ public class Dao extends DAOBase {
         invitee.setSponsor(sponsor);
         ofy.put(invitee);
         log.info("Finished adding invite...");
-    }
+    }    
+
+    public void resaveUser(final String email) {
+        final Objectify ofy = ofy();
+        Iterable<Key<LanternUser>> allKeys = ofy.query(LanternUser.class).fetchKeys();
+        final Map<Key<LanternUser>, LanternUser> all = ofy.get(allKeys);
+        final Set<Entry<Key<LanternUser>, LanternUser>> entries = all.entrySet();
+        for (final Entry<Key<LanternUser>, LanternUser> entry : entries) {
+            final LanternUser user = entry.getValue();
+            System.out.println(user.getSponsor());
+            user.setDegree(1);
+            user.setEverSignedIn(true);
+            user.setInvites(0);
+            user.setSponsor("adamfisk@gmail.com");
+            ofy.put(user);
+        }
+
+        /*
+        final Objectify ofy = ofy();
+        final LanternUser user = ofy.find(LanternUser.class, email);
         
+        if (user == null) {
+            log.warning("Could not find sponsor sending invite: " +user);
+            return;
+        }
+        //invitee.setDegree(user.getDegree()+1);
+        //invitee.setSponsor(sponsor);
+        user.setDegree(1);
+        user.setEverSignedIn(true);
+        user.setInvites(5);
+        user.setSponsor("adamfisk@gmail");
+        ofy.put(user);
+        log.info("Finished adding invite...");
+        */
+    }
+    
     public void decrementInvites(final String userId) {
         log.info("Decrementing invites for "+userId);
         final Objectify ofy = ofy();
@@ -318,14 +374,12 @@ public class Dao extends DAOBase {
         final Objectify ofy = ofy();
         final LanternUser user;
         final LanternUser tempUser = ofy.find(LanternUser.class, userId);
-        final boolean isUserNew;
-        if (tempUser == null) {
-            log.info("Could not find user: "+userId);
+        final boolean isUserNew = tempUser == null;
+        if (isUserNew) {
+            log.info("Could not find user!!");
             user = new LanternUser(userId);
-            isUserNew = true;
         } else {
             user = tempUser;
-            isUserNew = false;
         }
 
         user.setBytesProxied(user.getBytesProxied() + bytesProxied);
@@ -343,15 +397,17 @@ public class Dao extends DAOBase {
 
         log.info("Really bumping stats...");
 
-        String giveStr = isGiveMode ? "give" : "get";
+        String giveStr = isGiveMode ? GIVE : GET;
         if (!user.instanceIdSeen(instanceId)) {
             incrementCounter(dottedPath(NPEERS, EVER, giveStr));
         }
         if (!user.countrySeen(countryCode)) {
-            incrementCounter(dottedPath(countryCode, NUSERS, EVER, giveStr));
+            incrementCounter(dottedPath(countryCode, NUSERS, EVER));
         }
-        if (!user.instanceIdSeenFromCountry(instanceId, countryCode)) {
-            incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+
+        // Never store censored users.
+        if (!CensoredUtils.isCensored(countryCode)) {
+            ofy.put(user);
         }
 
         incrementCounter(dottedPath(countryCode, BYTES_PROXIED), bytesProxied);
@@ -360,7 +416,7 @@ public class Dao extends DAOBase {
         incrementCounter(DIRECT_BYTES, directBytes);
         incrementCounter(DIRECT_REQUESTS, directRequests);
         if (isUserNew) {
-            COUNTER_FACTORY.getCounter(TOTAL_USERS).increment();
+            COUNTER_MANAGER.increment(TOTAL_USERS);
             if (CensoredUtils.isCensored(countryCode)) {
                 incrementCounter(CENSORED_USERS);
             } else {
@@ -368,28 +424,17 @@ public class Dao extends DAOBase {
                 incrementCounter(UNCENSORED_USERS);
             }
             incrementCounter(countryCode + ".nusers.ever");
-            /*
-            final ShardedCounter countryBytesCounter = 
-                COUNTER_FACTORY.getCounterUnchecked(countryCode+"-b");
-            countryBytesCounter.increment(bytesProxied);
-            final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getCounterUnchecked(countryCode);
-            final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getCounterUnchecked(countryCode);
-            final ShardedCounter countryCounter = 
-                COUNTER_FACTORY.getCounterUnchecked(countryCode);
-                */
         }
         
         return isUserNew;
     }
 
     private void incrementCounter(String counter) {
-        COUNTER_FACTORY.getCounterUnchecked(counter).increment();
+        COUNTER_MANAGER.increment(counter);
     }
 
     private void incrementCounter(String counter, long count) {
-        COUNTER_FACTORY.getCounterUnchecked(counter).increment(count);
+        COUNTER_MANAGER.increment(counter, count);
     }
 
     public String getStats() {
@@ -401,10 +446,11 @@ public class Dao extends DAOBase {
         add(data, CENSORED_USERS);
         add(data, UNCENSORED_USERS);
         add(data, ONLINE);
-
+        add(data, BPS);
 
         final Map<String, Object> countriesData = new HashMap<String, Object>();
         for (final String country : countries) {
+            add(countriesData, dottedPath(country, BPS));
             add(countriesData, dottedPath(country, BYTES_PROXIED));
             add(countriesData, dottedPath(country, NUSERS, ONLINE));
             add(countriesData, dottedPath(country, NUSERS, EVER));
@@ -447,18 +493,9 @@ public class Dao extends DAOBase {
             }
             add(container, remainder, counterName);
         } else {
-            final ShardedCounter counter = COUNTER_FACTORY.getCounter(counterName);
-            if (counter == null) {
-                add(data, key, 0);
-            } else {
-                final long count = counter.getCount();
-                add(data, key, count);
-            }
+            long count = COUNTER_MANAGER.getCount(counterName);
+            data.put(key.toLowerCase(), count);
         }
-    }
-
-    private void add(final Map<String, Object> data, final String key, final long val) {
-        data.put(key.toLowerCase(), val);
     }
 
     public void whitelistAdditions(final Collection<String> whitelistAdditions,
