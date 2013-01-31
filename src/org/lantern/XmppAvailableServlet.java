@@ -84,12 +84,14 @@ public class XmppAvailableServlet extends HttpServlet {
         final boolean isGiveMode = 
             LanternControllerUtils.isLantern(presence.getFromJid().getId());
         final String userId = userId(presence, isGiveMode);
-        processClientInfo(presence, stats, responseJson, userId);
+        final String instanceId = LanternControllerUtils.instanceId(presence);
+        processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
         if (isGiveMode) {
             processGiveMode(presence, xmpp, available, responseJson);
         } else {
             processGetMode(presence, xmpp, available, responseJson);
         }
+
         if (!dao.isEverSignedIn(from)) {
             MailChimpApi.addSubscriber(from);
             dao.signedIn(from);
@@ -186,13 +188,6 @@ public class XmppAvailableServlet extends HttpServlet {
         } else {
             log.info("Not sending servers to unavailable clients");
         }
-        
-        // The following will delete the instance if it's not available,
-        // updating all counters.
-        log.info("Setting instance availability");
-        final String instanceId = presence.getFromJid().getId();
-        final Dao dao = new Dao();
-        dao.setInstanceAvailable(instanceId, available);
     }
     
 
@@ -205,7 +200,8 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence, 
         final String stats, final Map<String, Object> responseJson, 
-        final String idToUse) {
+        final String idToUse, String instanceId, boolean isGiveMode,
+        boolean available) {
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;
@@ -217,8 +213,13 @@ public class XmppAvailableServlet extends HttpServlet {
             final Stats data = mapper.readValue(stats, Stats.class);
             addUpdateData(data, responseJson);
             addInviteData(presence, responseJson);
+            // The following will delete the instance if it's not available,
+            // updating all counters.
+            log.info("Setting instance availability");
+            final Dao dao = new Dao();
+            dao.setInstanceAvailable(instanceId, available, data.getCountryCode(), isGiveMode);
             try {
-                updateStats(data, idToUse);
+                updateStats(data, idToUse, instanceId, isGiveMode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -287,7 +288,8 @@ public class XmppAvailableServlet extends HttpServlet {
                 presence.getFromJid()) == SendResponse.Status.SUCCESS);
     }
 
-    private void updateStats(final Stats data, final String idToUse) {
+    private void updateStats(final Stats data, final String idToUse,
+            final String instanceId, boolean isGiveMode) {
         
         final Dao dao = new Dao();
         
@@ -295,7 +297,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.updateUser(idToUse, data.getDirectRequests(), 
             data.getDirectBytes(), data.getTotalProxiedRequests(), 
             data.getTotalBytesProxied(), 
-            data.getCountryCode());
+            data.getCountryCode(), instanceId, isGiveMode);
     }
 
     private void addServers(final String jid, 

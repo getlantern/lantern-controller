@@ -50,7 +50,6 @@ public class ShardedCounter {
         try {
             cache = CacheManager.getInstance().getCacheFactory()
                     .createCache(Collections.emptyMap());
-            cache.clear();
         } catch (final CacheException e) {
             e.printStackTrace();
         }
@@ -65,6 +64,7 @@ public class ShardedCounter {
         Query thisCounterQuery = pm.newQuery(DatastoreCounter.class,
                 "counterName == nameParam");
         thisCounterQuery.declareParameters("String nameParam");
+        @SuppressWarnings("unchecked")
         List<DatastoreCounter> counter = 
             (List<DatastoreCounter>) thisCounterQuery.execute(counterName);
         if (counter != null && !counter.isEmpty()) {
@@ -101,6 +101,7 @@ public class ShardedCounter {
             Query shardsQuery = pm.newQuery(DatastoreCounterShard.class,
                     "counterName == nameParam");
             shardsQuery.declareParameters("String nameParam");
+            @SuppressWarnings("unchecked")
             List<DatastoreCounterShard> shards = 
                 (List<DatastoreCounterShard>) shardsQuery.execute(counterName);
             if (shards != null && !shards.isEmpty()) {
@@ -221,6 +222,7 @@ public class ShardedCounter {
                 "counterName == nameParam && shardNumber == numParam");
             randomShardQuery.declareParameters(
                 "String nameParam, int numParam");
+            @SuppressWarnings("unchecked")
             final List<DatastoreCounterShard> shards = 
                 (List<DatastoreCounterShard>) randomShardQuery.execute(
                     counterName, shardNum);
