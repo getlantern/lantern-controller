@@ -16,7 +16,9 @@ public class LanternInstance {
     
     @Embedded private LanternUser user;
 
-    private HashSet<String> countries;
+    private HashSet<String> countries = new HashSet<String>();
+
+    private String currentCountry;
     
     public LanternInstance() {
         super();
@@ -69,5 +71,13 @@ public class LanternInstance {
 
     public boolean getSeenFromCountry(String countryCode) {
         return countries.contains(countryCode);
+    }
+
+    public String getCurrentCountry() {
+        return currentCountry;
+    }
+
+    public void setCurrentCountry(String currentCountry) {
+        this.currentCountry = currentCountry;
     }
 }

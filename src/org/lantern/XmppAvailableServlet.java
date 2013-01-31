@@ -81,11 +81,12 @@ public class XmppAvailableServlet extends HttpServlet {
         
         //log.info("Stats JSON: "+stats);
         
-        final boolean isGiveMode = 
-            LanternControllerUtils.isLantern(presence.getFromJid().getId());
+        String modeString = LanternControllerUtils.getProperty(presence, "mode");
+        final boolean isGiveMode = "give".equals(modeString);
         final String userId = userId(presence, isGiveMode);
         final String instanceId = LanternControllerUtils.instanceId(presence);
         processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
+
         if (isGiveMode) {
             processGiveMode(presence, xmpp, available, responseJson);
         } else {
@@ -203,6 +204,13 @@ public class XmppAvailableServlet extends HttpServlet {
         final String stats, final Map<String, Object> responseJson, 
         final String idToUse, String instanceId, boolean isGiveMode,
         boolean available) {
+        if (!available) {
+            //just handle logout
+            Dao dao = new Dao();
+            dao.setInstanceUnavailable(instanceId, isGiveMode);
+            return;
+        }
+
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;
@@ -218,7 +226,7 @@ public class XmppAvailableServlet extends HttpServlet {
             // updating all counters.
             log.info("Setting instance availability");
             final Dao dao = new Dao();
-            dao.setInstanceAvailable(instanceId, available, data.getCountryCode(), isGiveMode);
+            dao.setInstanceAvailable(instanceId, data.getCountryCode(), isGiveMode);
             try {
                 updateStats(data, idToUse, instanceId, isGiveMode);
             } catch (final UnsupportedOperationException e) {
