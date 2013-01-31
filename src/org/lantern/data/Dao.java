@@ -67,6 +67,12 @@ public class Dao extends DAOBase {
         final LanternUser user = ofy.find(LanternUser.class, id);
         return user != null;
     }
+    
+    public Collection<LanternUser> getAllUsers() {
+        final Objectify ofy = ObjectifyService.begin();
+        final Query<LanternUser> users = ofy.query(LanternUser.class);
+        return users.list();
+    }
 
     public Collection<String> getInstances() {
         final Objectify ofy = ObjectifyService.begin();
@@ -84,7 +90,7 @@ public class Dao extends DAOBase {
         final Date cutoff = 
             new Date(now - LanternControllerConstants.UPDATE_TIME_MILLIS);
         
-        log.info("Cutoff data is: "+cutoff);
+        log.info("Cutoff date is: "+cutoff);
         final Query<LanternInstance> instances = 
             ofy.query(LanternInstance.class).filter("available", true).filter("lastUpdated >", cutoff);
         //final Query<LanternInstance> instances = 
@@ -283,7 +289,7 @@ public class Dao extends DAOBase {
         final LanternUser tempUser = ofy.find(LanternUser.class, userId);
         final boolean isUserNew;
         if (tempUser == null) {
-            log.info("Could not find user!!");
+            log.info("Could not find user: "+userId);
             user = new LanternUser(userId);
             isUserNew = true;
         } else {
@@ -303,6 +309,9 @@ public class Dao extends DAOBase {
         user.setCountryCodes(newCodes);
         
         // Never store censored users.
+        
+        // This is tricky because it means we'll never learn of new users. 
+        // Create the user with a dummy or hashed ID?
         if (!CensoredUtils.isCensored(countryCode)) {
             ofy.put(user);
         }
