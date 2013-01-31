@@ -244,7 +244,15 @@ public class XmppAvailableServlet extends HttpServlet {
     private void addUpdateData(final Stats data,
         final Map<String, Object> responseJson) {
         try {
-            final double version = Double.parseDouble(data.getVersion());
+            final String majorMinor;
+            final String rawVersion = data.getVersion();
+            if (rawVersion.contains("-")) {
+                majorMinor = StringUtils.substringBeforeLast(rawVersion, ".");
+            } else {
+                majorMinor = rawVersion;
+            }
+            final double version = Double.parseDouble(majorMinor);
+            
             //final double version = 0.001; //just for testing!!
             if (LanternControllerConstants.LATEST_VERSION > version) {
                 final Map<String,Object> updateJson = 
