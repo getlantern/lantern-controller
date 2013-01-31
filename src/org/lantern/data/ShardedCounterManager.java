@@ -1,9 +1,9 @@
 package org.lantern.data;
 
-/* 
- * This is loosely based on Google's sharded counter code, but 
- * unlike Google's code, it is affordable to run. 
- * 
+/*
+ * This is loosely based on Google's sharded counter code, but
+ * unlike Google's code, it is affordable to run.
+ *
  * Copyright (c) 2009 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +50,8 @@ public class ShardedCounterManager {
     // how many updates (on average) we record for each shard
     public static final int SHARD_UPDATE_RATIO = 10;
 
+    private static final Long BASELINE = Long.MAX_VALUE / 2;
+
     CounterGroup group;
 
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
@@ -70,7 +72,7 @@ public class ShardedCounterManager {
 
     /**
      * Increment a counter by count.
-     * 
+     *
      * @param name
      * @param count
      */
@@ -84,7 +86,7 @@ public class ShardedCounterManager {
         int shardCount = counter.getShardCount();
         Random generator = new Random();
         int shardNum = generator.nextInt(shardCount);
-        cache.increment("count" + name + "-" + shardNum, count, 0L);
+        cache.increment("count" + name + "-" + shardNum, count, BASELINE);
 
         int updateCounter = generator.nextInt(shardCount * SHARD_UPDATE_RATIO);
         if (updateCounter == 0) {
@@ -158,16 +160,16 @@ public class ShardedCounterManager {
 
     public long getNewCountDestructive(String counterName) {
         loadGroup();
-        DatastoreCounter counter = group.getCounter(counterName);
-        int shardCount = counter.getShardCount();
+        final DatastoreCounter counter = group.getCounter(counterName);
+        final int shardCount = counter.getShardCount();
         long total = 0;
-        ArrayList<String> keys = new ArrayList<String>();
+        final ArrayList<String> keys = new ArrayList<String>();
         for (int shardNum = 0; shardNum < shardCount; ++shardNum) {
             keys.add("count" + counterName + "-" + shardNum);
         }
         Map<String, Object> results = cache.getAll(keys);
         for (Map.Entry<String, Object> result : results.entrySet()) {
-            total += (Long) result.getValue();
+            total += (Long) result.getValue() - BASELINE;
             cache.delete(result.getKey());
         }
         return total;
