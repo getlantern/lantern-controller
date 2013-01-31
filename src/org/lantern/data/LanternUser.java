@@ -173,4 +173,8 @@ public class LanternUser {
     public boolean countrySeen(String countryCode) {
         return countryCodes.contains(countryCode);
     }
+
+    public Set<String> getCountryCodes() {
+        return countryCodes;
+    }
 }
