@@ -50,6 +50,10 @@ public class ShardedCounterManager {
     // how many updates (on average) we record for each shard
     public static final int SHARD_UPDATE_RATIO = 10;
 
+    // This slightly insane constant is required because
+    // MemcacheService.increment with negative count will never go below zero.
+    // But sometimes we want to go below zero -- for instance, the change in
+    // number of users online (this minute) might be negative.
     private static final Long BASELINE = Long.MAX_VALUE / 2;
 
     CounterGroup group;
