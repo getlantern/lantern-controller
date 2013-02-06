@@ -161,8 +161,7 @@ public class Dao extends DAOBase {
         if (instance != null) {
             log.info("Setting availability to true for "+id);
 
-            final boolean originalAvailable = instance.isAvailable();
-            if (!originalAvailable) {
+            if (!instance.isAvailable()) {
                 log.info("Incrementing online count");
 
                 //handle the online counters
@@ -187,22 +186,12 @@ public class Dao extends DAOBase {
 
             instance.setLastUpdated(new Date());
             LanternUser user = instance.getUser();
-            //fixme: is this necessary? -lxs
-            if (user == null) {
-                user = ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
-                if (user == null) {
-                    log.severe("No user?");
-                } else {
-                    instance.setUser(user);
-                }
-            }
+            assert(user != null);
         } else {
             log.info("Could not find instance!!");
             LanternUser user =
                 ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
-            if (user == null) {
-                user = new LanternUser(id);
-            }
+            assert(user != null);
 
             instance = new LanternInstance(id);
             instance.setUser(user);
@@ -511,8 +500,7 @@ public class Dao extends DAOBase {
     public void setInstanceUnavailable(String instanceId, boolean isGiveMode) {
         final Objectify ofy = ofy();
         final LanternInstance instance = ofy.find(LanternInstance.class, instanceId);
-        final boolean originalAvailable = instance.isAvailable();
-        if (originalAvailable) {
+        if (instance.isAvailable()) {
             log.info("Decrementing online count");
             instance.setAvailable(false);
 
