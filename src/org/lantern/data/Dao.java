@@ -52,7 +52,7 @@ public class Dao extends DAOBase {
             "ZM", "ZW"
     };
 
-    private static final String BYTES_PROXIED = "PROXIED_BYTES";
+    private static final String BYTES_EVER = "bytesEver";
     private static final String REQUESTS_PROXIED = "PROXIED_REQUESTS";
     private static final String DIRECT_BYTES = "DIRECT_BYTES";
     private static final String DIRECT_REQUESTS = "DIRECT_REQUESTS";
@@ -66,6 +66,7 @@ public class Dao extends DAOBase {
     private static final String GIVE = "give";
     private static final String GET = "get";
     private static final String BPS = "bps";
+    private static final String GLOBAL = "global";
 
     private static final ShardedCounterManager COUNTER_MANAGER = new ShardedCounterManager();
 
@@ -77,23 +78,25 @@ public class Dao extends DAOBase {
         ArrayList<String> counters = new ArrayList<String>();
         ArrayList<String> timedCounters = new ArrayList<String>();
 
-        counters.add(BYTES_PROXIED);
+        counters.add(dottedPath(GLOBAL, BYTES_EVER));
         counters.add(REQUESTS_PROXIED);
         counters.add(DIRECT_BYTES);
         counters.add(DIRECT_REQUESTS);
         counters.add(CENSORED_USERS);
         counters.add(UNCENSORED_USERS);
         counters.add(TOTAL_USERS);
-        counters.add(ONLINE);
-        counters.add(dottedPath(NPEERS, ONLINE, GIVE));
-        counters.add(dottedPath(NPEERS, ONLINE, GET));
-        counters.add(dottedPath(NPEERS, EVER, GIVE));
-        counters.add(dottedPath(NPEERS, EVER, GET));
 
-        timedCounters.add(BPS);
+        counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
+        counters.add(dottedPath(GLOBAL, NUSERS, EVER));
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GET));
+        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GIVE));
+        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GET));
+
+        timedCounters.add(dottedPath(GLOBAL,BPS));
 
         for (final String country : countries) {
-            counters.add(dottedPath(country, BYTES_PROXIED));
+            counters.add(dottedPath(country, BYTES_EVER));
             counters.add(dottedPath(country, NUSERS, ONLINE));
             counters.add(dottedPath(country, NUSERS, EVER));
 
@@ -165,13 +168,14 @@ public class Dao extends DAOBase {
                 log.info("Incrementing online count");
 
                 //handle the online counters
-                incrementCounter(ONLINE);
+                incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
                 incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
                 //and the ever-seen
                 if (!instance.getSeenFromCountry(countryCode)) {
                     instance.addSeenFromCountry(countryCode);
                     incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+                    incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
                 }
                 instance.setCurrentCountry(countryCode);
 
@@ -179,6 +183,7 @@ public class Dao extends DAOBase {
                 //available
                 if (!instance.getUser().anyInstancesSignedIn()) {
                     incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
+                    incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
                 }
                 instance.setAvailable(true);
 
@@ -198,7 +203,9 @@ public class Dao extends DAOBase {
             instance.setAvailable(true);
             instance.setCurrentCountry(countryCode);
             log.info("DAO incrementing online count");
-            incrementCounter(ONLINE);
+            incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
+            incrementCounter(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+            incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
             incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
             incrementCounter(dottedPath(countryCode, NPEERS, ONLINE));
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
@@ -363,8 +370,12 @@ public class Dao extends DAOBase {
             ofy.put(user);
         }
 
-        incrementCounter(dottedPath(countryCode, BYTES_PROXIED), bytesProxied);
-        incrementCounter(BYTES_PROXIED, bytesProxied);
+        incrementCounter(dottedPath(countryCode, BYTES_EVER), bytesProxied);
+        incrementCounter(dottedPath(GLOBAL, BYTES_EVER), bytesProxied);
+
+        incrementCounter(dottedPath(countryCode, BPS), bytesProxied);
+        incrementCounter(dottedPath(GLOBAL, BPS), bytesProxied);
+
         incrementCounter(REQUESTS_PROXIED, requestsProxied);
         incrementCounter(DIRECT_BYTES, directBytes);
         incrementCounter(DIRECT_REQUESTS, directRequests);
@@ -392,19 +403,25 @@ public class Dao extends DAOBase {
 
     public String getStats() {
         final Map<String, Object> data = new HashMap<String, Object>();
-        add(data, BYTES_PROXIED);
         add(data, REQUESTS_PROXIED);
         add(data, DIRECT_BYTES);
         add(data, DIRECT_REQUESTS);
         add(data, CENSORED_USERS);
         add(data, UNCENSORED_USERS);
-        add(data, ONLINE);
-        add(data, BPS);
+        add(data, dottedPath(GLOBAL, NUSERS, ONLINE));
+        add(data, dottedPath(GLOBAL, NUSERS, EVER));
+
+        add(data, dottedPath(GLOBAL, NPEERS, EVER, GIVE));
+        add(data, dottedPath(GLOBAL, NPEERS, EVER, GET));
+        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
+        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GET));
+        add(data, dottedPath(GLOBAL, BPS));
+        add(data, dottedPath(GLOBAL, BYTES_EVER));
 
         final Map<String, Object> countriesData = new HashMap<String, Object>();
         for (final String country : countries) {
             add(countriesData, dottedPath(country, BPS));
-            add(countriesData, dottedPath(country, BYTES_PROXIED));
+            add(countriesData, dottedPath(country, BYTES_EVER));
             add(countriesData, dottedPath(country, NUSERS, ONLINE));
             add(countriesData, dottedPath(country, NUSERS, EVER));
 
@@ -447,7 +464,7 @@ public class Dao extends DAOBase {
             add(container, remainder, counterName);
         } else {
             long count = COUNTER_MANAGER.getCount(counterName);
-            data.put(key.toLowerCase(), count);
+            data.put(key, count);
         }
     }
 
@@ -507,10 +524,11 @@ public class Dao extends DAOBase {
             String giveStr = isGiveMode ? GIVE : GET;
             String countryCode = instance.getCurrentCountry();
 
-            COUNTER_MANAGER.decrement(ONLINE);
+            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
             if (instance.getUser().anyInstancesSignedIn()) {
+                COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NUSERS, ONLINE));
                 COUNTER_MANAGER.decrement(dottedPath(countryCode, NUSERS, ONLINE));
             }
 
