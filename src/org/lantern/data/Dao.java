@@ -317,6 +317,7 @@ public class Dao extends DAOBase {
             log.warning("Could not find sponsor sending invite: " +user);
             return;
         }
+
         //invitee.setDegree(user.getDegree()+1);
         //invitee.setSponsor(sponsor);
         user.setDegree(1);
