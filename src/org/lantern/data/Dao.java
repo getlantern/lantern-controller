@@ -10,10 +10,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
+import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
-import org.lantern.LanternUtils;
+import org.lantern.LanternXmppUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.googlecode.objectify.Key;
@@ -195,7 +196,7 @@ public class Dao extends DAOBase {
         } else {
             log.info("Could not find instance!!");
             LanternUser user =
-                ofy.find(LanternUser.class, LanternUtils.jidToUserId(id));
+                ofy.find(LanternUser.class, LanternXmppUtils.jidToUserId(id));
             assert(user != null);
 
             instance = new LanternInstance(id);
@@ -431,7 +432,7 @@ public class Dao extends DAOBase {
             add(countriesData, dottedPath(country, NPEERS, EVER, GET));
         }
         data.put("countries", countriesData);
-        return LanternUtils.jsonify(data);
+        return JsonUtils.jsonify(data);
     }
 
     /**
