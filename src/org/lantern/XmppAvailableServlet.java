@@ -24,7 +24,6 @@ import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.MessageType;
 import com.google.appengine.api.xmpp.Presence;
-import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 
@@ -66,8 +65,9 @@ public class XmppAvailableServlet extends HttpServlet {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            processInvite(presence);
-            dao.decrementInvites(from);
+            if (processInvite(presence)) {
+                dao.decrementInvites(from);
+            }
             return;
         }
         final boolean available = presence.isAvailable();
@@ -101,7 +101,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private final class AlreadyInvitedException extends Exception {}
 
-    private void processInvite(final Presence presence) {
+    private boolean processInvite(final Presence presence) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
         final String inviterEmail = LanternControllerUtils.userId(presence);
         final String inviterName;
@@ -119,18 +119,18 @@ public class XmppAvailableServlet extends HttpServlet {
 
         if (StringUtils.isBlank(invitedEmail)) {
             log.severe("No e-mail to invite?");
-            return;
+            return false;
         }
         if (invitedEmail.contains("public.talk.google.com")) {
             // This is a google talk JID and not an e-mail address -- we
             // can't use it!.
             log.info("Can't e-mail a Google Talk ID. Ignoring.");
-            return;
+            return false;
         }
         final Dao dao = new Dao();
         if (dao.alreadyInvitedBy(inviterEmail, invitedEmail)) {
             log.info("Not re-sending e-mail since user is already invited");
-            return;
+            return false;
         }
         dao.addInvite(inviterEmail, invitedEmail);
         try {
@@ -138,6 +138,7 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
+        return true;
     }
 
     private boolean isInvite(final Presence presence) {
@@ -291,7 +292,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 presence.getFromJid()).withBody(serversBody).withMessageType(
                     MessageType.HEADLINE).build();
         log.info("Sending response:\n"+responseJson.toString());
-        final SendResponse status = xmpp.sendMessage(msg);
+        xmpp.sendMessage(msg);
     }
 
     private void updateStats(final Stats data, final String idToUse,
