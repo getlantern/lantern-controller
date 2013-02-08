@@ -256,6 +256,9 @@ public class Dao extends DAOBase {
         log.info("Adding invite to database");
         final LanternUser invitee = new LanternUser(email);
         invitee.setDegree(user.getDegree()+1);
+        if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
+            invitee.setInvites(2);
+        }
         invitee.setSponsor(sponsor);
         ofy.put(invitee);
         log.info("Finished adding invite...");
