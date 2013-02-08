@@ -2,7 +2,7 @@ package org.lantern;
 
 import java.util.Collection;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.Sets;
 
@@ -13,34 +13,34 @@ public class CensoredUtils {
      */
     private static final Collection<String> CENSORED =
         Sets.newHashSet(
-            // Asia 
+            // Asia
                 /*
             "CN",
             "VN",
             "MM",
-            //Mideast: 
-            "IR", 
-            "BH", 
-            "YE", 
-            "SA", 
+            //Mideast:
+            "IR",
+            "BH",
+            "YE",
+            "SA",
             "SY",
-            //Eurasia: 
-            "UZ", 
+            //Eurasia:
+            "UZ",
             "TM",
-            //Africa: 
-            "ET", 
+            //Africa:
+            "ET",
             "ER",
-            // LAC: 
+            // LAC:
             "CU"
             */
             // These are taken from ONI data -- 11/16 - any country containing
             // any type of censorship considered "substantial" or "pervasive".
-            "AE", "AM", "BH", "CN", "CU", "ET", "ID", "IR", "KP", "KR", 
-            "KW", "MM", "OM", "PK", "PS", "QA", "SA", "SD", "SY", "TM", "UZ", 
+            "AE", "AM", "BH", "CN", "CU", "ET", "ID", "IR", "KP", "KR",
+            "KW", "MM", "OM", "PK", "PS", "QA", "SA", "SD", "SY", "TM", "UZ",
             "VN", "YE"
             );
 
-    
+
     public static boolean isCensored(final String countryCode) {
         if (StringUtils.isBlank(countryCode)) {
             return true;
