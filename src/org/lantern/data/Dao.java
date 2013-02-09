@@ -253,12 +253,21 @@ public class Dao extends DAOBase {
             log.warning("Could not find sponsor sending invite: " +sponsor);
             return;
         }
-        log.info("Adding invite to database");
-        final LanternUser invitee = new LanternUser(email);
-        invitee.setDegree(user.getDegree()+1);
-        invitee.setSponsor(sponsor);
-        ofy.put(invitee);
-        log.info("Finished adding invite...");
+        LanternUser invitee = ofy.find(LanternUser.class, email);
+        if (invitee == null) {
+            log.info("Adding invite to database");
+            invitee = new LanternUser(email);
+
+            invitee.setDegree(user.getDegree()+1);
+            if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
+                invitee.setInvites(2);
+            }
+            invitee.setSponsor(sponsor);
+            ofy.put(invitee);
+            log.info("Finished adding invite...");
+        } else {
+            log.info("Invitee exists, nothing to do here");
+        }
     }
         
     public void decrementInvites(final String userId) {
