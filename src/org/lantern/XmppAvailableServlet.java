@@ -65,9 +65,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            if (processInvite(presence)) {
-                dao.decrementInvites(from);
-            }
+            processInvite(presence);
             return;
         }
         final boolean available = presence.isAvailable();
@@ -101,7 +99,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private final class AlreadyInvitedException extends Exception {}
 
-    private boolean processInvite(final Presence presence) {
+    private void processInvite(final Presence presence) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
         final String inviterEmail = LanternControllerUtils.userId(presence);
         final String inviterName;
@@ -119,18 +117,18 @@ public class XmppAvailableServlet extends HttpServlet {
 
         if (StringUtils.isBlank(invitedEmail)) {
             log.severe("No e-mail to invite?");
-            return false;
+            return;
         }
         if (invitedEmail.contains("public.talk.google.com")) {
             // This is a google talk JID and not an e-mail address -- we
             // can't use it!.
             log.info("Can't e-mail a Google Talk ID. Ignoring.");
-            return false;
+            return;
         }
         final Dao dao = new Dao();
         if (dao.alreadyInvitedBy(inviterEmail, invitedEmail)) {
             log.info("Not re-sending e-mail since user is already invited");
-            return false;
+            return;
         }
         dao.addInvite(inviterEmail, invitedEmail);
         try {
@@ -138,7 +136,7 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
-        return true;
+        dao.decrementInvites(inviterEmail);
     }
 
     private boolean isInvite(final Presence presence) {
