@@ -17,7 +17,6 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
-import org.littleshoot.util.Sha1Hasher;
 import org.littleshoot.util.ThreadUtils;
 
 import com.google.appengine.api.xmpp.Message;
@@ -81,7 +80,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
         String modeString = LanternControllerUtils.getProperty(presence, "mode");
         final boolean isGiveMode = "give".equals(modeString);
-        final String userId = userId(presence, isGiveMode);
+        final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);
         processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
 
@@ -151,17 +150,6 @@ public class XmppAvailableServlet extends HttpServlet {
         return isInvite;
     }
 
-    private String userId(final Presence presence, final boolean isGiveMode) {
-        if (isGiveMode) {
-            return LanternControllerUtils.userId(presence);
-        } else {
-            // We hash the ID of users in censored countries and just count them
-            // as a generic number. We only look at the JID at all to avoid
-            // over counting.
-            return Sha1Hasher.hash(LanternControllerUtils.userId(presence));
-        }
-    }
-
     private void processGetMode(final Presence presence,
         final XMPPService xmpp, final boolean available,
         final Map<String, Object> responseJson) {
@@ -206,7 +194,7 @@ public class XmppAvailableServlet extends HttpServlet {
         if (!available) {
             //just handle logout
             Dao dao = new Dao();
-            dao.setInstanceUnavailable(instanceId, isGiveMode);
+            dao.setInstanceUnavailable(idToUse, instanceId, isGiveMode);
             return;
         }
 

@@ -13,7 +13,7 @@ public class LanternInstance {
 
     private Date lastUpdated = new Date();
 
-    private LanternUser user;
+    private String user;
 
     private final HashSet<String> countries = new HashSet<String>();
 
@@ -38,21 +38,17 @@ public class LanternInstance {
 
     public void setAvailable(final boolean available) {
         this.available = available;
-        if (available)
-            user.incrementInstancesSignedIn();
-        else
-            user.decrementInstancesSignedIn();
     }
 
     public boolean getAvailable() {
         return this.available;
     }
 
-    public void setUser(final LanternUser user) {
+    public void setUser(final String user) {
         this.user = user;
     }
 
-    public LanternUser getUser() {
+    public String getUser() {
         return user;
     }
 
