@@ -14,7 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
-import org.lantern.LanternXmppUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.googlecode.objectify.Key;
@@ -157,7 +156,7 @@ public class Dao extends DAOBase {
         return results;
     }
 
-    public void setInstanceAvailable(final String id,
+    public void setInstanceAvailable(String userId, final String id,
             final String countryCode, final boolean isGiveMode) {
         final Objectify ofy = ofy();
         LanternInstance instance = ofy.find(LanternInstance.class, id);
@@ -196,9 +195,9 @@ public class Dao extends DAOBase {
         } else {
             log.info("Could not find instance!!");
             LanternUser user =
-                ofy.find(LanternUser.class, LanternXmppUtils.jidToUserId(id));
-            assert(user != null);
+                ofy.find(LanternUser.class, userId);
 
+            assert(user != null);
             instance = new LanternInstance(id);
             instance.setUser(user);
             instance.setAvailable(true);
