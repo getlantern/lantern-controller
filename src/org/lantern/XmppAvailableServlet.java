@@ -225,7 +225,7 @@ public class XmppAvailableServlet extends HttpServlet {
             // updating all counters.
             log.info("Setting instance availability");
             final Dao dao = new Dao();
-            dao.setInstanceAvailable(instanceId, data.getCountryCode(), isGiveMode);
+            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), isGiveMode);
             try {
                 updateStats(data, idToUse, instanceId, isGiveMode);
             } catch (final UnsupportedOperationException e) {
