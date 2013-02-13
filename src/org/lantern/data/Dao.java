@@ -161,9 +161,10 @@ public class Dao extends DAOBase {
         final Objectify ofy = ofy();
         LanternInstance instance = ofy.find(LanternInstance.class, id);
         String giveStr = isGiveMode ? GIVE : GET;
+        LanternUser user;
         if (instance != null) {
             log.info("Setting availability to true for "+id);
-
+            user = ofy.find(LanternUser.class, instance.getUser());
             if (!instance.isAvailable()) {
                 log.info("Incrementing online count");
 
@@ -181,25 +182,24 @@ public class Dao extends DAOBase {
 
                 //notice that we check for any signed in before we set this instance
                 //available
-                if (!instance.getUser().anyInstancesSignedIn()) {
+                if (!user.anyInstancesSignedIn()) {
                     incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
                     incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
                 }
                 instance.setAvailable(true);
+                user.incrementInstancesSignedIn();
 
             }
 
             instance.setLastUpdated(new Date());
-            LanternUser user = instance.getUser();
             assert(user != null);
         } else {
             log.info("Could not find instance!!");
-            LanternUser user =
-                ofy.find(LanternUser.class, userId);
+            user = ofy.find(LanternUser.class, userId);
 
             assert(user != null);
             instance = new LanternInstance(id);
-            instance.setUser(user);
+            instance.setUser(userId);
             instance.setAvailable(true);
             instance.setCurrentCountry(countryCode);
             log.info("DAO incrementing online count");
@@ -211,7 +211,7 @@ public class Dao extends DAOBase {
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
         }
         ofy.put(instance);
-        ofy.put(instance.getUser());
+        ofy.put(user);
         log.info("Finished updating datastore...");
     }
 
@@ -528,12 +528,14 @@ public class Dao extends DAOBase {
         ofy.put(invite);
     }
 
-    public void setInstanceUnavailable(String instanceId, boolean isGiveMode) {
+    public void setInstanceUnavailable(String userId, String instanceId, boolean isGiveMode) {
         final Objectify ofy = ofy();
         final LanternInstance instance = ofy.find(LanternInstance.class, instanceId);
         if (instance.isAvailable()) {
             log.info("Decrementing online count");
             instance.setAvailable(false);
+            LanternUser user = ofy.find(LanternUser.class, userId);
+            user.decrementInstancesSignedIn();
 
             String giveStr = isGiveMode ? GIVE : GET;
             String countryCode = instance.getCurrentCountry();
@@ -541,13 +543,13 @@ public class Dao extends DAOBase {
             COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
-            if (instance.getUser().anyInstancesSignedIn()) {
+            if (user.anyInstancesSignedIn()) {
                 COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NUSERS, ONLINE));
                 COUNTER_MANAGER.decrement(dottedPath(countryCode, NUSERS, ONLINE));
             }
 
             ofy.put(instance);
-            ofy.put(instance.getUser());
+            ofy.put(user);
         }
     }
 }
