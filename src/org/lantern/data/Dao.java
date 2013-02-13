@@ -242,6 +242,9 @@ public class Dao extends DAOBase {
             log.warning("Could not find sponsor sending invite: " +sponsor);
             return;
         }
+        Invite invite = new Invite (sponsor, email);
+        ofy.put(invite);
+
         LanternUser invitee = ofy.find(LanternUser.class, email);
         if (invitee == null) {
             log.info("Adding invite to database");
@@ -315,12 +318,14 @@ public class Dao extends DAOBase {
     public boolean alreadyInvitedBy(final String inviterEmail,
         final String invitedEmail) {
         final Objectify ofy = ofy();
+        String key = Invite.makeKey(inviterEmail, invitedEmail);
+        final Invite invite = ofy.find(Invite.class, key);
+        if (invite != null) return true;
+
+        //handle legacy invites
         final LanternUser user = ofy.find(LanternUser.class, invitedEmail);
-        if (user != null) {
-            final String sponsor = user.getSponsor();
-            return sponsor.equalsIgnoreCase(inviterEmail.trim());
-        }
-        return false;
+        final String sponsor = user.getSponsor();
+        return sponsor.equalsIgnoreCase(inviterEmail.trim());
     }
 
     public boolean isInvited(final String email) {
