@@ -207,7 +207,7 @@ public class Dao extends DAOBase {
             incrementCounter(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
             incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
-            incrementCounter(dottedPath(countryCode, NPEERS, ONLINE));
+            incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
         }
         ofy.put(instance);
