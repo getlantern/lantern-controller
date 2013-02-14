@@ -323,6 +323,7 @@ public class Dao extends DAOBase {
 
         //handle legacy invites
         final LanternUser user = ofy.find(LanternUser.class, invitedEmail);
+        if (user == null) return false;
         final String sponsor = user.getSponsor();
         return sponsor.equalsIgnoreCase(inviterEmail.trim());
     }
