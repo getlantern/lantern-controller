@@ -73,6 +73,7 @@ public class Dao extends DAOBase {
     static {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
+        ObjectifyService.register(Invite.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
