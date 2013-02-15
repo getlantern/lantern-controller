@@ -189,11 +189,13 @@ public class Dao extends DAOBase {
                     incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
                 }
                 instance.setAvailable(true);
+                instance.setLastUpdated(new Date());
                 user.incrementInstancesSignedIn();
-
+                ofy.put(instance);
+                ofy.put(user);
+                log.info("Finished updating datastore...");
             }
 
-            instance.setLastUpdated(new Date());
             assert(user != null);
         } else {
             log.info("Could not find instance!!");
@@ -211,10 +213,11 @@ public class Dao extends DAOBase {
             incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
             incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+            ofy.put(instance);
+            ofy.put(user);
+            log.info("Finished updating datastore...");
         }
-        ofy.put(instance);
-        ofy.put(user);
-        log.info("Finished updating datastore...");
+
     }
 
     private static String dottedPath(String ... strings) {
