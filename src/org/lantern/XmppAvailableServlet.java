@@ -125,11 +125,11 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         final Dao dao = new Dao();
-        if (dao.alreadyInvitedBy(inviterEmail, invitedEmail)) {
-            log.info("Not re-sending e-mail since user is already invited");
+
+        if (!dao.addInvite(inviterEmail, invitedEmail)) {
+            log.info("Not adding an invite");
             return;
         }
-        dao.addInvite(inviterEmail, invitedEmail);
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail);
         } catch (final IOException e) {

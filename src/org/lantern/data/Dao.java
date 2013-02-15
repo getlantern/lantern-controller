@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -235,31 +236,59 @@ public class Dao extends DAOBase {
     }
 
 
-    public void addInvite(final String sponsor, final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, sponsor);
-        if (user == null) {
-            log.warning("Could not find sponsor sending invite: " +sponsor);
-            return;
-        }
-        Invite invite = new Invite (sponsor, email);
-        ofy.put(invite);
-
-        LanternUser invitee = ofy.find(LanternUser.class, email);
-        if (invitee == null) {
-            log.info("Adding invite to database");
-            invitee = new LanternUser(email);
-
-            invitee.setDegree(user.getDegree()+1);
-            if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
-                invitee.setInvites(2);
+    /**
+     * Returns true if the invite was added, false if it wasn't (because it
+     * already existed, for instance)
+     *
+     * @param sponsor
+     * @param email
+     * @return
+     */
+    public boolean addInvite(final String sponsor, final String email) {
+        final Objectify ofy = ObjectifyService.beginTransaction();
+        try {
+            final LanternUser user = ofy.find(LanternUser.class, sponsor);
+            if (user == null) {
+                log.warning("Could not find sponsor sending invite: " + sponsor);
+                return false;
             }
-            invitee.setSponsor(sponsor);
-            ofy.put(invitee);
-            log.info("Finished adding invite...");
-        } else {
-            log.info("Invitee exists, nothing to do here");
+
+            if (alreadyInvitedBy(ofy, sponsor, email)) {
+                log.info("Not re-sending e-mail since user is already invited");
+                return false;
+            }
+
+            Invite invite = new Invite(sponsor, email);
+            ofy.put(invite);
+
+            LanternUser invitee = ofy.find(LanternUser.class, email);
+            if (invitee == null) {
+                log.info("Adding invite to database");
+                invitee = new LanternUser(email);
+
+                invitee.setDegree(user.getDegree() + 1);
+                if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
+                    invitee.setInvites(2);
+                }
+                invitee.setSponsor(sponsor);
+                ofy.put(invitee);
+                log.info("Finished adding invite...");
+            } else {
+                log.info("Invitee exists, nothing to do here");
+            }
+
+            ofy.getTxn().commit();
+        } catch (Exception e) {
+            log.log(Level.WARNING, "txn commit failed in some way {}", e);
         }
+        finally {
+            if (ofy.getTxn().isActive()) {
+                ofy.getTxn().rollback();
+                return false;
+            }
+        }
+        log.info("Done committing");
+        return true;
     }
 
     public void resaveUser(final String email) {
@@ -315,9 +344,8 @@ public class Dao extends DAOBase {
         ofy.put(user);
     }
 
-    public boolean alreadyInvitedBy(final String inviterEmail,
+    public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,
         final String invitedEmail) {
-        final Objectify ofy = ofy();
         String key = Invite.makeKey(inviterEmail, invitedEmail);
         final Invite invite = ofy.find(Invite.class, key);
         if (invite != null) return true;
