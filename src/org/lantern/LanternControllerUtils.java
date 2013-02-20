@@ -1,10 +1,12 @@
 package org.lantern;
 
 import java.io.StringReader;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
@@ -17,6 +19,8 @@ import com.google.appengine.api.xmpp.Presence;
  * Utility methods for the controller.
  */
 public class LanternControllerUtils {
+
+    private static HashMap<String, XPathExpression> xPathCache = new HashMap<String, XPathExpression>();
 
     /**
      * Returns whether or not the given ID is a lantern ID.
@@ -42,41 +46,58 @@ public class LanternControllerUtils {
         try {
             StringReader reader = new StringReader(presence.getStanza());
             InputSource inputSource = new InputSource(reader);
-            XPath xpath = XPathFactory.newInstance().newXPath();
-
-            NamespaceContext ctx = new NamespaceContext() {
-                @Override
-                public String getNamespaceURI(String prefix) {
-                    String uri;
-                    if (prefix.equals("ns1"))
-                        uri = "http://www.jivesoftware.com/xmlns/xmpp/properties";
-                    else if (prefix.equals("jabber:client"))
-                        uri = "jabber:client";
-                    else {
-                        uri = null;
-                        assert false : "Unexpected prefix";
-                    }
-                    return uri;
-                }
-
-                @Override
-                public String getPrefix(String arg0) {
-                    return null;
-                }
-
-                @Override
-                public Iterator<?> getPrefixes(String arg0) {
-                    return null;
-                }
-
-            };
-            xpath.setNamespaceContext(ctx);
-            String expression = "/jabber:client:presence/ns1:properties/ns1:property[ns1:name='"
-                    + key + "']/ns1:value/text()";
-            return xpath.evaluate(expression, inputSource);
+            XPathExpression compiled = getXPathExpression(key);
+            return compiled.evaluate(inputSource);
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static XPathExpression getXPathExpression(final String key)
+            throws XPathExpressionException {
+
+        XPathExpression expression = xPathCache.get(key);
+        if (expression != null) {
+            return expression;
+        }
+
+        XPath xpath = XPathFactory.newInstance().newXPath();
+
+        NamespaceContext ctx = new NamespaceContext() {
+            @Override
+            public String getNamespaceURI(String prefix) {
+                String uri;
+                if (prefix.equals("ns1"))
+                    uri = "http://www.jivesoftware.com/xmlns/xmpp/properties";
+                else if (prefix.equals("jabber:client"))
+                    uri = "jabber:client";
+                else {
+                    uri = null;
+                    assert false : "Unexpected prefix";
+                }
+                return uri;
+            }
+
+            @Override
+            public String getPrefix(String arg0) {
+                //required by interface but unused
+                return null;
+            }
+
+            @Override
+            public Iterator<?> getPrefixes(String arg0) {
+                //required by interface but unused
+                return null;
+            }
+
+        };
+        xpath.setNamespaceContext(ctx);
+        String expressionStr = "/jabber:client:presence/ns1:properties/ns1:property[ns1:name='"
+                + key + "']/ns1:value/text()";
+        XPathExpression compiled = xpath.compile(expressionStr);
+
+        xPathCache.put(key, compiled);
+        return compiled;
     }
 
     public static String instanceId(final Message message) {
