@@ -19,7 +19,7 @@ public class CounterGroup implements Serializable {
     private Long id;
 
     @Persistent(serialized = "true")
-    private HashMap<String, DatastoreCounter> counters;
+    private final HashMap<String, DatastoreCounter> counters;
 
     public CounterGroup() {
         counters = new HashMap<String, DatastoreCounter>();
@@ -30,7 +30,7 @@ public class CounterGroup implements Serializable {
     }
 
     public Map<String, DatastoreCounter> getAllCounters() {
-        return counters;
+        return new HashMap<String, DatastoreCounter>(counters);
     }
 
     public void addCounter(DatastoreCounter counter) {
