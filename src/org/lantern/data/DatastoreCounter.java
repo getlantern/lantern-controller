@@ -1,6 +1,6 @@
 package org.lantern.data;
 
-/* 
+/*
  * This is loosely based on Google's sharded counter code, but
  * unlike Google's code, it is affordable to run.
  *
@@ -24,7 +24,7 @@ import java.io.Serializable;
 public class DatastoreCounter implements Serializable {
     private static final long serialVersionUID = 8683909836035053816L;
 
-    private String counterName;
+    private final String counterName;
 
     // these are memcache shards
     private int shards = 1;
@@ -78,4 +78,7 @@ public class DatastoreCounter implements Serializable {
        shards += 1;
     }
 
+    public void addShards(int n) {
+       shards += n;
+    }
 }
