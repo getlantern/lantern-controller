@@ -92,9 +92,13 @@ public class ShardedCounterManager {
         int shardNum = generator.nextInt(shardCount);
         cache.increment("count" + name + "-" + shardNum, count, BASELINE);
 
-        int updateCounter = generator.nextInt(shardCount * SHARD_UPDATE_RATIO);
-        if (updateCounter == 0) {
-            cache.increment("updates" + name, 1, 0L);
+        // updates holds the approximate number of updates per minute. This
+        // is implemented by incrementing it by N stochastically 1/Nth of the
+        // times that the counter updates.
+
+        int dieRoll = generator.nextInt(shardCount * SHARD_UPDATE_RATIO);
+        if (dieRoll == 0) {
+            cache.increment("updates" + name, shardCount * SHARD_UPDATE_RATIO, 0L);
         }
     }
 
