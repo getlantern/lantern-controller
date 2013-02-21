@@ -1,16 +1,22 @@
 package org.lantern;
 
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 
 import javax.xml.namespace.NamespaceContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.xml.sax.InputSource;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.Presence;
@@ -37,17 +43,29 @@ public class LanternControllerUtils {
         return jidToUserId(message.getFromJid().getId());
     }
 
-    public static String invitedName(final Presence presence) {
-        return getProperty(presence, LanternConstants.INVITEE_NAME);
+    public static Document buildDoc(final Presence presence) {
+        final DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+        domFactory.setNamespaceAware(true);
+        DocumentBuilder builder;
+        try {
+            builder = domFactory.newDocumentBuilder();
+            byte[] bytes = presence.getStanza().getBytes();
+            InputStream is = new ByteArrayInputStream(bytes);
+            return builder.parse(is);
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        } catch (SAXException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static String getProperty(final Presence presence,
+    public static String getProperty(final Document doc,
         final String key) {
         try {
-            StringReader reader = new StringReader(presence.getStanza());
-            InputSource inputSource = new InputSource(reader);
             XPathExpression compiled = getXPathExpression(key);
-            return compiled.evaluate(inputSource);
+            return compiled.evaluate(doc);
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);
         }

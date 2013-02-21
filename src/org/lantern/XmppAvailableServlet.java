@@ -18,6 +18,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
 import org.littleshoot.util.ThreadUtils;
+import org.w3c.dom.Document;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
@@ -44,6 +45,8 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
+        Document doc = LanternControllerUtils.buildDoc(presence);
+
         final Map<String,Object> responseJson =
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
@@ -58,13 +61,13 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
-        if (isInvite(presence)) {
+        if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
             if (!dao.hasMoreInvites(from)) {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            processInvite(presence);
+            processInvite(presence, doc);
             return;
         }
         final boolean available = presence.isAvailable();
@@ -74,11 +77,11 @@ public class XmppAvailableServlet extends HttpServlet {
         log.info("Got presence "+available);
 
         final String stats =
-            LanternControllerUtils.getProperty(presence, "stats");
+            LanternControllerUtils.getProperty(doc, "stats");
 
         //log.info("Stats JSON: "+stats);
 
-        String modeString = LanternControllerUtils.getProperty(presence, "mode");
+        String modeString = LanternControllerUtils.getProperty(doc, "mode");
         final boolean isGiveMode = "give".equals(modeString);
         final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);
@@ -98,12 +101,12 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private final class AlreadyInvitedException extends Exception {}
 
-    private void processInvite(final Presence presence) {
+    private void processInvite(final Presence presence, final Document doc) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
         final String inviterEmail = LanternControllerUtils.userId(presence);
         final String inviterName;
         final String inviterNameTmp =
-            LanternControllerUtils.getProperty(presence,
+            LanternControllerUtils.getProperty(doc,
                 LanternConstants.INVITER_NAME);
         if (StringUtils.isBlank(inviterNameTmp)) {
             inviterName = inviterEmail;
@@ -111,7 +114,7 @@ public class XmppAvailableServlet extends HttpServlet {
             inviterName = inviterNameTmp;
         }
         final String invitedEmail =
-            LanternControllerUtils.getProperty(presence,
+            LanternControllerUtils.getProperty(doc,
                 LanternConstants.INVITED_EMAIL);
 
         if (StringUtils.isBlank(invitedEmail)) {
@@ -138,14 +141,14 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.decrementInvites(inviterEmail);
     }
 
-    private boolean isInvite(final Presence presence) {
-        final String invite = LanternControllerUtils.getProperty(presence,
+    private boolean isInvite(final Document doc) {
+        final String invite = LanternControllerUtils.getProperty(doc,
             LanternConstants.INVITED_EMAIL);
         boolean isInvite = !StringUtils.isBlank(invite);
         if (isInvite) {
-            log.info("FOUND INVITE IN: "+presence.getStanza());
+            log.info("FOUND INVITE");
         } else {
-            log.info("NO INVITE IN: "+presence.getStanza());
+            log.info("NO INVITE");
         }
         return isInvite;
     }
