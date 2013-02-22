@@ -57,7 +57,7 @@ public class PersistController extends HttpServlet {
                     log.info("adding shard for counter " + counterName);
                     int notHandledByCurrentShards = (int) (updates
                             - (currentShards * maxUpdatesPerShard));
-                    counter.addShards(notHandledByCurrentShards / maxUpdatesPerShard);
+                    counter.addShards((int) Math.ceil(notHandledByCurrentShards / (float)maxUpdatesPerShard));
                 }
             }
         }
