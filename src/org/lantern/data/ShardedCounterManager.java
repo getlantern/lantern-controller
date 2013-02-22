@@ -46,7 +46,10 @@ public class ShardedCounterManager {
     //the durable datastore; this must match the value in cron.xml
     public static final int PERSIST_TIMEOUT = 60;
 
-    public static final int MAX_UPDATES_PER_SHARD = 100;
+    public static final int MAX_UPDATES_PER_SHARD_PER_SECOND = 100;
+
+    public static final int MAX_UPDATES_PER_SHARD_PER_CYCLE = MAX_UPDATES_PER_SHARD_PER_SECOND
+            * ShardedCounterManager.PERSIST_TIMEOUT;
     // how many updates (on average) we record for each shard
     public static final int SHARD_UPDATE_RATIO = 10;
 
