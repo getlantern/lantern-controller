@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,6 +17,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import com.google.appengine.api.xmpp.Message;
@@ -25,6 +28,18 @@ import com.google.appengine.api.xmpp.Presence;
  * Utility methods for the controller.
  */
 public class LanternControllerUtils {
+
+    private static class MyEntityResolver implements EntityResolver {
+        @Override
+        public InputSource resolveEntity(String publicId, String systemId) {
+            //prevent xml remote entity attacks
+            throw new RuntimeException("Only local entities allowed");
+        }
+    }
+    static {
+        //prevent xml entity expansion attacks
+        System.setProperty("entityExpansionLimit", "100");
+    }
 
     private static HashMap<String, XPathExpression> xPathCache = new HashMap<String, XPathExpression>();
 
@@ -44,12 +59,20 @@ public class LanternControllerUtils {
     }
 
     public static Document buildDoc(final Presence presence) {
+        String stanza = presence.getStanza();
+        if (stanza.length() > 10000) {
+            //prevent xml generic entity expansion
+            throw new RuntimeException("Unexpectedly long stanza");
+        }
         final DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
         domFactory.setNamespaceAware(true);
         DocumentBuilder builder;
         try {
+            domFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            domFactory.setValidating(false);
             builder = domFactory.newDocumentBuilder();
-            byte[] bytes = presence.getStanza().getBytes();
+            builder.setEntityResolver(new MyEntityResolver());
+            byte[] bytes = stanza.getBytes();
             InputStream is = new ByteArrayInputStream(bytes);
             return builder.parse(is);
         } catch (ParserConfigurationException e) {
