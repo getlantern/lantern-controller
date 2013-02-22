@@ -3,6 +3,7 @@
   <cron>
     <url>/persist</url>
     <description>Persist memcache entries to datastore</description>
+    <!-- this must match the value in ShardedCounterManager.PERSIST_TIMEOUT -->
     <schedule>every 1 minutes</schedule>
   </cron>
 </cronentries>

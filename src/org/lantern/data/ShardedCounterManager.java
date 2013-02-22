@@ -43,7 +43,7 @@ public class ShardedCounterManager {
             .getLogger(ShardedCounterManager.class.getName());
 
     //how frequently (in seconds) we persist memcached counters to
-    //the durable datastore
+    //the durable datastore; this must match the value in cron.xml
     public static final int PERSIST_TIMEOUT = 60;
 
     public static final int MAX_UPDATES_PER_SHARD = 100;
