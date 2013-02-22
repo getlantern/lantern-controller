@@ -55,9 +55,9 @@ public class PersistController extends HttpServlet {
                 final int maxUpdatesPerShard = ShardedCounterManager.MAX_UPDATES_PER_SHARD;
                 if (updates > currentShards * maxUpdatesPerShard) {
                     log.info("adding shard for counter " + counterName);
-                    int handledByCurrentShards = (int) (updates
+                    int notHandledByCurrentShards = (int) (updates
                             - (currentShards * maxUpdatesPerShard));
-                    counter.addShards(handledByCurrentShards / maxUpdatesPerShard);
+                    counter.addShards(notHandledByCurrentShards / maxUpdatesPerShard);
                 }
             }
         }
