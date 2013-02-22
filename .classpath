@@ -3,10 +3,32 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/objectify-3.0.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/lantern-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-remote-api-sdk-1.7.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/lantern-common"/>
+	<classpathentry kind="lib" path="/home/leah/.m2/repository/org/littleshoot/util/1.0-SNAPSHOT/util-1.0-SNAPSHOT.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="org.littleshoot"/>
+			<attribute name="maven.artifactId" value="util"/>
+			<attribute name="maven.version" value="1.0-SNAPSHOT"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-lang3-3.1.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/httpclient-4.2.2.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/httpcore-4.2.2.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-core-asl-1.9.11.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-jaxrs-1.9.11.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-mapper-asl-1.9.11.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-mrbean-1.9.11.jar"/>
+	<classpathentry kind="lib" path="/home/leah/eclipse/plugins/com.google.appengine.eclipse.sdkbundle_1.7.4/appengine-java-sdk-1.7.4/lib/user/appengine-api-1.0-sdk-1.7.4.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/home/leah/eclipse/plugins/com.google.appengine.eclipse.sdkbundle_1.7.4/appengine-java-sdk-1.7.4/docs/javadoc/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/guava-14.0-rc1.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/objectify-3.1.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
