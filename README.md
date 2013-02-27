@@ -6,3 +6,6 @@ To bring this project into Eclipse, just do the following:
 2. cd lantern-controller
 4. File->Import...->Existing Projects into Workspace
 5. Choose the lantern-controller directory 
+
+You'll also need to fill in src/org.lantern.secrets.properties with
+the correct data; accessKey must match the one used on getlantern.org

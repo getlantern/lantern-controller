@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Id;
@@ -19,9 +20,9 @@ public class LanternUser {
     private long requestsProxied;
     
     private Date created = new Date();
-    
-    private Set<String> countryCodes;
-    
+
+    private Set<String> countryCodes = new HashSet<String>();
+
     private int invites;
 
     /**
@@ -38,6 +39,10 @@ public class LanternUser {
     private boolean everSignedIn = false;
     
     private Date lastAccessed = new Date();
+
+    private int instancesSignedIn = 0;
+
+    private HashSet<String> instanceIds = new HashSet<String>();
     
     /**
      * The server, if any, that is running in behalf of this user to provide
@@ -93,14 +98,6 @@ public class LanternUser {
         this.bytesProxied = bytesProxied;
     }
 
-    public Set<String> getCountryCodes() {
-        return countryCodes;
-    }
-
-    public void setCountryCodes(final Set<String> countryCodes) {
-        this.countryCodes = countryCodes;
-    }
-    
     public long getDirectBytes() {
         return directBytes;
     }
@@ -165,6 +162,30 @@ public class LanternUser {
         this.lastAccessed = lastAccessed;
     }
 
+    public boolean anyInstancesSignedIn() {
+        return instancesSignedIn > 0;
+    }
+
+    public void incrementInstancesSignedIn() {
+        instancesSignedIn ++;
+    }
+
+    public void decrementInstancesSignedIn() {
+        instancesSignedIn --;
+    }
+
+    public boolean instanceIdSeen(String instanceId) {
+        return !instanceIds.add(instanceId);
+    }
+
+    public boolean countrySeen(String countryCode) {
+        return !countryCodes.add(countryCode);
+    }
+
+    public Set<String> getCountryCodes() {
+        return countryCodes;
+    }
+
     public String getInstallerLocation() {
         return installerLocation;
     }
@@ -172,15 +193,4 @@ public class LanternUser {
     public void setInstallerLocation(final String installerLocation) {
         this.installerLocation = installerLocation;
     }
-
-    //XXX: Disabled because we are not using this at the moment, but we'll
-    // probably need it when we want to recover from crashed/blocked invited
-    // servers and buckets.
-    /*public String getInvitedServer() {
-        return invitedServer;
-    }
-
-    public void setInvitedServer(String ip) {
-        invitedServer = ip;
-    }*/
 }

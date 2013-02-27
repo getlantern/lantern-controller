@@ -82,7 +82,7 @@ public class MandrillEmailer {
         throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("key", LanternControllerConstants.MANDRILL_API_KEY);
+        data.put("key", LanternControllerConstants.getMandrillApiKey());
         data.put("template_name", LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME);
         data.put("template_content", new String[]{});
      
@@ -108,7 +108,7 @@ public class MandrillEmailer {
         if (StringUtils.isNotBlank(inviterName)) {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
-        mergeVars.add(mergeVar("ACCESSKEY", LanternControllerConstants.ACCESSKEY));
+        mergeVars.add(mergeVar("ACCESSKEY", LanternControllerConstants.getAccessKey()));
 
         mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
         mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));

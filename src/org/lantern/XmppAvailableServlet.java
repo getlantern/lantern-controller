@@ -11,30 +11,29 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
-import org.littleshoot.util.Sha1Hasher;
 import org.littleshoot.util.ThreadUtils;
+import org.w3c.dom.Document;
 
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.MessageType;
 import com.google.appengine.api.xmpp.Presence;
-import com.google.appengine.api.xmpp.SendResponse;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
-    
+
     private final transient Logger log = Logger.getLogger(getClass().getName());
-    
+
     @Override
-    public void doPost(final HttpServletRequest req, 
+    public void doPost(final HttpServletRequest req,
         final HttpServletResponse res) {
         log.info("Got XMPP post...");
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
@@ -46,7 +45,9 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
-        final Map<String,Object> responseJson = 
+        Document doc = LanternControllerUtils.buildDoc(presence);
+
+        final Map<String,Object> responseJson =
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
         final String from = LanternControllerUtils.userId(presence);
@@ -59,37 +60,39 @@ public class XmppAvailableServlet extends HttpServlet {
             dao.updateLastAccessed(from);
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
-        
-        if (isInvite(presence)) {
+
+        if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
             if (!dao.hasMoreInvites(from)) {
                 log.severe("No more invites for user: "+from);
                 return;
             }
-            processInvite(presence);
-            dao.decrementInvites(from);
+            processInvite(presence, doc);
             return;
         }
         final boolean available = presence.isAvailable();
-        
-        
+
+
         //final boolean lan = LanternControllerUtils.isLantern(id);
         log.info("Got presence "+available);
-        
-        final String stats = 
-            LanternControllerUtils.getProperty(presence, "stats");
-        
+
+        final String stats =
+            LanternControllerUtils.getProperty(doc, "stats");
+
         //log.info("Stats JSON: "+stats);
-        
-        final boolean isGiveMode = 
-            LanternControllerUtils.isLantern(presence.getFromJid().getId());
-        final String userId = userId(presence, isGiveMode);
-        processClientInfo(presence, stats, responseJson, userId);
+
+        String modeString = LanternControllerUtils.getProperty(doc, "mode");
+        final boolean isGiveMode = "give".equals(modeString);
+        final String userId = LanternXmppUtils.jidToUserId(from);
+        final String instanceId = LanternControllerUtils.instanceId(presence);
+        processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
+
         if (isGiveMode) {
             processGiveMode(presence, xmpp, available, responseJson);
         } else {
             processGetMode(presence, xmpp, available, responseJson);
         }
+
         if (!dao.isEverSignedIn(from)) {
             dao.signedIn(from);
         }
@@ -97,21 +100,20 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private final class AlreadyInvitedException extends Exception {}
 
-    private void processInvite(final Presence presence) {
+    private void processInvite(final Presence presence, final Document doc) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
-        log.severe("INVITING");
-        final String inviterEmail = LanternControllerUtils.userId(presence); 
+        final String inviterEmail = LanternControllerUtils.userId(presence);
         final String inviterName;
-        final String inviterNameTmp = 
-            LanternControllerUtils.getProperty(presence, 
+        final String inviterNameTmp =
+            LanternControllerUtils.getProperty(doc,
                 LanternConstants.INVITER_NAME);
         if (StringUtils.isBlank(inviterNameTmp)) {
             inviterName = inviterEmail;
         } else {
             inviterName = inviterNameTmp;
         }
-        final String invitedEmail = 
-            LanternControllerUtils.getProperty(presence, 
+        final String invitedEmail =
+            LanternControllerUtils.getProperty(doc,
                 LanternConstants.INVITED_EMAIL);
 
         if (StringUtils.isBlank(invitedEmail)) {
@@ -119,46 +121,36 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         if (invitedEmail.contains("public.talk.google.com")) {
-            // This is a google talk JID and not an e-mail address -- we 
+            // This is a google talk JID and not an e-mail address -- we
             // can't use it!.
             log.info("Can't e-mail a Google Talk ID. Ignoring.");
             return;
         }
         final String refreshToken = LanternControllerUtils.getProperty(
-                presence, LanternConstants.INVITER_REFRESH_TOKEN);
+                doc, LanternConstants.INVITER_REFRESH_TOKEN);
         log.info("Refresh token IS: " + refreshToken);
         InvitedServerLauncher.onInvite(
                 inviterName, inviterEmail, refreshToken, invitedEmail);
         
     }
 
-    private boolean isInvite(final Presence presence) {
-        final String invite = LanternControllerUtils.getProperty(presence, 
+    private boolean isInvite(final Document doc) {
+        final String invite = LanternControllerUtils.getProperty(doc,
             LanternConstants.INVITED_EMAIL);
-        if (invite != null) {
-            log.info("FOUND INVITE IN: "+presence.getStanza());
+        boolean isInvite = !StringUtils.isBlank(invite);
+        if (isInvite) {
+            log.info("FOUND INVITE");
         } else {
-            log.info("NO INVITE IN: "+presence.getStanza());
+            log.info("NO INVITE");
         }
-        return invite != null;
-    }
-
-    private String userId(final Presence presence, final boolean isGiveMode) {
-        if (isGiveMode) {
-            return LanternControllerUtils.userId(presence);
-        } else {
-            // We hash the ID of users in censored countries and just count them
-            // as a generic number. We only look at the JID at all to avoid 
-            // over counting.
-            return Sha1Hasher.hash(LanternControllerUtils.userId(presence));
-        }
+        return isInvite;
     }
 
     private void processGetMode(final Presence presence,
-        final XMPPService xmpp, final boolean available, 
+        final XMPPService xmpp, final boolean available,
         final Map<String, Object> responseJson) {
         if (available) {
-            // Not we don't tell get mode users to check back in -- we just 
+            // Not we don't tell get mode users to check back in -- we just
             // give them servers to connect to.
             log.info("Sending servers to available get mode");
             addServers(presence.getFromJid().getId(), responseJson);
@@ -169,38 +161,39 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void processGiveMode(final Presence presence,
-        final XMPPService xmpp, final boolean available, 
+        final XMPPService xmpp, final boolean available,
         final Map<String, Object> responseJson) {
         if (available) {
-            // We always need to tell the client to check back in because 
+            // We always need to tell the client to check back in because
             // we use it as a fallback for which users are online.
-            responseJson.put(LanternConstants.UPDATE_TIME, 
+            responseJson.put(LanternConstants.UPDATE_TIME,
                 LanternControllerConstants.UPDATE_TIME_MILLIS);
             log.info("Not sending servers to give mode");
             sendResponse(presence, xmpp, responseJson);
         } else {
             log.info("Not sending servers to unavailable clients");
         }
-        
-        // The following will delete the instance if it's not available,
-        // updating all counters.
-        log.info("Setting instance availability");
-        final String instanceId = presence.getFromJid().getId();
-        final Dao dao = new Dao();
-        dao.setInstanceAvailable(instanceId, available);
     }
-    
 
-    private void processNotInvited(final Presence presence, 
+
+    private void processNotInvited(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
         responseJson.put(LanternConstants.INVITED, Boolean.FALSE);
         log.info("Not allowing uninvited user.");
         sendResponse(presence, xmpp, responseJson);
     }
 
-    private void processClientInfo(final Presence presence, 
-        final String stats, final Map<String, Object> responseJson, 
-        final String idToUse) {
+    private void processClientInfo(final Presence presence,
+        final String stats, final Map<String, Object> responseJson,
+        final String idToUse, String instanceId, boolean isGiveMode,
+        boolean available) {
+        if (!available) {
+            //just handle logout
+            Dao dao = new Dao();
+            dao.setInstanceUnavailable(idToUse, instanceId, isGiveMode);
+            return;
+        }
+
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;
@@ -212,8 +205,13 @@ public class XmppAvailableServlet extends HttpServlet {
             final Stats data = mapper.readValue(stats, Stats.class);
             addUpdateData(data, responseJson);
             addInviteData(presence, responseJson);
+            // The following will delete the instance if it's not available,
+            // updating all counters.
+            log.info("Setting instance availability");
+            final Dao dao = new Dao();
+            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), isGiveMode);
             try {
-                updateStats(data, idToUse);
+                updateStats(data, idToUse, instanceId, isGiveMode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -228,29 +226,37 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void addInviteData(final Presence presence,
         final Map<String, Object> responseJson) {
-        
+
         final Dao dao = new Dao();
-        final int invites = 
+        final int invites =
             dao.getInvites(LanternControllerUtils.userId(presence));
         responseJson.put(LanternConstants.INVITES_KEY, invites);
-        
+
     }
 
     private void addUpdateData(final Stats data,
         final Map<String, Object> responseJson) {
         try {
-            final double version = Double.parseDouble(data.getVersion());
+            final String majorMinor;
+            final String rawVersion = data.getVersion();
+            if (rawVersion.contains("-")) {
+                majorMinor = StringUtils.substringBeforeLast(rawVersion, ".");
+            } else {
+                majorMinor = rawVersion;
+            }
+            final double version = Double.parseDouble(majorMinor);
+
             //final double version = 0.001; //just for testing!!
             if (LanternControllerConstants.LATEST_VERSION > version) {
-                final Map<String,Object> updateJson = 
+                final Map<String,Object> updateJson =
                     new LinkedHashMap<String,Object>();
-                updateJson.put(LanternConstants.UPDATE_VERSION_KEY, 
+                updateJson.put(LanternConstants.UPDATE_VERSION_KEY,
                     LanternControllerConstants.LATEST_VERSION);
-                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY, 
+                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY,
                     LanternControllerConstants.UPDATE_RELEASE_DATE);
-                updateJson.put(LanternConstants.UPDATE_URL_KEY, 
+                updateJson.put(LanternConstants.UPDATE_URL_KEY,
                     LanternControllerConstants.UPDATE_URL);
-                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY, 
+                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY,
                     LanternControllerConstants.UPDATE_MESSAGE);
                 responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
             }
@@ -260,48 +266,46 @@ public class XmppAvailableServlet extends HttpServlet {
         }
     }
 
-    private void sendResponse(final Presence presence, final XMPPService xmpp, 
+    private void sendResponse(final Presence presence, final XMPPService xmpp,
         final Map<String, Object> responseJson) {
-        final String serversBody = LanternUtils.jsonify(responseJson);
-        final Message msg = 
+        final String serversBody = JsonUtils.jsonify(responseJson);
+        final Message msg =
             new MessageBuilder().withRecipientJids(
                 presence.getFromJid()).withBody(serversBody).withMessageType(
                     MessageType.HEADLINE).build();
         log.info("Sending response:\n"+responseJson.toString());
-        final SendResponse status = xmpp.sendMessage(msg);
-        final boolean messageSent = 
-            (status.getStatusMap().get(
-                presence.getFromJid()) == SendResponse.Status.SUCCESS);
+        xmpp.sendMessage(msg);
     }
 
-    private void updateStats(final Stats data, final String idToUse) {
-        
+    private void updateStats(final Stats data, final String idToUse,
+            final String instanceId, boolean isGiveMode) {
+
         final Dao dao = new Dao();
-        
+
         log.info("Updating stats");
-        dao.updateUser(idToUse, data.getDirectRequests(), 
-            data.getDirectBytes(), data.getTotalProxiedRequests(), 
-            data.getTotalBytesProxied(), 
-            data.getCountryCode());
+        dao.updateUser(idToUse, data.getDirectRequests(),
+            data.getDirectBytes(), data.getTotalProxiedRequests(),
+            data.getTotalBytesProxied(),
+            data.getCountryCode(), instanceId, isGiveMode);
     }
 
-    private void addServers(final String jid, 
+    private void addServers(final String jid,
         final Map<String, Object> responseJson) {
 
         log.info("Adding servers...");
         final Dao dao = new Dao();
         final Collection<String> servers = dao.getInstances();
-        
+
         // Make sure to remove ourselves.
         servers.remove(jid);
-        
+
         // TODO: We need to provide the same servers for the same users every
         // time. Possibly only provide servers to validated users?
-        
+
         servers.addAll(Arrays.asList("75.101.134.244:7777",
             "laeproxyhr1.appspot.com",
             "rlanternz.appspot.com"));
-            
+
         responseJson.put(LanternConstants.SERVERS, servers);
     }
 }

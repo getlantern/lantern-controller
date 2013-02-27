@@ -2,13 +2,13 @@ package org.lantern;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 /**
  * Constants for Lantern.
  */
 public class LanternControllerConstants {
 
-    static final String MANDRILL_API_KEY = "secret"; // keep this secret
     static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
     static final String INVITE_EMAIL_TEMPLATE_NAME = "cloud-invite";
@@ -21,13 +21,14 @@ public class LanternControllerConstants {
     // XXX handle this better? it's duplicated in getlantern.org code's
     // secrets.py, and it'd be nice to be able to change its value without
     // having to redeploy Lantern Controller
-    static final String ACCESSKEY = "secret";
+    private static String accessKey;
+    private static String mandrillApiKey;
 
     // XXX these are out of date?:
     public static final String UPDATE_URLS_KEY = "urls";
     public static final String UPDATE_RELEASE_DATE = "2012-01-31T11:15:00Z";
-    
-    public static final Map<String, String> UPDATE_URLS = 
+
+    public static final Map<String, String> UPDATE_URLS =
         new HashMap<String, String>();
     
     public static final double LATEST_VERSION = 0.202;
@@ -42,6 +43,11 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("ubuntu", URL_BASE+".deb");
         UPDATE_URLS.put("fedora", URL_BASE+".rpm");
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
+
+        ResourceBundle bundle = ResourceBundle.getBundle ("secrets");
+        accessKey = (String) bundle.getObject("accessKey");
+        mandrillApiKey = (String) bundle.getObject("mandrillApiKey");
+
     }
 
     /**
@@ -51,28 +57,28 @@ public class LanternControllerConstants {
     /*
     public static final int PLAINTEXT_LOCALHOST_PROXY_PORT = 7777;
     public static final int LANTERN_LOCALHOST_HTTP_PORT = 8787;
-    
+
     public static final int LANTERN_LOCALHOST_HTTPS_PORT = 8788;
-    
+
     public static final String USER_NAME = "un";
     public static final String PASSWORD = "pwd";
-    
+
     public static final String DIRECT_BYTES = "db";
     public static final String BYTES_PROXIED = "bp";
-    
+
     public static final String REQUESTS_PROXIED = "rp";
     public static final String DIRECT_REQUESTS = "dr";
-    
+
     public static final String MACHINE_ID = "m";
     public static final String COUNTRY_CODE = "cc";
     public static final String WHITELIST_ADDITIONS = "wa";
     public static final String WHITELIST_REMOVALS = "wr";
     public static final String SERVERS = "s";
-    
-    
+
+
     public static final String UPDATE_TIME = "ut";
     */
-    
+
     public static final long UPDATE_TIME_MILLIS = 60 * 1000;
 
     //public static final String UPDATE_MESSAGE_KEY = "message";
@@ -81,14 +87,14 @@ public class LanternControllerConstants {
         "Lantern "+LATEST_VERSION_STRING+" is now available with many new performance and usability improvements.";
     
     public static final String VERSION_KEY = "v";
-    
+
     /**
      * The key for the update JSON object.
      */
     public static final String UPDATE_KEY = "uk";
 
     public static final String UPDATE_VERSION_KEY = "number";
-    
+
     //public static final String UPDATE_TITLE_KEY = "upt";
 
     //public static final String UPDATE_TITLE = "Update Lantern?";
@@ -96,4 +102,12 @@ public class LanternControllerConstants {
     public static final String UPDATE_URL_KEY = "url";
 
     public static final String UPDATE_URL = "http://www.getlantern.org";
+
+    public static String getMandrillApiKey() {
+        return mandrillApiKey;
+    }
+
+    public static String getAccessKey() {
+        return accessKey;
+    }
 }

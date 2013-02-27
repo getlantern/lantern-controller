@@ -15,7 +15,6 @@ import com.google.appengine.api.xmpp.MessageType;
 
 import org.littleshoot.util.ThreadUtils;
 
-import org.lantern.data.AlreadyInvitedException;
 import org.lantern.data.UnknownUserException;
 import org.lantern.data.Dao;
 
@@ -35,14 +34,13 @@ public class InvitedServerLauncher {
                            final String invitedEmail) {
 
         final Dao dao = new Dao();
-        try {
-            dao.addInvite(inviterEmail, invitedEmail);
-        } catch (final AlreadyInvitedException e) {
-            log.info(inviterEmail 
-                     + " had already invited " 
-                     + invitedEmail);
+
+        if (dao.addInvite(inviterEmail, invitedEmail)) {
+            dao.decrementInvites(inviterEmail);
+        } else {
+            log.info("Not adding an invite");
             return;
-        } 
+        }
         
         String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
         if (installerLocation == null && refreshToken != null) {
@@ -64,7 +62,7 @@ public class InvitedServerLauncher {
             map.put("launch-invsrv-as", inviterEmail);
             map.put("launch-refrtok", refreshToken);
             map.put("launch-bucket", bucket);
-            final String body = LanternUtils.jsonify(map);
+            final String body = JsonUtils.jsonify(map);
             Message msg = new MessageBuilder()
                 .withMessageType(MessageType.HEADLINE)
                 .withRecipientJids(INVSRVLAUNCHER_JID)
@@ -73,7 +71,7 @@ public class InvitedServerLauncher {
             xmpp.sendMessage(msg);
 
         } else if (!installerLocation.equals(PENDING)) {
-            sendInvite(inviterName, inviterEmail, invitedEmail, installerLocation);
+            sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
     }
 
@@ -83,17 +81,17 @@ public class InvitedServerLauncher {
         try {
             final Collection<String> invitees = dao.setInstallerLocationAndGetInvitees(inviterEmail, installerLocation);
             for (String invitedEmail : invitees) {
-                sendInvite(inviterEmail, inviterEmail, invitedEmail, installerLocation);
+                sendInviteEmail(inviterEmail, inviterEmail, invitedEmail, installerLocation);
             }
         } catch (final UnknownUserException e) {
             log.severe("Server up for unknown inviter " + inviterEmail);
         }
     }
 
-    private static void sendInvite(final String inviterName,
-                                   final String inviterEmail,
-                                   final String invitedEmail,
-                                   final String installerLocation) {
+    private static void sendInviteEmail(final String inviterName,
+                                        final String inviterEmail,
+                                        final String invitedEmail,
+                                        final String installerLocation) {
         final String[] parts = installerLocation.split("/");
         assert parts.length == 2;
         final String bucket = parts[0];

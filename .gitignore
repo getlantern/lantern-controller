@@ -1,8 +1,10 @@
 .DS_Store
 *.swp
+*.swo
 *.un~
 *.*~
 *.settings
 *.classpath
 *.project
 war/WEB-INF/classes
+war/WEB-INF/appengine-generated/local_db.bin
