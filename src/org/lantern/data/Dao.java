@@ -525,7 +525,6 @@ public class Dao extends DAOBase {
         }
     }
 
-
     public boolean isEverSignedIn(final String email) {
         final Objectify ofy = ofy();
         final LanternUser invite = ofy.find(LanternUser.class, email);
@@ -594,7 +593,7 @@ public class Dao extends DAOBase {
                 }
     		}
     	}
-    	//XXX raise instead?
+    	//XXX: is really returning our best guess better than failing?
     	log.warning("Gave up because of too much contention!");
     	return old;
     }
@@ -613,10 +612,17 @@ public class Dao extends DAOBase {
                 user.setInstallerLocation(installerLocation);
                 ofy.put(user);
 
-                //XXX: use new invitees table.
+                results = new HashSet<String>(20);
+
+                final Query<Invite> invites = ofy.query(Invite.class).filter("inviter", inviterEmail);
+
+                for (Invite invite : invites) {
+                    results.add(invite.getInvitee());
+                }
+
+                // Compatibility with old invites.
                 final Query<LanternUser> invitees =
                     ofy.query(LanternUser.class).filter("sponsor", inviterEmail);
-                results = new HashSet<String>(20);
 
                 for (LanternUser invitee : invitees) {
                 	final String invitedEmail = invitee.getId();
@@ -659,9 +665,9 @@ public class Dao extends DAOBase {
     	for (int retries=TXN_RETRIES; retries > 0; retries--) {
             Objectify ofy = ObjectifyService.beginTransaction();
             try {
-            	//XXX: this non-ancestor query is not guaranteed to really give us 
-            	// the minimum.  The point of this transaction is to guarantee we 
-            	// increment whatever bucket we get.
+                //XXX: this non-ancestor query is not guaranteed to really
+                //give us the minimum.  The point of this transaction is to
+                //guarantee we increment whatever bucket we get.
                 leastUsed = ofy.query(InstallerBucket.class).order("-installerLocation").get();
                 leastUsed.setInstallerLocations(leastUsed.getInstallerLocations() + 1);
                 ofy.put(leastUsed);

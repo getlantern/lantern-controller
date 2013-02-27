@@ -28,10 +28,15 @@ public class InvitedServerLauncher {
     public static final String INVSRVLAUNCHER_EMAIL = "invsrvlauncher@gmail.com";
     private static final JID INVSRVLAUNCHER_JID = new JID(INVSRVLAUNCHER_EMAIL);
 
+    // Contains installers with default fallback servers, for backwards
+    // compatibility.
+    // XXX: populate with an actual location before merging with master!
+    private static final String DEFAULT_INSTALLER_LOCATION = "tbd/tbd";
+
     public static void onInvite(final String inviterName,
-                           final String inviterEmail, 
-                           final String refreshToken, 
-                           final String invitedEmail) {
+                                final String inviterEmail,
+                                final String refreshToken,
+                                final String invitedEmail) {
 
         final Dao dao = new Dao();
 
@@ -43,7 +48,11 @@ public class InvitedServerLauncher {
         }
         
         String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
-        if (installerLocation == null && refreshToken != null) {
+        if (installerLocation == null && refreshToken == null) {
+            // Inviter is running an old client.
+            sendInviteEmail(inviterName, inviterEmail, invitedEmail,
+                            DEFAULT_INSTALLER_LOCATION);
+        } else if (installerLocation == null && refreshToken != null) {
             // Ask invsrvlauncher to create an instance for this user.
             log.info("Ordering launch of new invited server for "
                      + inviterEmail);
@@ -69,7 +78,6 @@ public class InvitedServerLauncher {
                 .withBody(body)
                 .build();
             xmpp.sendMessage(msg);
-
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
