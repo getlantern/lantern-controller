@@ -111,7 +111,7 @@ public class InvitedServerLauncher {
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
                 baseUrl + ".dmg", baseUrl + ".exe",
-                baseUrl + "-32.deb", baseUrl + "-64.deb");
+                baseUrl + "-32bit.deb", baseUrl + "-64bit.deb");
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
