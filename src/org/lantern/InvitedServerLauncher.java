@@ -30,8 +30,8 @@ public class InvitedServerLauncher {
 
     // Contains installers with default fallback servers, for backwards
     // compatibility.
-    // XXX: populate with an actual location before merging with master!
-    private static final String DEFAULT_INSTALLER_LOCATION = "tbd/tbd";
+    private static final String
+        DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback";
 
     public static void onInvite(final String inviterName,
                                 final String inviterEmail,
