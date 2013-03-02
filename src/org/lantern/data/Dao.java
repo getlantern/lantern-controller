@@ -661,30 +661,29 @@ public class Dao extends DAOBase {
     }
 
     public String getAndIncrementLeastUsedBucket() {
-    	InstallerBucket leastUsed = null;
+        // Not really guaranteed to return the minimum, but since we'll make
+        // sure to increment whatever we get, we get a balanced bucket usage
+        // eventually.
+        final InstallerBucket leastUsed = ofy().query(InstallerBucket.class)
+                                            .order("installerLocations").get();
     	for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            Objectify ofy = ObjectifyService.beginTransaction();
+            Objectify txnOfy = ObjectifyService.beginTransaction();
             try {
-                //XXX: this non-ancestor query is not guaranteed to really
-                //give us the minimum.  The point of this transaction is to
-                //guarantee we increment whatever bucket we get.
-                leastUsed = ofy.query(InstallerBucket.class).order("-installerLocation").get();
-                leastUsed.setInstallerLocations(leastUsed.getInstallerLocations() + 1);
-                ofy.put(leastUsed);
-                ofy.getTxn().commit();
+                leastUsed.setInstallerLocations(
+                        leastUsed.getInstallerLocations() + 1);
+                txnOfy.put(leastUsed);
+                txnOfy.getTxn().commit();
                 return leastUsed.getId();
             } catch (final ConcurrentModificationException e) {
                 log.info("Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
+                if (txnOfy.getTxn().isActive()) {
+                    txnOfy.getTxn().rollback();
                 }
     		}
         }
-        // After having done our best to return the right bucket and increment
-        // its count, returning just any is better than failing.  But if we get
-    	// this we probably want to move to sharded counters instead.
+        // If we ever get this we probably want to move to sharded counters instead.
         log.warning("Too much contention for buckets; you may want to look into this.");
         return leastUsed.getId();
     }
