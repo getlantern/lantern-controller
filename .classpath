@@ -30,5 +30,7 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/guava-14.0-rc1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/objectify-3.1.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-configuration-1.9.jar" sourcepath="/home/leah/.m2/repository/commons-configuration/commons-configuration/1.9/commons-configuration-1.9-sources.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

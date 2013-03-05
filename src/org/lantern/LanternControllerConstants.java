@@ -2,7 +2,9 @@ package org.lantern;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
+
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
  * Constants for Lantern.
@@ -43,10 +45,13 @@ public class LanternControllerConstants {
         UPDATE_URLS.put("fedora", URL_BASE+".rpm");
         UPDATE_URLS.put("tarball", URL_BASE+".tgz");
 
-        ResourceBundle bundle = ResourceBundle.getBundle ("secrets");
-        accessKey = (String) bundle.getObject("accessKey");
-        mandrillApiKey = (String) bundle.getObject("mandrillApiKey");
-
+        try {
+            PropertiesConfiguration config = new PropertiesConfiguration(LanternControllerConstants.class.getResource("secrets"));
+            accessKey = config.getString("accessKey");
+            mandrillApiKey = config.getString("mandrillApiKey");
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
