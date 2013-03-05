@@ -18,5 +18,7 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-remote-api-sdk-1.7.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/util-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/lantern-common-0.1-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-configuration-1.9.jar" sourcepath="/home/leah/.m2/repository/commons-configuration/commons-configuration/1.9/commons-configuration-1.9-sources.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
