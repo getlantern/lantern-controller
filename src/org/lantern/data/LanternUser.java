@@ -45,21 +45,6 @@ public class LanternUser {
     private HashSet<String> instanceIds = new HashSet<String>();
     
     /**
-     * The server, if any, that is running in behalf of this user to provide
-     * installers and fallback connectivity to the users she invited.
-     *
-     * Possible values are:
-     *
-     *  - null if this user has never invited anyone yet,
-     *  - 'launching' if the server is still being launched, or
-     *  - the IP address where the server is running, otherwise.
-     */
-    //XXX: Disabled because we are not using this at the moment, but we'll
-    // probably need it when we want to recover from crashed/blocked invited
-    // servers and buckets.
-    //private String invitedServer;
-
-    /**
      * The location where invitees of this user should get their installers.
      *
      * This is in `bucket/folder` format, where bucket is the name of an

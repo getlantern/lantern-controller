@@ -108,7 +108,6 @@ public class MandrillEmailer {
         if (StringUtils.isNotBlank(inviterName)) {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
-        mergeVars.add(mergeVar("ACCESSKEY", LanternControllerConstants.getAccessKey()));
 
         mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
         mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));
