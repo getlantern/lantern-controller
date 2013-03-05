@@ -54,9 +54,6 @@ public class LanternControllerUtils {
         return id.contains("/-lan");
     }
 
-    public static String userId(final Message message) {
-        return jidToUserId(message.getFromJid().getId());
-    }
 
     public static Document buildDoc(final Presence presence) {
         String stanza = presence.getStanza();
@@ -141,23 +138,37 @@ public class LanternControllerUtils {
         return compiled;
     }
 
-    public static String instanceId(final Message message) {
-        return message.getFromJid().getId().split("/")[1];
+    public static String userId(final Message message) {
+        return jidToUserId(message.getFromJid().getId());
     }
 
     public static String userId(final Presence presence) {
         return jidToUserId(presence.getFromJid().getId());
     }
 
-    public static String jidToUserId(final String fullId) {
-        return fullId.split("/")[0];
-    }
-
-    public static String jidToInstanceId(final String fullId) {
-        return fullId.split("/", 2)[1];
+    public static String instanceId(final Message message) {
+        return jidToInstanceId(message.getFromJid().getId());
     }
 
     public static String instanceId(Presence presence) {
         return jidToInstanceId(presence.getFromJid().getId());
+    }
+
+    public static String jidToUserId(final String fullId) {
+        return fullId.split("/")[0];
+    }
+
+    // As of this writing, we use instanceId to refer to the XMPP resource,
+    // that being the instance-specific part of the jabberId.  Note that
+    // this does *not* identify an instance globally.  You need the userId too.
+    // That is why, somewhat confusingly, instances are keyed by full jabberId
+    // in the LanternInstances table.
+    public static String jidToInstanceId(final String fullId) {
+        return fullId.split("/", 2)[1];
+    }
+
+    public static String jabberIdFromUserAndResource(final String userId,
+                                                     final String resource) {
+        return userId + "/" + resource;
     }
 }

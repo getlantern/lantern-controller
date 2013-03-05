@@ -15,6 +15,7 @@ import org.lantern.CensoredUtils;
 import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
+import org.lantern.LanternControllerUtils;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.googlecode.objectify.Key;
@@ -161,14 +162,22 @@ public class Dao extends DAOBase {
         return results;
     }
 
-    public void setInstanceAvailable(String userId, final String id,
+    public void setInstanceAvailable(String userId, final String instanceId,
             final String countryCode, final boolean isGiveMode) {
         final Objectify ofy = ofy();
-        LanternInstance instance = ofy.find(LanternInstance.class, id);
+        // As of this writing, we use instanceId to refer to the XMPP
+        // resource, that being the instance-specific part of the jabberId.
+        // Note that this does *not* identify an instance globally.  You need
+        // the userId too.  That is why, somewhat confusingly, instances are
+        // keyed by full jabberId in the LanternInstances table.
+        final String
+            fullId = LanternControllerUtils.jabberIdFromUserAndResource(
+                        userId, instanceId);
+        LanternInstance instance = ofy.find(LanternInstance.class, fullId);
         String giveStr = isGiveMode ? GIVE : GET;
         LanternUser user;
         if (instance != null) {
-            log.info("Setting availability to true for "+id);
+            log.info("Setting availability to true for " + fullId);
             user = ofy.find(LanternUser.class, instance.getUser());
             if (!instance.isAvailable()) {
                 log.info("Incrementing online count");
@@ -205,7 +214,7 @@ public class Dao extends DAOBase {
             user = ofy.find(LanternUser.class, userId);
 
             assert(user != null);
-            instance = new LanternInstance(id);
+            instance = new LanternInstance(fullId);
             instance.setUser(userId);
             instance.setAvailable(true);
             instance.setCurrentCountry(countryCode);
@@ -549,7 +558,19 @@ public class Dao extends DAOBase {
 
     public void setInstanceUnavailable(String userId, String instanceId, boolean isGiveMode) {
         final Objectify ofy = ofy();
-        final LanternInstance instance = ofy.find(LanternInstance.class, instanceId);
+        // As of this writing, we use instanceId to refer to the XMPP
+        // resource, that being the instance-specific part of the jabberId.
+        // Note that this does *not* identify an instance globally.  You need
+        // the userId too.  That is why, somewhat confusingly, instances are
+        // keyed by full jabberId in the LanternInstances table.
+        final String
+            fullId = LanternControllerUtils.jabberIdFromUserAndResource(
+                        userId, instanceId);
+        final LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+        if (instance == null) {
+            log.warning("Instance " + fullId + " not available.");
+            return;
+        }
         if (instance.isAvailable()) {
             log.info("Decrementing online count");
             instance.setAvailable(false);

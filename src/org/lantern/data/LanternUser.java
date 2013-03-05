@@ -42,6 +42,13 @@ public class LanternUser {
 
     private int instancesSignedIn = 0;
 
+    /**
+     * The instances we have seen running in behalf of this user.
+     *
+     * Instances are identified by XMPP resource, so if you want to use these
+     * to key into the LanternInstances table, you need to obtain the full
+     * jabberId. @see LanternControllerUtils.jabberIdFromUserAndResource .
+     */
     private HashSet<String> instanceIds = new HashSet<String>();
     
     /**
