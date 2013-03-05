@@ -116,12 +116,6 @@ public class Dao extends DAOBase {
         COUNTER_MANAGER.initCounters(timedCounters, true);
     }
 
-    public boolean exists(final String id) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, id);
-        return user != null;
-    }
-
     public Collection<LanternUser> getAllUsers() {
         final Objectify ofy = ObjectifyService.begin();
         final Query<LanternUser> users = ofy.query(LanternUser.class);

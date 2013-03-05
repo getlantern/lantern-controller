@@ -140,7 +140,7 @@ public class MandrillEmailer {
 
         final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults().
             followRedirects().validateCertificate().setDeadline(60d);
-        log.warning("Sending paylaod:\n"+payload);
+        log.info("Sending payload:\n"+payload);
         final HTTPRequest request = 
             new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
             //new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
