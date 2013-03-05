@@ -1,6 +1,8 @@
 package org.lantern.data;
 
 import javax.persistence.Id;
+import com.googlecode.objectify.Key;
+import com.googlecode.objectify.annotation.Parent;
 
 /**
  * An invite's id is inviter-email-address\1invitee-email-address
@@ -9,6 +11,9 @@ public class Invite {
 
     @Id
     private String id;
+
+    @Parent
+    private Key<LanternUser> inviterKey;
 
     private String inviter;
 
@@ -19,6 +24,7 @@ public class Invite {
 
     public Invite(String inviter, String invitee) {
         this.id = makeKey(inviter, invitee);
+        this.inviterKey = new Key<LanternUser>(LanternUser.class, inviter);
         this.inviter = inviter;
         this.invitee = invitee;
     }

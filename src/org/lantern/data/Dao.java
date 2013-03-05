@@ -17,6 +17,7 @@ import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 
 import com.google.appengine.api.datastore.QueryResultIterator;
+import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -602,43 +603,49 @@ public class Dao extends DAOBase {
             final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
     	Collection<String> results = new HashSet<String>(20);
+        final Key<LanternUser>
+            ancestor = new Key<LanternUser>(LanternUser.class, inviterEmail);
+
     	for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            Objectify ofy = ObjectifyService.beginTransaction();
+            results = new HashSet<String>(20);
+
+            // Compatibility with old invites.
+            final Query<LanternUser> invitees =
+                // Note that this does NOT have any transactional
+                // guarantees.  This is not an ancestor query and thus
+                // we couldn't run it in the transaction.
+                ofy().query(LanternUser.class).filter("sponsor", inviterEmail);
+            for (LanternUser invitee : invitees) {
+                final String invitedEmail = invitee.getId();
+                if (!emailsMatch(invitedEmail, inviterEmail)) {
+                    results.add(invitedEmail);
+                }
+            }
+
+            Objectify txnOfy = ObjectifyService.beginTransaction();
             try {
-                LanternUser user = ofy.find(LanternUser.class, inviterEmail);
+                LanternUser user = txnOfy.find(LanternUser.class,
+                                               inviterEmail);
                 if (user == null) {
                     throw new UnknownUserException(inviterEmail);
                 }
                 user.setInstallerLocation(installerLocation);
-                ofy.put(user);
-
-                results = new HashSet<String>(20);
-
-                final Query<Invite> invites = ofy.query(Invite.class).filter("inviter", inviterEmail);
-
+                txnOfy.put(user);
+                final Query<Invite> invites = txnOfy.query(Invite.class)
+                                                 .ancestor(ancestor);
                 for (Invite invite : invites) {
                     results.add(invite.getInvitee());
                 }
 
-                // Compatibility with old invites.
-                final Query<LanternUser> invitees =
-                    ofy.query(LanternUser.class).filter("sponsor", inviterEmail);
-
-                for (LanternUser invitee : invitees) {
-                	final String invitedEmail = invitee.getId();
-                    if (!emailsMatch(invitedEmail, inviterEmail)) {
-                    	results.add(invitedEmail);
-                    }
-                }
-                ofy.getTxn().commit();
+                txnOfy.getTxn().commit();
                 log.info("Returning instances: "+results);
                 return results;
             } catch (final ConcurrentModificationException e) {
                 log.info("Concurrent modification! Retrying transaction...");
     			continue;
     		} finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
+                if (txnOfy.getTxn().isActive()) {
+                    txnOfy.getTxn().rollback();
                 }
     		}
     	}
