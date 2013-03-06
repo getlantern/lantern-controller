@@ -389,7 +389,7 @@ public class Dao extends DAOBase {
 
         String giveStr = isGiveMode ? GIVE : GET;
         if (!user.instanceIdSeen(instanceId)) {
-            incrementCounter(dottedPath(NPEERS, EVER, giveStr));
+            incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
         }
         if (!user.countrySeen(countryCode)) {
             incrementCounter(dottedPath(countryCode, NUSERS, EVER));
