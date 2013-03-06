@@ -267,8 +267,10 @@ public class Dao extends DAOBase {
                 invitee = new LanternUser(email);
 
                 invitee.setDegree(user.getDegree() + 1);
-                if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
-                    invitee.setInvites(2);
+                if (getUserCount() <= LanternControllerConstants.MAX_USERS) {
+                    if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
+                        invitee.setInvites(2);
+                    }
                 }
                 invitee.setSponsor(sponsor);
                 ofy.put(invitee);
@@ -565,5 +567,10 @@ public class Dao extends DAOBase {
             ofy.put(instance);
             ofy.put(user);
         }
+    }
+
+    public int getUserCount() {
+        Objectify ofy = ofy();
+        return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
     }
 }
