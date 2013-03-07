@@ -14,10 +14,10 @@ public class LanternControllerConstants {
     static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
     static final String INVITE_EMAIL_TEMPLATE_NAME = "cloud-invite";
-    static final String INVITE_EMAIL_SUBJECT = "You have been invited to Lantern";
-    static final String INVITE_EMAIL_FROM_ADDRESS = "beta@getlantern.org";
+    static final String INVITE_EMAIL_SUBJECT = "Lantern Invitation";
+    static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
     static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
-    static final String INVITE_EMAIL_BCC_ADDRESS = "bcc@getlantern.org";
+    static final String INVITE_EMAIL_BCC_ADDRESS = "invite@getlantern.org";
 
     // query string param to bypass password wall on getlantern.org:
     // XXX handle this better? it's duplicated in getlantern.org code's
@@ -108,6 +108,10 @@ public class LanternControllerConstants {
     public static final String UPDATE_URL_KEY = "url";
 
     public static final String UPDATE_URL = "http://www.getlantern.org";
+
+    public static final int MAX_USERS = 100;
+    public static final String ADMIN_EMAIL = "admin@getlantern.org";
+    public static final String NOTIFY_ON_MAX_USERS = "admin@getlantern.org";
 
     public static String getMandrillApiKey() {
         return mandrillApiKey;

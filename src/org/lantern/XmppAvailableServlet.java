@@ -1,12 +1,20 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -126,12 +134,50 @@ public class XmppAvailableServlet extends HttpServlet {
             log.info("Can't e-mail a Google Talk ID. Ignoring.");
             return;
         }
+        final Dao dao = new Dao();
+        if (dao.getUserCount() >= LanternControllerConstants.MAX_USERS) {
+            log.warning("We're out of slots for users, so we can't invite " + invitedEmail);
+            sendTooManyUsersEmail();
+            return;
+        }
         final String refreshToken = LanternControllerUtils.getProperty(
                 doc, LanternConstants.INVITER_REFRESH_TOKEN);
         log.info("Refresh token IS: " + refreshToken);
         InvitedServerLauncher.onInvite(
                 inviterName, inviterEmail, refreshToken, invitedEmail);
-        
+    }
+
+    private void sendTooManyUsersEmail() {
+        Properties props = new Properties();
+        Session session = Session.getDefaultInstance(props, null);
+
+        String msgBody = "We have more than "
+                + LanternControllerConstants.MAX_USERS
+                + " users now.  WE had better up the limit or something.";
+        MimeMessage msg = new MimeMessage(session);
+
+        try {
+            InternetAddress fromAddress = new InternetAddress(
+                    LanternControllerConstants.ADMIN_EMAIL,
+                    "Lantern Controller");
+            msg.setFrom(fromAddress);
+            InternetAddress toAddress = new InternetAddress(
+                    LanternControllerConstants.NOTIFY_ON_MAX_USERS,
+                    "Ops");
+            msg.addRecipient(javax.mail.Message.RecipientType.TO,
+                    toAddress);
+
+            msg.setSubject("We're out of users!");
+            msg.setText(msgBody);
+            Transport.send(msg);
+
+        } catch (AddressException e) {
+            throw new RuntimeException(e);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean isInvite(final Document doc) {

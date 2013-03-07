@@ -276,7 +276,9 @@ public class Dao extends DAOBase {
                     invitee = new LanternUser(email);
 
                     invitee.setDegree(inviter.getDegree() + 1);
-                    if (invitee.getDegree() < 3 && invitee.getInvites() < 2) {
+                    if (getUserCount() < LanternControllerConstants.MAX_USERS
+                        && invitee.getDegree() < 3
+                        && invitee.getInvites() < 2) {
                         invitee.setInvites(2);
                     }
                     invitee.setSponsor(sponsor);
@@ -396,7 +398,7 @@ public class Dao extends DAOBase {
 
         String giveStr = isGiveMode ? GIVE : GET;
         if (!user.instanceIdSeen(instanceId)) {
-            incrementCounter(dottedPath(NPEERS, EVER, giveStr));
+            incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
         }
         if (!user.countrySeen(countryCode)) {
             incrementCounter(dottedPath(countryCode, NUSERS, EVER));
@@ -713,5 +715,9 @@ public class Dao extends DAOBase {
     private boolean emailsMatch(final String one, final String other) {
         return one.trim().equalsIgnoreCase(other.trim());
     }
-}
 
+    public int getUserCount() {
+        Objectify ofy = ofy();
+        return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
+    }
+}

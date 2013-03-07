@@ -64,6 +64,7 @@ public class MandrillEmailer {
     
     /**
      * Creates JSON compatible with the Mandrill API. Public for testing.
+     * See https://mandrillapp.com/api/docs/messages.html#method=send-template
      * 
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
