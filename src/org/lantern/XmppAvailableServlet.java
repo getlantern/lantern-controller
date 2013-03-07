@@ -142,7 +142,12 @@ public class XmppAvailableServlet extends HttpServlet {
         }
         final String refreshToken = LanternControllerUtils.getProperty(
                 doc, LanternConstants.INVITER_REFRESH_TOKEN);
-        log.info("Refresh token IS: " + refreshToken);
+        if (refreshToken == null) {
+            log.info("No refresh token.");
+        } else {
+            log.info("Refresh token starts with: "
+                     + refreshToken.substring(0, 12) + "...");
+        }
         InvitedServerLauncher.onInvite(
                 inviterName, inviterEmail, refreshToken, invitedEmail);
     }
