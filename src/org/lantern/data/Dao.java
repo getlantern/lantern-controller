@@ -219,6 +219,7 @@ public class Dao extends DAOBase {
             incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
             incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+            user.incrementInstancesSignedIn();
             ofy.put(instance);
             ofy.put(user);
             log.info("Finished updating datastore...");
