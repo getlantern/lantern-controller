@@ -122,40 +122,6 @@ public class Dao extends DAOBase {
         return users.list();
     }
 
-    public Collection<String> getInstances() {
-        final Objectify ofy = ObjectifyService.begin();
-
-        // TODO: Limit this more and randomize it more.
-        // First find the users that are validated, and then find the
-        // instances associated with that user that are available.
-        final long now = System.currentTimeMillis();
-        //final Date cutoff = new Date(now - 1000 * 60 * 60 * 24 * 5);
-
-        // Instances get updated quite often via info chat messages. These are
-        // more reliable than presence updates because we don't get presence
-        // updates from users in invisibility mode.
-        // Only give out the freshest instances.
-        final Date cutoff =
-            new Date(now - LanternControllerConstants.UPDATE_TIME_MILLIS);
-
-        log.info("Cutoff date is: "+cutoff);
-        final Query<LanternInstance> instances =
-            ofy.query(LanternInstance.class).filter("available", true).filter("lastUpdated >", cutoff);
-        //final Query<LanternInstance> instances =
-        //    ofy.query(LanternInstance.class).filter("available", true);
-
-        //final Query<LanternUser> users =
-        //    ofy.query(LanternUser.class).filter("available", true).filter("validated", true);
-        final Collection<String> results = new HashSet<String>(20);
-        final QueryResultIterator<LanternInstance> iter = instances.iterator();
-        while (iter.hasNext()) {
-            final LanternInstance user = iter.next();
-            results.add(user.getId());
-        }
-        log.info("Returning instances: "+results);
-        return results;
-    }
-
     public void setInstanceAvailable(String userId, final String instanceId,
             final String countryCode, final boolean isGiveMode) {
         final Objectify ofy = ofy();

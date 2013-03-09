@@ -343,20 +343,9 @@ public class XmppAvailableServlet extends HttpServlet {
     private void addServers(final String jid,
         final Map<String, Object> responseJson) {
 
-        log.info("Adding servers...");
-        final Dao dao = new Dao();
-        final Collection<String> servers = dao.getInstances();
+        log.info("Adding server...");
 
-        // Make sure to remove ourselves.
-        servers.remove(jid);
-
-        // TODO: We need to provide the same servers for the same users every
-        // time. Possibly only provide servers to validated users?
-
-        servers.addAll(Arrays.asList("75.101.134.244:7777",
-            "laeproxyhr1.appspot.com",
-            "rlanternz.appspot.com"));
-
-        responseJson.put(LanternConstants.SERVERS, servers);
+        responseJson.put(LanternConstants.SERVERS,
+                         Arrays.asList("75.101.134.244:7777"));
     }
 }
