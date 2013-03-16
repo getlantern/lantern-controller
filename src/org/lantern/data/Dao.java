@@ -583,29 +583,48 @@ public class Dao extends DAOBase {
     	return old;
     }
 
+   /** Perform, as an atomic operation, the setting of the installerLocation
+     *  and the getting of whatever invitees had been waiting for the installers
+     *  to be built.
+     *
+     *  This is to prevent the case that an invitation is processed between
+     *  these operations, thus triggering the sending of two invite e-mails
+     *  (one in the handling of the server-up event, and another in the
+     *  handling of the invitation proper, which sees the server as available
+     *  and thus sends the e-mail immediately).
+     *
+     *  While this would not be terrible, it's not hard to avoid either.
+     */
     public Collection<String> setInstallerLocationAndGetInvitees(
             final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
-    	Collection<String> results = new HashSet<String>(20);
+        Collection<String> results = new HashSet<String>();
+        // Compatibility with old invites.  This is done so users of old
+        // clients get a chance to upgrade in a way that carries their
+        // network-of-trust information to the new scheme.
+        //
+        // Even if we could run this inside the transaction, it would
+        // make no sense since this is old data.
+        final Query<LanternUser> invitees =
+            ofy().query(LanternUser.class).filter("sponsor", inviterEmail);
+        for (LanternUser invitee : invitees) {
+            final String invitedEmail = invitee.getId();
+            if (!emailsMatch(invitedEmail, inviterEmail)) {
+                results.add(invitedEmail);
+            }
+        }
+        // The GAE datastore only gives strong consistency guarantees for
+        // queries that specify an 'ancestor' constraint ("ancestor queries").
+        // In addition, no other queries are allowed in a transaction.
+        //
+        // As of this writing, we are only ever querying invites per inviter,
+        // hence the grouping.
         final Key<LanternUser>
             ancestor = new Key<LanternUser>(LanternUser.class, inviterEmail);
-
-    	for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            results = new HashSet<String>(20);
-
-            // Compatibility with old invites.
-            final Query<LanternUser> invitees =
-                // Note that this does NOT have any transactional
-                // guarantees.  This is not an ancestor query and thus
-                // we couldn't run it in the transaction.
-                ofy().query(LanternUser.class).filter("sponsor", inviterEmail);
-            for (LanternUser invitee : invitees) {
-                final String invitedEmail = invitee.getId();
-                if (!emailsMatch(invitedEmail, inviterEmail)) {
-                    results.add(invitedEmail);
-                }
-            }
-
+        for (int retries=TXN_RETRIES; retries > 0; retries--) {
+            // We don't need to reset `results` inside the loop because it will
+            // only ever grow.  If we get a collision, the only point of
+            // retrying is to incorporate any new invites.
             Objectify txnOfy = ObjectifyService.beginTransaction();
             try {
                 LanternUser user = txnOfy.find(LanternUser.class,
@@ -626,16 +645,17 @@ public class Dao extends DAOBase {
                 return results;
             } catch (final ConcurrentModificationException e) {
                 log.info("Concurrent modification! Retrying transaction...");
-    			continue;
-    		} finally {
+                continue;
+            } finally {
                 if (txnOfy.getTxn().isActive()) {
                     txnOfy.getTxn().rollback();
                 }
-    		}
-    	}
-    	log.warning("Gave up because of too many failed transactions!");
-    	//XXX: is really returning our best guess better than failing?
-    	return results;
+            }
+        }
+        log.warning("Gave up because of too many failed transactions!");
+        // Since the correctness of this is not critical, returning our best
+        // effort guess is better than failing altogether.
+        return results;
     }
 
     public void addInstallerBucket(final String name) {
