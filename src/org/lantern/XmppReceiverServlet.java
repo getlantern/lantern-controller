@@ -32,7 +32,12 @@ public class XmppReceiverServlet extends HttpServlet {
         final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
         final Message msg = xmpp.parseMessage(req);
         
-        final JID fromJid = msg.getFromJid();
+        final String fromJid = msg.getFromJid().getId();
+        if (!LanternXmppUtils.jidToUserId(fromJid).equals(
+                InvitedServerLauncher.INVSRVLAUNCHER_EMAIL)) {
+            log.warning("Chat from unauthorized user: " + fromJid);
+            return;
+        }
         final String body = msg.getBody();
         log.info("Received " + fromJid + " body:\n" + body);
 
@@ -64,13 +69,6 @@ public class XmppReceiverServlet extends HttpServlet {
             // New buckets for installers have been created.
             final List<String> bucketList = (List<String>)m.get("register-buckets");
             if (bucketList != null) {
-                if (!fromJid.getId().startsWith(
-                        InvitedServerLauncher.INVSRVLAUNCHER_EMAIL)) {
-                    log.warning("Unauthorized user "
-                                + fromJid
-                                + " tried to register buckets.");
-                    return;
-                }
                 final Dao dao = new Dao();
                 for (String bucketName : bucketList) {
                     dao.addInstallerBucket(bucketName);
