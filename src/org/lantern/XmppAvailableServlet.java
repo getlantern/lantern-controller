@@ -254,7 +254,6 @@ public class XmppAvailableServlet extends HttpServlet {
         mapper.registerModule(new MrBeanModule());
         try {
             final Stats data = mapper.readValue(stats, Stats.class);
-            addUpdateData(data, responseJson);
             addInviteData(presence, responseJson);
             // The following will delete the instance if it's not available,
             // updating all counters.
@@ -283,38 +282,6 @@ public class XmppAvailableServlet extends HttpServlet {
             dao.getInvites(LanternControllerUtils.userId(presence));
         responseJson.put(LanternConstants.INVITES_KEY, invites);
 
-    }
-
-    private void addUpdateData(final Stats data,
-        final Map<String, Object> responseJson) {
-        try {
-            final String majorMinor;
-            final String rawVersion = data.getVersion();
-            if (rawVersion.contains("-")) {
-                majorMinor = StringUtils.substringBeforeLast(rawVersion, ".");
-            } else {
-                majorMinor = rawVersion;
-            }
-            final double version = Double.parseDouble(majorMinor);
-
-            //final double version = 0.001; //just for testing!!
-            if (LanternControllerConstants.LATEST_VERSION > version) {
-                final Map<String,Object> updateJson =
-                    new LinkedHashMap<String,Object>();
-                updateJson.put(LanternConstants.UPDATE_VERSION_KEY,
-                    LanternControllerConstants.LATEST_VERSION);
-                updateJson.put(LanternConstants.UPDATE_RELEASED_KEY,
-                    LanternControllerConstants.UPDATE_RELEASE_DATE);
-                updateJson.put(LanternConstants.UPDATE_URL_KEY,
-                    LanternControllerConstants.UPDATE_URL);
-                updateJson.put(LanternConstants.UPDATE_MESSAGE_KEY,
-                    LanternControllerConstants.UPDATE_MESSAGE);
-                responseJson.put(LanternConstants.UPDATE_KEY, updateJson);
-            }
-        } catch (final NumberFormatException nfe) {
-            // Probably running from main line.
-            log.info("Format exception on version: "+data.getVersion());
-        }
     }
 
     private void sendResponse(final Presence presence, final XMPPService xmpp,

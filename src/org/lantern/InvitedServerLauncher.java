@@ -106,7 +106,7 @@ public class InvitedServerLauncher {
         final String folder = parts[1];
         final String baseUrl =
             "https://" + bucket + ".s3.amazonaws.com/" + folder
-            + "/lantern-" + LanternControllerConstants.LATEST_VERSION_STRING;
+            + "/lantern-" + LanternControllerConstants.LATEST_VERSION;
 
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
