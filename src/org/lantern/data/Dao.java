@@ -599,20 +599,6 @@ public class Dao extends DAOBase {
             final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
         Collection<String> results = new HashSet<String>();
-        // Compatibility with old invites.  This is done so users of old
-        // clients get a chance to upgrade in a way that carries their
-        // network-of-trust information to the new scheme.
-        //
-        // Even if we could run this inside the transaction, it would
-        // make no sense since this is old data.
-        final Query<LanternUser> invitees =
-            ofy().query(LanternUser.class).filter("sponsor", inviterEmail);
-        for (LanternUser invitee : invitees) {
-            final String invitedEmail = invitee.getId();
-            if (!emailsMatch(invitedEmail, inviterEmail)) {
-                results.add(invitedEmail);
-            }
-        }
         // The GAE datastore only gives strong consistency guarantees for
         // queries that specify an 'ancestor' constraint ("ancestor queries").
         // In addition, no other queries are allowed in a transaction.
