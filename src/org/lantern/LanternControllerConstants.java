@@ -33,7 +33,7 @@ public class LanternControllerConstants {
     public static final Map<String, String> UPDATE_URLS =
         new HashMap<String, String>();
 
-    public static final double LATEST_VERSION = 0.20;
+    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.20");
 
     private static final String URL_BASE =
         "http://cdn.getlantern.org/Lantern-"+LATEST_VERSION;

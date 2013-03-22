@@ -298,10 +298,10 @@ public class XmppAvailableServlet extends HttpServlet {
             } else {
                 majorMinor = rawVersion;
             }
-            final double version = Double.parseDouble(majorMinor);
+            final VersionNumber version = new VersionNumber(majorMinor);
 
             //final double version = 0.001; //just for testing!!
-            if (LanternControllerConstants.LATEST_VERSION > version) {
+            if (LanternControllerConstants.LATEST_VERSION.compareTo(version) > 0) {
                 final Map<String,Object> updateJson =
                     new LinkedHashMap<String,Object>();
                 updateJson.put(LanternConstants.UPDATE_VERSION_KEY,
