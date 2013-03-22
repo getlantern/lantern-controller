@@ -21,7 +21,7 @@ public class LanternControllerConstants {
 
     private static String mandrillApiKey;
 
-    public static final String LATEST_VERSION = "0.21.0";
+    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.20");
 
     static {
         try {
