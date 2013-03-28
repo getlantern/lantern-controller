@@ -179,10 +179,14 @@ public class Dao extends DAOBase {
             instance.setCurrentCountry(countryCode);
             instance.setGiveMode(isGiveMode);
             log.info("DAO incrementing online count");
-            incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
+
+            if (!user.anyInstancesSignedIn()) {
+                incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
+                incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
+            }
+
             incrementCounter(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
-            incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
             incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
             incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
             user.incrementInstancesSignedIn();
