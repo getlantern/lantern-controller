@@ -17,7 +17,6 @@ import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
 
-import com.google.appengine.api.datastore.QueryResultIterator;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
@@ -546,7 +545,7 @@ public class Dao extends DAOBase {
             COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
-            if (user.anyInstancesSignedIn()) {
+            if (!user.anyInstancesSignedIn()) {
                 COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NUSERS, ONLINE));
                 COUNTER_MANAGER.decrement(dottedPath(countryCode, NUSERS, ONLINE));
             }
