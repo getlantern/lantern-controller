@@ -19,6 +19,8 @@ public class LanternInstance {
 
     private String currentCountry;
 
+    private boolean giveMode;
+
     public LanternInstance() {
         super();
     }
@@ -74,5 +76,13 @@ public class LanternInstance {
 
     public void setCurrentCountry(String currentCountry) {
         this.currentCountry = currentCountry;
+    }
+
+    public boolean isGiveMode() {
+        return giveMode;
+    }
+
+    public void setGiveMode(boolean mode) {
+        this.giveMode = mode;
     }
 }

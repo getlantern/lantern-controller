@@ -177,6 +177,7 @@ public class Dao extends DAOBase {
             instance.setUser(userId);
             instance.setAvailable(true);
             instance.setCurrentCountry(countryCode);
+            instance.setGiveMode(isGiveMode);
             log.info("DAO incrementing online count");
             incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
             incrementCounter(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
@@ -691,5 +692,24 @@ public class Dao extends DAOBase {
     public int getUserCount() {
         Objectify ofy = ofy();
         return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
+    }
+
+    public void handleModeChange(final String userId, final String instanceId,
+            final boolean isGiveMode) {
+        Objectify ofy = ofy();
+        final String fullId = LanternControllerUtils.jabberIdFromUserAndResource(
+                    userId, instanceId);
+        LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+        if (instance.isGiveMode() != isGiveMode) {
+            final String oldGiveStr = instance.isGiveMode() ? GIVE : GET;
+            instance.setGiveMode(isGiveMode);
+
+            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, oldGiveStr));
+            COUNTER_MANAGER.decrement(dottedPath(instance.getCurrentCountry(), NPEERS, ONLINE, oldGiveStr));
+            final String giveStr = isGiveMode ? GIVE : GET;
+            COUNTER_MANAGER.increment(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+            COUNTER_MANAGER.increment(dottedPath(instance.getCurrentCountry(), NPEERS, ONLINE, giveStr));
+
+        }
     }
 }

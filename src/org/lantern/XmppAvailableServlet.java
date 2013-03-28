@@ -3,7 +3,6 @@ package org.lantern;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -25,7 +24,6 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
-import org.littleshoot.util.ThreadUtils;
 import org.w3c.dom.Document;
 
 import com.google.appengine.api.xmpp.Message;
@@ -69,6 +67,16 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
+        final String userId = LanternXmppUtils.jidToUserId(from);
+        final String instanceId = LanternControllerUtils.instanceId(presence);
+        if (isModeChange(doc)) {
+            String modeString = LanternControllerUtils.getProperty(doc,
+                    LanternConstants.MODE_CHANGE_TOKEN);
+            boolean isGiveMode = "give".equals(modeString);
+            dao.handleModeChange(userId, instanceId, isGiveMode);
+            return;
+        }
+
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
             if (!dao.hasMoreInvites(from)) {
@@ -91,8 +99,6 @@ public class XmppAvailableServlet extends HttpServlet {
 
         String modeString = LanternControllerUtils.getProperty(doc, "mode");
         final boolean isGiveMode = "give".equals(modeString);
-        final String userId = LanternXmppUtils.jidToUserId(from);
-        final String instanceId = LanternControllerUtils.instanceId(presence);
         processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
 
         if (isGiveMode) {
@@ -104,6 +110,18 @@ public class XmppAvailableServlet extends HttpServlet {
         if (!dao.isEverSignedIn(from)) {
             dao.signedIn(from);
         }
+    }
+
+    private boolean isModeChange(Document doc) {
+        final String modeChange = LanternControllerUtils.getProperty(doc,
+                LanternConstants.MODE_CHANGE_TOKEN);
+        boolean isModeChange = !StringUtils.isBlank(modeChange);
+        if (isModeChange) {
+            log.info("Found mode change");
+        } else {
+            log.info("No mode change");
+        }
+        return isModeChange;
     }
 
     private final class AlreadyInvitedException extends Exception {}
