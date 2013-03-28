@@ -142,7 +142,6 @@ public class Dao extends DAOBase {
                 log.info("Incrementing online count");
 
                 //handle the online counters
-                incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
                 incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
                 //and the ever-seen
