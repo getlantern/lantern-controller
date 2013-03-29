@@ -69,13 +69,6 @@ public class XmppAvailableServlet extends HttpServlet {
 
         final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);
-        if (isModeChange(doc)) {
-            String modeString = LanternControllerUtils.getProperty(doc,
-                    LanternConstants.MODE_CHANGE_TOKEN);
-            boolean isGiveMode = "give".equals(modeString);
-            dao.handleModeChange(userId, instanceId, isGiveMode);
-            return;
-        }
 
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
@@ -110,18 +103,6 @@ public class XmppAvailableServlet extends HttpServlet {
         if (!dao.isEverSignedIn(from)) {
             dao.signedIn(from);
         }
-    }
-
-    private boolean isModeChange(Document doc) {
-        final String modeChange = LanternControllerUtils.getProperty(doc,
-                LanternConstants.MODE_CHANGE_TOKEN);
-        boolean isModeChange = !StringUtils.isBlank(modeChange);
-        if (isModeChange) {
-            log.info("Found mode change");
-        } else {
-            log.info("No mode change");
-        }
-        return isModeChange;
     }
 
     private final class AlreadyInvitedException extends Exception {}

@@ -131,11 +131,15 @@ public class Dao extends DAOBase {
                         ofy, userId, instanceId, countryCode, isGiveMode);
                 ofy.getTxn().commit();
                 // We only actually increment the counters when we know the
-                // transaction succeeded.  Since these effect the memcache
+                // transaction succeeded.  Since these affect the memcache
                 // rather than the Datastore, there would be no way to roll
                 // them back should this transaction fail.
                 for (String counter : countersToIncrement) {
-                    incrementCounter(counter);
+                    if (counter.startsWith("-")) {
+                        decrementCounter(counter.substring(1));
+                    } else {
+                        incrementCounter(counter);
+                    }
                 }
                 return;
             } catch (final ConcurrentModificationException e) {
@@ -178,11 +182,27 @@ public class Dao extends DAOBase {
         if (instance != null) {
             log.info("Setting availability to true for " + fullId);
             user = ofy.find(LanternUser.class, instance.getUser());
-            if (!instance.isAvailable()) {
+            if (instance.isAvailable()) {
+                //handle mode changes
+                if (instance.isGiveMode() != isGiveMode) {
+                    log.info("Mode change to " + isGiveMode);
+                    ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+                    ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+                    String oldGiveStr = (!isGiveMode) ? GIVE : GET;
+                    //and decrement the old counters
+                    ret.add("-" + dottedPath(countryCode, NPEERS, ONLINE, oldGiveStr));
+                    ret.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, oldGiveStr));
+                    instance.setGiveMode(isGiveMode);
+                    ofy.put(instance);
+                    log.info("Finished updating datastore...");
+                }
+
+            } else {
                 log.info("Incrementing online count");
 
                 //handle the online counters
                 ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+                ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
 
                 //and the ever-seen
                 if (!instance.getSeenFromCountry(countryCode)) {
@@ -200,6 +220,7 @@ public class Dao extends DAOBase {
                 }
                 instance.setAvailable(true);
                 instance.setLastUpdated(new Date());
+                instance.setGiveMode(isGiveMode);
                 user.incrementInstancesSignedIn();
                 ofy.put(instance);
                 ofy.put(user);
@@ -442,6 +463,10 @@ public class Dao extends DAOBase {
         return isUserNew;
     }
 
+    private void decrementCounter(String counter) {
+        COUNTER_MANAGER.decrement(counter);
+    }
+
     private void incrementCounter(String counter) {
         COUNTER_MANAGER.increment(counter);
     }
@@ -587,13 +612,14 @@ public class Dao extends DAOBase {
             LanternUser user = ofy.find(LanternUser.class, userId);
             user.decrementInstancesSignedIn();
 
-            String giveStr = isGiveMode ? GIVE : GET;
+            String giveStr = instance.isGiveMode() ? GIVE : GET;
             String countryCode = instance.getCurrentCountry();
 
             COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
             COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
             if (!user.anyInstancesSignedIn()) {
+                log.info("Decrementing online user count");
                 COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NUSERS, ONLINE));
                 COUNTER_MANAGER.decrement(dottedPath(countryCode, NUSERS, ONLINE));
             }
@@ -739,25 +765,6 @@ public class Dao extends DAOBase {
     public int getUserCount() {
         Objectify ofy = ofy();
         return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
-    }
-
-    public void handleModeChange(final String userId, final String instanceId,
-            final boolean isGiveMode) {
-        Objectify ofy = ofy();
-        final String fullId = LanternControllerUtils.jabberIdFromUserAndResource(
-                    userId, instanceId);
-        LanternInstance instance = ofy.find(LanternInstance.class, fullId);
-        if (instance.isGiveMode() != isGiveMode) {
-            final String oldGiveStr = instance.isGiveMode() ? GIVE : GET;
-            instance.setGiveMode(isGiveMode);
-
-            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, oldGiveStr));
-            COUNTER_MANAGER.decrement(dottedPath(instance.getCurrentCountry(), NPEERS, ONLINE, oldGiveStr));
-            final String giveStr = isGiveMode ? GIVE : GET;
-            COUNTER_MANAGER.increment(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-            COUNTER_MANAGER.increment(dottedPath(instance.getCurrentCountry(), NPEERS, ONLINE, giveStr));
-
-        }
     }
 
     public void forgetEveryoneSignedIn() {
