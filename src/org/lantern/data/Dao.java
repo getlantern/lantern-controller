@@ -558,8 +558,12 @@ public class Dao extends DAOBase {
             log.severe("No corresponding invite for "+email);
             return;
         }
+        // As of this writing, XmppAvailableServlet makes sure this is the
+        // case before calling me.
+        assert !invite.isEverSignedIn();
         invite.setEverSignedIn(true);
         ofy.put(invite);
+        incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
     }
 
     public void setInstanceUnavailable(String userId, String instanceId, boolean isGiveMode) {
