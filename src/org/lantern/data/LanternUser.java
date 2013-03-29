@@ -3,22 +3,24 @@ package org.lantern.data;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
 public class LanternUser {
-    
+    private final transient Logger log = Logger.getLogger(getClass().getName());
+
     @Id
     private String id;
-    
+
     private long directBytes;
-    
+
     private long bytesProxied;
-    
+
     private long directRequests;
-    
+
     private long requestsProxied;
-    
+
     private Date created = new Date();
 
     private Set<String> countryCodes = new HashSet<String>();
@@ -30,14 +32,14 @@ public class LanternUser {
      * Lantern developers.
      */
     private int degree;
-    
+
     /**
      * This is the user who invited this user to the network.
      */
     private String sponsor;
-    
+
     private boolean everSignedIn = false;
-    
+
     private Date lastAccessed = new Date();
 
     private int instancesSignedIn = 0;
@@ -163,7 +165,11 @@ public class LanternUser {
     }
 
     public void decrementInstancesSignedIn() {
-        instancesSignedIn --;
+        //if instancesSignedIn is zero, there is a bug
+        if (instancesSignedIn > 0)
+            instancesSignedIn --;
+        else
+            log.info("Instances signed in for " + this + " is already zero");
     }
 
     public boolean instanceIdSeen(String instanceId) {
