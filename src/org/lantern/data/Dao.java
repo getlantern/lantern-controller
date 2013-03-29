@@ -123,7 +123,25 @@ public class Dao extends DAOBase {
 
     public void setInstanceAvailable(String userId, final String instanceId,
             final String countryCode, final boolean isGiveMode) {
-        final Objectify ofy = ofy();
+        final Objectify ofy = ObjectifyService.beginTransaction();
+        try {
+            setInstanceAvailable(ofy, userId, instanceId, countryCode, isGiveMode);
+            ofy.getTxn().commit();
+        } catch (final ConcurrentModificationException e) {
+            // When a user logs in we get duplicated presence events for some
+            // reason.  Whoever first handled this should have done the right
+            // thing, and retrying here could only make things worse.
+            log.info("Concurrent modification! Ignoring...");
+        } finally {
+            if (ofy.getTxn().isActive()) {
+                ofy.getTxn().rollback();
+            }
+        }
+    }
+
+    public void setInstanceAvailable(Objectify ofy, String userId,
+            final String instanceId, final String countryCode,
+            final boolean isGiveMode) {
         // As of this writing, we use instanceId to refer to the XMPP
         // resource, that being the instance-specific part of the jabberId.
         // Note that this does *not* identify an instance globally.  You need
