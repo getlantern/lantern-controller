@@ -169,7 +169,7 @@ public class LanternUser {
         if (instancesSignedIn > 0)
             instancesSignedIn --;
         else
-            log.info("Instances signed in for " + this + " is already zero");
+            log.warning("Instances signed in for " + this + " is already zero");
     }
 
     public boolean instanceIdSeen(String instanceId) {
