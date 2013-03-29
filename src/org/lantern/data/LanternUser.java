@@ -184,6 +184,12 @@ public class LanternUser {
         return countryCodes;
     }
 
+/*  Uncomment for datastore reset scripts.
+    public void resetCountryCodes() {
+        countryCodes = new HashSet<String>();
+    }
+*/
+
     public String getInstallerLocation() {
         return installerLocation;
     }

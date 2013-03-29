@@ -26,6 +26,7 @@ public class RemoteApi {
 
         try {
             final Dao dao = new Dao();
+            dao.forgetEveryoneSignedIn();
             /* Trigger your hacks here.*/
             //dao.createInitialUser("insertmyaccount@gmail.com");
         } finally {

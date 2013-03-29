@@ -757,6 +757,8 @@ public class Dao extends DAOBase {
         Objectify ofy = ofy();
         for (LanternUser user : ofy.query(LanternUser.class)) {
             user.setEverSignedIn(false);
+            // Uncomment this method in LanternUsers too.
+            user.resetCountryCodes();
             ofy.put(user);
         }
         */
