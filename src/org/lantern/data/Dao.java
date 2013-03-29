@@ -176,85 +176,82 @@ public class Dao extends DAOBase {
             fullId = LanternControllerUtils.jabberIdFromUserAndResource(
                         userId, instanceId);
         LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+        LanternUser user = ofy.find(LanternUser.class, userId);
         String giveStr = isGiveMode ? GIVE : GET;
-        LanternUser user;
-        ArrayList<String> ret = new ArrayList<String>();
+        ArrayList<String> counters = new ArrayList<String>();
         if (instance != null) {
             log.info("Setting availability to true for " + fullId);
-            user = ofy.find(LanternUser.class, instance.getUser());
             if (instance.isAvailable()) {
                 //handle mode changes
                 if (instance.isGiveMode() != isGiveMode) {
                     log.info("Mode change to " + isGiveMode);
-                    ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
-                    ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+                    counters.add(dottedPath(countryCode, NPEERS, ONLINE,
+                                 giveStr));
+                    counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
                     String oldGiveStr = (!isGiveMode) ? GIVE : GET;
                     //and decrement the old counters
-                    ret.add("-" + dottedPath(countryCode, NPEERS, ONLINE, oldGiveStr));
-                    ret.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, oldGiveStr));
+                    counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE,
+                                 oldGiveStr));
+                    counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE,
+                                 oldGiveStr));
                     instance.setGiveMode(isGiveMode);
                     ofy.put(instance);
                     log.info("Finished updating datastore...");
                 }
 
             } else {
-                log.info("Incrementing online count");
-
-                //handle the online counters
-                ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
-                ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-
-                //and the ever-seen
-                if (!instance.getSeenFromCountry(countryCode)) {
-                    instance.addSeenFromCountry(countryCode);
-                    ret.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
-                    ret.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
-                }
-                instance.setCurrentCountry(countryCode);
-
-                //notice that we check for any signed in before we set this instance
-                //available
-                if (!user.anyInstancesSignedIn()) {
-                    ret.add(dottedPath(countryCode, NUSERS, ONLINE));
-                    ret.add(dottedPath(GLOBAL, NUSERS, ONLINE));
-                }
-                instance.setAvailable(true);
-                instance.setLastUpdated(new Date());
-                instance.setGiveMode(isGiveMode);
-                user.incrementInstancesSignedIn();
-                ofy.put(instance);
-                ofy.put(user);
-                log.info("Finished updating datastore...");
+                // XXX will we ever see this anyway?
+                log.info("Instance exists but was unavailable.");
+                updateStatsForNewlyAvailableInstance(ofy, user, instance,
+                        countryCode, giveStr, counters);
             }
 
-            assert(user != null);
         } else {
             log.info("Could not find instance!!");
-            user = ofy.find(LanternUser.class, userId);
-
-            assert(user != null);
             instance = new LanternInstance(fullId);
             instance.setUser(userId);
-            instance.setAvailable(true);
-            instance.setCurrentCountry(countryCode);
-            instance.setGiveMode(isGiveMode);
-            log.info("DAO incrementing online count");
-
-            if (!user.anyInstancesSignedIn()) {
-                ret.add(dottedPath(GLOBAL, NUSERS, ONLINE));
-                ret.add(dottedPath(countryCode, NUSERS, ONLINE));
-            }
-
-            ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-            ret.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
-            ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
-            ret.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
-            user.incrementInstancesSignedIn();
-            ofy.put(instance);
-            ofy.put(user);
-            log.info("Finished updating datastore...");
+            // The only counter that we need handling differently for new
+            // instances is the global peers ever.
+            counters.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
+            updateStatsForNewlyAvailableInstance(ofy, user, instance,
+                    countryCode, giveStr, counters);
         }
-        return ret;
+        return counters;
+    }
+
+    /**
+     * Possibly modifies the user, instance and the counters (via the
+     * `counters` list).
+     */
+    private void updateStatsForNewlyAvailableInstance(Objectify ofy,
+            LanternUser user, LanternInstance instance,
+            final String countryCode, final String giveStr,
+            ArrayList<String> counters) {
+        //handle the online counters
+        counters.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+        //and the ever-seen
+        if (!instance.getSeenFromCountry(countryCode)) {
+            instance.addSeenFromCountry(countryCode);
+            counters.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
+        }
+        if (!user.countrySeen(countryCode)){
+            counters.add(dottedPath(countryCode, NUSERS, EVER));
+        }
+        //notice that we check for any signed in before we set this instance
+        //available
+        if (!user.anyInstancesSignedIn()) {
+            counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
+            counters.add(dottedPath(countryCode, NUSERS, ONLINE));
+        }
+        user.incrementInstancesSignedIn();
+        instance.setCurrentCountry(countryCode);
+        instance.setGiveMode(giveStr == GIVE);
+        instance.setAvailable(true);
+        instance.setLastUpdated(new Date());
+        ofy.put(instance);
+        ofy.put(user);
+        log.info("Finished updating datastore...");
     }
 
     private static String dottedPath(String ... strings) {
