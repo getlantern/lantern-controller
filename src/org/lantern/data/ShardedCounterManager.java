@@ -21,6 +21,7 @@ package org.lantern.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -48,8 +49,6 @@ public class ShardedCounterManager {
 
     public static final int MAX_UPDATES_PER_SHARD_PER_SECOND = 100;
 
-    public static final int MAX_UPDATES_PER_SHARD_PER_CYCLE = MAX_UPDATES_PER_SHARD_PER_SECOND
-            * ShardedCounterManager.PERSIST_TIMEOUT;
     // how many updates (on average) we record for each shard
     public static final int SHARD_UPDATE_RATIO = 10;
 
@@ -187,11 +186,18 @@ public class ShardedCounterManager {
     }
 
     public void persistCounters() {
+        long now = new Date().getTime() / 1000;
+        group.setLastUpdated(now);
         cache.put("countergroup", group);
 
         PersistenceManager pm = PMF.get().getPersistenceManager();
         pm.makePersistent(group);
         pm.close();
 
+    }
+
+    public long getLastUpdated() {
+        loadGroup();
+        return group.getLastUpdated();
     }
 }

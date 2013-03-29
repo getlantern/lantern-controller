@@ -21,6 +21,10 @@ public class CounterGroup implements Serializable {
     @Persistent(serialized = "true")
     private final HashMap<String, DatastoreCounter> counters;
 
+    //in epoch seconds
+    @Persistent
+    private long lastUpdated;
+
     public CounterGroup() {
         counters = new HashMap<String, DatastoreCounter>();
     }
@@ -35,5 +39,13 @@ public class CounterGroup implements Serializable {
 
     public void addCounter(DatastoreCounter counter) {
         counters.put(counter.getCounterName(), counter);
+    }
+
+    public long getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(long lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 }

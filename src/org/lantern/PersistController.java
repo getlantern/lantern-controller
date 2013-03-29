@@ -2,6 +2,7 @@ package org.lantern;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -34,6 +35,14 @@ public class PersistController extends HttpServlet {
         ShardedCounterManager manager = new ShardedCounterManager();
         Map<String, DatastoreCounter> counters = manager.getAllCounters();
         Map<String, Long> cachedCounters = new HashMap<String, Long>();
+        long now = new Date().getTime() / 1000;
+        int timeSinceLastPersist = (int) (now - manager.getLastUpdated());
+        if (timeSinceLastPersist < 60) {
+            //assume at least one minute has passed to avoid
+            //weirdness
+            timeSinceLastPersist = 60;
+        }
+
         for (DatastoreCounter counter : counters.values()) {
             // get count of new items since last persist
             String counterName = counter.getCounterName();
@@ -53,7 +62,7 @@ public class PersistController extends HttpServlet {
                 cachedCounters.put("updates" + counterName, 0L);
                 final int currentShards = counter.getShardCount();
                 final int maxUpdatesPerShard = ShardedCounterManager.MAX_UPDATES_PER_SHARD_PER_SECOND
-                        * ShardedCounterManager.PERSIST_TIMEOUT;
+                        * timeSinceLastPersist;
                 if (updates > currentShards * maxUpdatesPerShard) {
                     log.info("adding shard for counter " + counterName);
                     int notHandledByCurrentShards = (int) (updates
