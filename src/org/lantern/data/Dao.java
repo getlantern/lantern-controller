@@ -759,4 +759,16 @@ public class Dao extends DAOBase {
 
         }
     }
+
+    public void forgetEveryoneSignedIn() {
+        // One-shot job so lantern-controller reckons old users in the global
+        // ever counter.  Uncomment and run from RemoteAPI for fun and evil.
+        /*
+        Objectify ofy = ofy();
+        for (LanternUser user : ofy.query(LanternUser.class)) {
+            user.setEverSignedIn(false);
+            ofy.put(user);
+        }
+        */
+    }
 }
