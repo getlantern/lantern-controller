@@ -123,24 +123,45 @@ public class Dao extends DAOBase {
 
     public void setInstanceAvailable(String userId, final String instanceId,
             final String countryCode, final boolean isGiveMode) {
-        final Objectify ofy = ObjectifyService.beginTransaction();
-        try {
-            setInstanceAvailable(ofy, userId, instanceId, countryCode, isGiveMode);
-            ofy.getTxn().commit();
-        } catch (final ConcurrentModificationException e) {
-            // When a user logs in we get duplicated presence events for some
-            // reason.  Whoever first handled this should have done the right
-            // thing, and retrying here could only make things worse.
-            log.info("Concurrent modification! Ignoring...");
-        } finally {
-            if (ofy.getTxn().isActive()) {
-                ofy.getTxn().rollback();
+        for (int retries=TXN_RETRIES; retries>0; retries--) {
+            final Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                final ArrayList<String> countersToIncrement
+                    = setInstanceAvailable(
+                        ofy, userId, instanceId, countryCode, isGiveMode);
+                ofy.getTxn().commit();
+                // We only actually increment the counters when we know the
+                // transaction succeeded.  Since these effect the memcache
+                // rather than the Datastore, there would be no way to roll
+                // them back should this transaction fail.
+                for (String counter : countersToIncrement) {
+                    incrementCounter(counter);
+                }
+                return;
+            } catch (final ConcurrentModificationException e) {
+                // When a user logs in we get duplicated presence events for
+                // some reason.  This is why we put this method in
+                // a transaction, but we wouldn't really want to retry on this
+                // condition.  We do retry because this transaction can also
+                // fail if someone concurrently modifies the LanternUser that
+                // owns this instance.
+                log.info("Concurrent modification! Retrying...");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
             }
         }
+        log.warning("Too much contention; giving up!");
     }
 
-    public void setInstanceAvailable(Objectify ofy, String userId,
-            final String instanceId, final String countryCode,
+    /**
+     * @return a list of the counters that should be incremented as a
+     * result of this instance having become available.
+     */
+    public ArrayList<String> setInstanceAvailable(Objectify ofy,
+            String userId, final String instanceId, final String countryCode,
             final boolean isGiveMode) {
         // As of this writing, we use instanceId to refer to the XMPP
         // resource, that being the instance-specific part of the jabberId.
@@ -153,6 +174,7 @@ public class Dao extends DAOBase {
         LanternInstance instance = ofy.find(LanternInstance.class, fullId);
         String giveStr = isGiveMode ? GIVE : GET;
         LanternUser user;
+        ArrayList<String> ret = new ArrayList<String>();
         if (instance != null) {
             log.info("Setting availability to true for " + fullId);
             user = ofy.find(LanternUser.class, instance.getUser());
@@ -160,21 +182,21 @@ public class Dao extends DAOBase {
                 log.info("Incrementing online count");
 
                 //handle the online counters
-                incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+                ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
 
                 //and the ever-seen
                 if (!instance.getSeenFromCountry(countryCode)) {
                     instance.addSeenFromCountry(countryCode);
-                    incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
-                    incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
+                    ret.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
+                    ret.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
                 }
                 instance.setCurrentCountry(countryCode);
 
                 //notice that we check for any signed in before we set this instance
                 //available
                 if (!user.anyInstancesSignedIn()) {
-                    incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
-                    incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
+                    ret.add(dottedPath(countryCode, NUSERS, ONLINE));
+                    ret.add(dottedPath(GLOBAL, NUSERS, ONLINE));
                 }
                 instance.setAvailable(true);
                 instance.setLastUpdated(new Date());
@@ -198,20 +220,20 @@ public class Dao extends DAOBase {
             log.info("DAO incrementing online count");
 
             if (!user.anyInstancesSignedIn()) {
-                incrementCounter(dottedPath(GLOBAL, NUSERS, ONLINE));
-                incrementCounter(dottedPath(countryCode, NUSERS, ONLINE));
+                ret.add(dottedPath(GLOBAL, NUSERS, ONLINE));
+                ret.add(dottedPath(countryCode, NUSERS, ONLINE));
             }
 
-            incrementCounter(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-            incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
-            incrementCounter(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
-            incrementCounter(dottedPath(countryCode, NPEERS, EVER, giveStr));
+            ret.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+            ret.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
+            ret.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+            ret.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
             user.incrementInstancesSignedIn();
             ofy.put(instance);
             ofy.put(user);
             log.info("Finished updating datastore...");
         }
-
+        return ret;
     }
 
     private static String dottedPath(String ... strings) {
