@@ -90,6 +90,10 @@ public class ShardedCounterManager {
             return;
         }
         int shardCount = counter.getShardCount();
+        if (shardCount <= 0) {
+            log.severe("Bogus shard count for " + name + ": " + Integer.toString(shardCount));
+            return;
+        }
         Random generator = new Random();
         int shardNum = generator.nextInt(shardCount);
         cache.increment("count" + name + "-" + shardNum, count, BASELINE);
