@@ -551,29 +551,30 @@ public class Dao extends DAOBase {
         }
     }
 
-    public boolean isEverSignedIn(final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser invite = ofy.find(LanternUser.class, email);
-        if (invite == null) {
-            log.severe("No corresponding invite for "+email);
-            return false;
-        }
-        return invite.isEverSignedIn();
-    }
-
     public void signedIn(final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser invite = ofy.find(LanternUser.class, email);
-        if (invite == null) {
-            log.severe("No corresponding invite for "+email);
-            return;
+        for (int retries=TXN_RETRIES; retries > 0; retries--) {
+            Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                LanternUser user = ofy.find(LanternUser.class, email);
+                if (!user.isEverSignedIn()) {
+                    log.info("This is a new user.");
+                    user.setEverSignedIn(true);
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                    // Increment after committing, because memcache is not
+                    // rolled back if the transaction fails.
+                    incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
+                }
+                return;
+            } catch (final ConcurrentModificationException e) {
+                log.info("Concurrent modification! Retrying transaction...");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
+            }
         }
-        // As of this writing, XmppAvailableServlet makes sure this is the
-        // case before calling me.
-        assert !invite.isEverSignedIn();
-        invite.setEverSignedIn(true);
-        ofy.put(invite);
-        incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
     }
 
     public void setInstanceUnavailable(String userId, String instanceId, boolean isGiveMode) {

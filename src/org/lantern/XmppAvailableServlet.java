@@ -100,9 +100,7 @@ public class XmppAvailableServlet extends HttpServlet {
             processGetMode(presence, xmpp, available, responseJson);
         }
 
-        if (!dao.isEverSignedIn(from)) {
-            dao.signedIn(from);
-        }
+        dao.signedIn(from);
     }
 
     private final class AlreadyInvitedException extends Exception {}
