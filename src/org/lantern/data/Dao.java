@@ -425,21 +425,6 @@ public class Dao extends DAOBase {
 
         ofy.put(user);
 
-        log.info("Really bumping stats...");
-
-        String giveStr = isGiveMode ? GIVE : GET;
-        if (!user.instanceIdSeen(instanceId)) {
-            incrementCounter(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
-        }
-        if (!user.countrySeen(countryCode)) {
-            incrementCounter(dottedPath(countryCode, NUSERS, EVER));
-        }
-
-        // Never store censored users.
-        if (!CensoredUtils.isCensored(countryCode)) {
-            ofy.put(user);
-        }
-
         incrementCounter(dottedPath(countryCode, BYTES_EVER), bytesProxied);
         incrementCounter(dottedPath(GLOBAL, BYTES_EVER), bytesProxied);
 
