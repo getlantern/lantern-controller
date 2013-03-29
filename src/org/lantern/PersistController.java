@@ -37,10 +37,13 @@ public class PersistController extends HttpServlet {
         Map<String, Long> cachedCounters = new HashMap<String, Long>();
         long now = new Date().getTime() / 1000;
         int timeSinceLastPersist = (int) (now - manager.getLastUpdated());
-        if (timeSinceLastPersist < 60) {
-            //assume at least one minute has passed to avoid
+        log.info("Time since last cycle  " + timeSinceLastPersist);
+        if (timeSinceLastPersist < ShardedCounterManager.PERSIST_TIMEOUT) {
+            //assume at least one cycle has passed to avoid
             //weirdness
-            timeSinceLastPersist = 60;
+            log.warning("Not enough time has passed between persist cycles; setting to "
+                    + ShardedCounterManager.PERSIST_TIMEOUT);
+            timeSinceLastPersist = ShardedCounterManager.PERSIST_TIMEOUT;
         }
 
         for (DatastoreCounter counter : counters.values()) {
@@ -49,7 +52,8 @@ public class PersistController extends HttpServlet {
             long count = manager.getNewCountDestructive(counterName);
             if (counter.isTimed()) {
                 // timed counters just get the current count
-                counter.setCount(count);
+                counter.setCount((count * ShardedCounterManager.PERSIST_TIMEOUT)
+                        / timeSinceLastPersist);
             } else {
                 counter.increment(count);
             }
