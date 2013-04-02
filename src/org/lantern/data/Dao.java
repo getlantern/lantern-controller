@@ -16,6 +16,7 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
+import org.lantern.state.Mode;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
@@ -64,8 +65,8 @@ public class Dao extends DAOBase {
     private static final String NUSERS = "nusers";
     private static final String NPEERS = "npeers";
     private static final String EVER = "ever";
-    private static final String GIVE = "give";
-    private static final String GET = "get";
+    private static final String GIVE = Mode.give.toString();
+    private static final String GET = Mode.get.toString();
     private static final String BPS = "bps";
     private static final String GLOBAL = "global";
 
@@ -122,13 +123,13 @@ public class Dao extends DAOBase {
     }
 
     public void setInstanceAvailable(String userId, final String instanceId,
-            final String countryCode, final boolean isGiveMode) {
+            final String countryCode, final Mode mode) {
         for (int retries=TXN_RETRIES; retries>0; retries--) {
             final Objectify ofy = ObjectifyService.beginTransaction();
             try {
                 final ArrayList<String> countersToIncrement
                     = setInstanceAvailable(
-                        ofy, userId, instanceId, countryCode, isGiveMode);
+                        ofy, userId, instanceId, countryCode, mode);
                 ofy.getTxn().commit();
                 // We only actually increment the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -166,7 +167,7 @@ public class Dao extends DAOBase {
      */
     public ArrayList<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final boolean isGiveMode) {
+            final Mode mode) {
         // As of this writing, we use instanceId to refer to the XMPP
         // resource, that being the instance-specific part of the jabberId.
         // Note that this does *not* identify an instance globally.  You need
@@ -176,25 +177,25 @@ public class Dao extends DAOBase {
             fullId = LanternControllerUtils.jabberIdFromUserAndResource(
                         userId, instanceId);
         LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+        String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
-        String giveStr = isGiveMode ? GIVE : GET;
         ArrayList<String> counters = new ArrayList<String>();
         if (instance != null) {
             log.info("Setting availability to true for " + fullId);
             if (instance.isAvailable()) {
                 //handle mode changes
-                if (instance.isGiveMode() != isGiveMode) {
-                    log.info("Mode change to " + isGiveMode);
+                if (instance.getMode() != mode) {
+                    log.info("Mode change to " + modeStr);
                     counters.add(dottedPath(countryCode, NPEERS, ONLINE,
-                                 giveStr));
-                    counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-                    String oldGiveStr = (!isGiveMode) ? GIVE : GET;
+                                 modeStr));
+                    counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
                     //and decrement the old counters
+                    String oldModeStr = instance.getMode().toString();
                     counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE,
-                                 oldGiveStr));
+                                 oldModeStr));
                     counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE,
-                                 oldGiveStr));
-                    instance.setGiveMode(isGiveMode);
+                                 oldModeStr));
+                    instance.setMode(mode);
                     ofy.put(instance);
                     log.info("Finished updating datastore...");
                 }
@@ -203,7 +204,7 @@ public class Dao extends DAOBase {
                 // XXX will we ever see this anyway?
                 log.info("Instance exists but was unavailable.");
                 updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                        countryCode, giveStr, counters);
+                        countryCode, mode, counters);
             }
 
         } else {
@@ -212,9 +213,9 @@ public class Dao extends DAOBase {
             instance.setUser(userId);
             // The only counter that we need handling differently for new
             // instances is the global peers ever.
-            counters.add(dottedPath(GLOBAL, NPEERS, EVER, giveStr));
+            counters.add(dottedPath(GLOBAL, NPEERS, EVER, modeStr));
             updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                    countryCode, giveStr, counters);
+                    countryCode, mode, counters);
         }
         return counters;
     }
@@ -225,15 +226,16 @@ public class Dao extends DAOBase {
      */
     private void updateStatsForNewlyAvailableInstance(Objectify ofy,
             LanternUser user, LanternInstance instance,
-            final String countryCode, final String giveStr,
+            final String countryCode, final Mode mode,
             ArrayList<String> counters) {
         //handle the online counters
-        counters.add(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
+        String modeStr = mode.toString();
+        counters.add(dottedPath(countryCode, NPEERS, ONLINE, modeStr));
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
         //and the ever-seen
         if (!instance.getSeenFromCountry(countryCode)) {
             instance.addSeenFromCountry(countryCode);
-            counters.add(dottedPath(countryCode, NPEERS, EVER, giveStr));
+            counters.add(dottedPath(countryCode, NPEERS, EVER, modeStr));
         }
         if (!user.countrySeen(countryCode)){
             counters.add(dottedPath(countryCode, NUSERS, EVER));
@@ -246,7 +248,7 @@ public class Dao extends DAOBase {
         }
         user.incrementInstancesSignedIn();
         instance.setCurrentCountry(countryCode);
-        instance.setGiveMode(giveStr == GIVE);
+        instance.setMode(mode);
         instance.setAvailable(true);
         instance.setLastUpdated(new Date());
         ofy.put(instance);
@@ -399,7 +401,7 @@ public class Dao extends DAOBase {
     public boolean updateUser(final String userId, final long directRequests,
         final long directBytes, final long requestsProxied,
         final long bytesProxied, final String countryCode,
-        final String instanceId, boolean isGiveMode) {
+        final String instanceId, final Mode mode) {
         log.info(
             "Updating user with stats: dr: "+directRequests+" db: "+
             directBytes+" bytesProxied: "+bytesProxied);
@@ -574,7 +576,7 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void setInstanceUnavailable(String userId, String instanceId, boolean isGiveMode) {
+    public void setInstanceUnavailable(String userId, String instanceId) {
         final Objectify ofy = ofy();
         // As of this writing, we use instanceId to refer to the XMPP
         // resource, that being the instance-specific part of the jabberId.
@@ -586,7 +588,7 @@ public class Dao extends DAOBase {
                         userId, instanceId);
         final LanternInstance instance = ofy.find(LanternInstance.class, fullId);
         if (instance == null) {
-            log.warning("Instance " + fullId + " not available.");
+            log.warning("Instance " + fullId + " not found.");
             return;
         }
         if (instance.isAvailable()) {
@@ -595,11 +597,11 @@ public class Dao extends DAOBase {
             LanternUser user = ofy.find(LanternUser.class, userId);
             user.decrementInstancesSignedIn();
 
-            String giveStr = instance.isGiveMode() ? GIVE : GET;
+            String modeStr = instance.getMode().toString();
             String countryCode = instance.getCurrentCountry();
 
-            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, giveStr));
-            COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, giveStr));
+            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
+            COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, modeStr));
 
             if (!user.anyInstancesSignedIn()) {
                 log.info("Decrementing online user count");

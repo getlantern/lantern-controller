@@ -24,6 +24,7 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
+import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
 import com.google.appengine.api.xmpp.Message;
@@ -79,25 +80,34 @@ public class XmppAvailableServlet extends HttpServlet {
             processInvite(presence, doc);
             return;
         }
-        final boolean available = presence.isAvailable();
 
-
-        //final boolean lan = LanternControllerUtils.isLantern(id);
-        log.info("Got presence "+available);
+        if (!presence.isAvailable()) {
+            log.info(userId + "/" + instanceId + " logging out.");
+            dao.setInstanceUnavailable(userId, instanceId);
+            return;
+        }
+        String modeStr = LanternControllerUtils.getProperty(doc, "mode");
+        Mode mode;
+        if ("give".equals(modeStr)) {
+            mode = Mode.give;
+        } else if ("get".equals(modeStr)) {
+            mode = Mode.get;
+        } else {
+            // We don't believe the controller should ever get unknown mode
+            // presences.
+            log.warning("Ignoring presence in '" + modeStr + "' mode.");
+            return;
+        }
 
         final String stats =
             LanternControllerUtils.getProperty(doc, "stats");
 
-        //log.info("Stats JSON: "+stats);
+        processClientInfo(presence, stats, responseJson, userId, instanceId, mode);
 
-        String modeString = LanternControllerUtils.getProperty(doc, "mode");
-        final boolean isGiveMode = "give".equals(modeString);
-        processClientInfo(presence, stats, responseJson, userId, instanceId, isGiveMode, available);
-
-        if (isGiveMode) {
-            processGiveMode(presence, xmpp, available, responseJson);
+        if (mode == Mode.give) {
+            processGiveMode(presence, xmpp, responseJson);
         } else {
-            processGetMode(presence, xmpp, available, responseJson);
+            processGetMode(presence, xmpp, responseJson);
         }
 
         dao.signedIn(from);
@@ -195,32 +205,22 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void processGetMode(final Presence presence,
-        final XMPPService xmpp, final boolean available,
-        final Map<String, Object> responseJson) {
-        if (available) {
-            // Not we don't tell get mode users to check back in -- we just
-            // give them servers to connect to.
-            log.info("Sending servers to available get mode");
-            addServers(presence.getFromJid().getId(), responseJson);
-            sendResponse(presence, xmpp, responseJson);
-        } else {
-            log.info("Not sending servers to unavailable clients");
-        }
+        final XMPPService xmpp, final Map<String, Object> responseJson) {
+        // We don't tell get mode users to check back in -- we just give them
+        // servers to connect to.
+        log.info("Sending servers to available get mode");
+        addServers(presence.getFromJid().getId(), responseJson);
+        sendResponse(presence, xmpp, responseJson);
     }
 
     private void processGiveMode(final Presence presence,
-        final XMPPService xmpp, final boolean available,
-        final Map<String, Object> responseJson) {
-        if (available) {
-            // We always need to tell the client to check back in because
-            // we use it as a fallback for which users are online.
-            responseJson.put(LanternConstants.UPDATE_TIME,
-                LanternControllerConstants.UPDATE_TIME_MILLIS);
-            log.info("Not sending servers to give mode");
-            sendResponse(presence, xmpp, responseJson);
-        } else {
-            log.info("Not sending servers to unavailable clients");
-        }
+        final XMPPService xmpp, final Map<String, Object> responseJson) {
+        // We always need to tell the client to check back in because we use
+        // it as a fallback for which users are online.
+        responseJson.put(LanternConstants.UPDATE_TIME,
+            LanternControllerConstants.UPDATE_TIME_MILLIS);
+        log.info("Not sending servers to give mode");
+        sendResponse(presence, xmpp, responseJson);
     }
 
 
@@ -233,14 +233,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final Map<String, Object> responseJson,
-        final String idToUse, String instanceId, boolean isGiveMode,
-        boolean available) {
-        if (!available) {
-            //just handle logout
-            Dao dao = new Dao();
-            dao.setInstanceUnavailable(idToUse, instanceId, isGiveMode);
-            return;
-        }
+        final String idToUse, String instanceId, Mode mode) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
@@ -256,9 +249,9 @@ public class XmppAvailableServlet extends HttpServlet {
             // updating all counters.
             log.info("Setting instance availability");
             final Dao dao = new Dao();
-            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), isGiveMode);
+            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), mode);
             try {
-                updateStats(data, idToUse, instanceId, isGiveMode);
+                updateStats(data, idToUse, instanceId, mode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -293,7 +286,7 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final Stats data, final String idToUse,
-            final String instanceId, boolean isGiveMode) {
+            final String instanceId, Mode mode) {
 
         final Dao dao = new Dao();
 
@@ -301,7 +294,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.updateUser(idToUse, data.getDirectRequests(),
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
-            data.getCountryCode(), instanceId, isGiveMode);
+            data.getCountryCode(), instanceId, mode);
     }
 
     private void addServers(final String jid,

@@ -5,6 +5,8 @@ import java.util.HashSet;
 
 import javax.persistence.Id;
 
+import org.lantern.state.Mode;
+
 public class LanternInstance {
     @Id
     private String id;
@@ -19,7 +21,7 @@ public class LanternInstance {
 
     private String currentCountry;
 
-    private boolean giveMode;
+    private Mode mode;
 
     public LanternInstance() {
         super();
@@ -78,11 +80,11 @@ public class LanternInstance {
         this.currentCountry = currentCountry;
     }
 
-    public boolean isGiveMode() {
-        return giveMode;
+    public Mode getMode() {
+        return mode;
     }
 
-    public void setGiveMode(boolean mode) {
-        this.giveMode = mode;
+    public void setMode(Mode mode) {
+        this.mode = mode;
     }
 }
