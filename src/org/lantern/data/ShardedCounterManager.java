@@ -126,6 +126,8 @@ public class ShardedCounterManager {
             List<CounterGroup> existing = (List<CounterGroup>) existingCounterQuery
                     .execute();
             if (existing.isEmpty()) {
+                log.warning("Did not find a counter group. Creating a new "
+                        + "one. This should only ever happen once.");
                 group = new CounterGroup();
                 pm.makePersistent(group);
             } else {
