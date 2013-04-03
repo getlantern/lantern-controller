@@ -137,8 +137,10 @@ public class Dao extends DAOBase {
                 // them back should this transaction fail.
                 for (String counter : countersToIncrement) {
                     if (counter.startsWith("-")) {
+                        log.finest("Decrementing counter " + counter);
                         decrementCounter(counter.substring(1));
                     } else {
+                        log.finest("Incrementing counter " + counter);
                         incrementCounter(counter);
                     }
                 }
@@ -570,20 +572,59 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void setInstanceUnavailable(String userId, String instanceId) {
-        final Objectify ofy = ofy();
+    public void setInstanceUnavailable(String userId, final String instanceId) {
+        for (int retries=TXN_RETRIES; retries>0; retries--) {
+            final Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                final ArrayList<String> countersToUpdate
+                    = setInstanceUnavailable(
+                        ofy, userId, instanceId);
+                ofy.getTxn().commit();
+                // We only actually update the counters when we know the
+                // transaction succeeded.  Since these affect the memcache
+                // rather than the Datastore, there would be no way to roll
+                // them back should this transaction fail.
+                for (String counter : countersToUpdate) {
+                    if (counter.startsWith("-")) {
+                        log.finest("Decrementing counter " + counter);
+                        decrementCounter(counter.substring(1));
+                    } else {
+                        log.finest("Incrementing counter " + counter);
+                        incrementCounter(counter);
+                    }
+                }
+                return;
+            } catch (final ConcurrentModificationException e) {
+                // When a user logs in we get duplicated presence events for
+                // some reason.  This is why we put this method in
+                // a transaction, but we wouldn't really want to retry on this
+                // condition.  We do retry because this transaction can also
+                // fail if someone concurrently modifies the LanternUser that
+                // owns this instance.
+                log.info("Concurrent modification! Retrying...");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
+            }
+        }
+        log.warning("Too much contention; giving up!");
+    }
+    public ArrayList<String> setInstanceUnavailable(Objectify ofy, String userId, String instanceId) {
         // As of this writing, we use instanceId to refer to the XMPP
         // resource, that being the instance-specific part of the jabberId.
         // Note that this does *not* identify an instance globally.  You need
         // the userId too.  That is why, somewhat confusingly, instances are
         // keyed by full jabberId in the LanternInstances table.
+        ArrayList<String> counters = new ArrayList<String>();
         final String
             fullId = LanternControllerUtils.jabberIdFromUserAndResource(
                         userId, instanceId);
         final LanternInstance instance = ofy.find(LanternInstance.class, fullId);
         if (instance == null) {
             log.warning("Instance " + fullId + " not found.");
-            return;
+            return counters;
         }
         if (instance.isAvailable()) {
             log.info("Decrementing online count");
@@ -594,18 +635,19 @@ public class Dao extends DAOBase {
             String modeStr = instance.getMode().toString();
             String countryCode = instance.getCurrentCountry();
 
-            COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-            COUNTER_MANAGER.decrement(dottedPath(countryCode, NPEERS, ONLINE, modeStr));
+            counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
+            counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE, modeStr));
 
             if (!user.anyInstancesSignedIn()) {
                 log.info("Decrementing online user count");
-                COUNTER_MANAGER.decrement(dottedPath(GLOBAL, NUSERS, ONLINE));
-                COUNTER_MANAGER.decrement(dottedPath(countryCode, NUSERS, ONLINE));
+                counters.add("-" + dottedPath(GLOBAL, NUSERS, ONLINE));
+                counters.add("-" + dottedPath(countryCode, NUSERS, ONLINE));
             }
 
             ofy.put(instance);
             ofy.put(user);
         }
+        return counters;
     }
 
     public String getAndSetInstallerLocation(final String email) {
