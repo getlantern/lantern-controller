@@ -55,7 +55,12 @@ public class PersistController extends HttpServlet {
                 counter.setCount((count * ShardedCounterManager.PERSIST_TIMEOUT)
                         / timeSinceLastPersist);
             } else {
-                counter.increment(count);
+                if (count != 0) {
+                    log.info("Counter '" + counterName + "': "
+                            + "was " + counter.getCount()
+                            + ", incremented by " + count);
+                    counter.increment(count);
+                }
             }
             // and preemptively cache the current count
             cachedCounters.put("count" + counterName, counter.getCount());

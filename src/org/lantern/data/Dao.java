@@ -127,20 +127,22 @@ public class Dao extends DAOBase {
         for (int retries=TXN_RETRIES; retries>0; retries--) {
             final Objectify ofy = ObjectifyService.beginTransaction();
             try {
-                final ArrayList<String> countersToIncrement
+                final ArrayList<String> countersToUpdate
                     = setInstanceAvailable(
                         ofy, userId, instanceId, countryCode, mode);
                 ofy.getTxn().commit();
-                // We only actually increment the counters when we know the
+                // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
                 // rather than the Datastore, there would be no way to roll
                 // them back should this transaction fail.
-                for (String counter : countersToIncrement) {
+                log.info("Transaction successful.");
+                for (String counter : countersToUpdate) {
                     if (counter.startsWith("-")) {
-                        log.finest("Decrementing counter " + counter);
-                        decrementCounter(counter.substring(1));
+                        counter = counter.substring(1);
+                        log.info("Decrementing counter " + counter);
+                        decrementCounter(counter);
                     } else {
-                        log.finest("Incrementing counter " + counter);
+                        log.info("Incrementing counter " + counter);
                         incrementCounter(counter);
                     }
                 }
@@ -586,10 +588,10 @@ public class Dao extends DAOBase {
                 // them back should this transaction fail.
                 for (String counter : countersToUpdate) {
                     if (counter.startsWith("-")) {
-                        log.finest("Decrementing counter " + counter);
+                        log.info("Decrementing counter " + counter);
                         decrementCounter(counter.substring(1));
                     } else {
-                        log.finest("Incrementing counter " + counter);
+                        log.info("Incrementing counter " + counter);
                         incrementCounter(counter);
                     }
                 }
