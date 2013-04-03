@@ -373,13 +373,7 @@ public class Dao extends DAOBase {
         final String invitedEmail) {
         String key = Invite.makeKey(inviterEmail, invitedEmail);
         final Invite invite = ofy.find(Invite.class, key);
-        if (invite != null) return true;
-
-        //handle legacy invites
-        final LanternUser user = ofy.find(LanternUser.class, invitedEmail);
-        if (user == null) return false;
-        final String sponsor = user.getSponsor();
-        return emailsMatch(sponsor, inviterEmail);
+        return invite != null;
     }
 
     public boolean isInvited(final String email) {
