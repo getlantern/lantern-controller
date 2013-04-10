@@ -287,10 +287,20 @@ public class Dao extends DAOBase {
      * @return
      */
     public boolean addInvite(final String sponsor, final String email) {
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            final Objectify ofy = ObjectifyService.beginTransaction();
+        // We do two different transactions here: one to add the invite if not
+        // there and, if this succeeds, another one to add the invitee if not
+        // there.
+
+        int retries;
+        Objectify ofy;
+
+        // Initialized only to appease the compiler.
+        LanternUser inviter = new LanternUser("bogus@never.used");
+
+        for (retries=TXN_RETRIES; retries>0; retries--) {
+            ofy = ObjectifyService.beginTransaction();
             try {
-                final LanternUser inviter = ofy.find(LanternUser.class, sponsor);
+                inviter = ofy.find(LanternUser.class, sponsor);
                 if (inviter == null) {
                     log.warning("Could not find sponsor sending invite: " + sponsor);
                     return false;
@@ -304,9 +314,30 @@ public class Dao extends DAOBase {
                 Invite invite = new Invite(sponsor, email);
                 ofy.put(invite);
 
+                ofy.getTxn().commit();
+                log.info("Successfully committed new invite.");
+                break;
+            } catch (ConcurrentModificationException e) {
+                log.warning("Trying to add invite: " + e.toString());
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
+            }
+        }
+
+        if (retries == 0) {
+            log.warning("Too much contention trying to add invite; gave up.");
+            return false;
+        }
+
+        for (retries=TXN_RETRIES; retries>0; retries--) {
+            ofy = ObjectifyService.beginTransaction();
+            try {
                 LanternUser invitee = ofy.find(LanternUser.class, email);
                 if (invitee == null) {
-                    log.info("Adding invite to database");
+                    log.info("Adding invitee to database");
                     invitee = new LanternUser(email);
 
                     invitee.setDegree(inviter.getDegree() + 1);
@@ -317,15 +348,15 @@ public class Dao extends DAOBase {
                     }
                     invitee.setSponsor(sponsor);
                     ofy.put(invitee);
-                    log.info("Finished adding invite...");
                 } else {
-                    log.info("Invitee exists, nothing to do here");
+                    log.info("Invitee exists, nothing to do here.");
+                    return true;
                 }
                 ofy.getTxn().commit();
-                log.info("Done committing");
+                log.info("Successfully committed attempt to add invitee.");
                 return true;
             } catch (Exception e) {
-                log.log(Level.WARNING, "txn commit failed in some way {}", e);
+                log.warning("Trying to add invitee: " + e.toString());
                 continue;
             } finally {
                 if (ofy.getTxn().isActive()) {
@@ -333,7 +364,10 @@ public class Dao extends DAOBase {
                 }
             }
         }
-        return false;
+        // I don't think we should ever see this.
+        log.warning("Contention for a user we're trying to create?");
+        // Anyway, the invite was added, so...
+        return true;
     }
 
     /**
