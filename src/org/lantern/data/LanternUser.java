@@ -185,6 +185,9 @@ public class LanternUser {
     }
 
 /*  Uncomment for datastore reset scripts.
+    public void resetInstancesSignedIn() {
+        instancesSignedIn = 0;
+    }
     public void resetCountryCodes() {
         countryCodes = new HashSet<String>();
     }

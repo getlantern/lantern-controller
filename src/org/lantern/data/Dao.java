@@ -793,14 +793,21 @@ public class Dao extends DAOBase {
     public void forgetEveryoneSignedIn() {
         // One-shot job so lantern-controller reckons old users in the global
         // ever counter.  Uncomment and run from RemoteAPI for fun and evil.
+        // You need to uncomment additional methods in LanternUser.java for
+        // this to work.
+        log.warning("The Button is disabled!"
+                    + "  Uncomment and redeploy if you really mean it.");
         /*
         Objectify ofy = ofy();
         for (LanternUser user : ofy.query(LanternUser.class)) {
+            user.resetInstancesSignedIn();
             user.setEverSignedIn(false);
             // Uncomment this method in LanternUsers too.
             user.resetCountryCodes();
             ofy.put(user);
         }
+        ofy.delete(ofy.query(LanternInstance.class));
+        log.warning("Sign-in data reset.");
         */
     }
 }
