@@ -23,7 +23,7 @@ public class Invite {
     };
 
     public Invite(String inviter, String invitee) {
-        this.id = makeKey(inviter, invitee);
+        this.id = makeId(inviter, invitee);
         this.inviterKey = new Key<LanternUser>(LanternUser.class, inviter);
         this.inviter = inviter;
         this.invitee = invitee;
