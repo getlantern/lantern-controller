@@ -23,13 +23,13 @@ public class Invite {
     };
 
     public Invite(String inviter, String invitee) {
-        this.id = makeKey(inviter, invitee);
+        this.id = makeId(inviter, invitee);
         this.inviterKey = new Key<LanternUser>(LanternUser.class, inviter);
         this.inviter = inviter;
         this.invitee = invitee;
     }
 
-    public static String makeKey(String inviterEmail, String inviteeEmail) {
+    public static String makeId(String inviterEmail, String inviteeEmail) {
         return inviterEmail + "\1" + inviteeEmail;
     }
 
