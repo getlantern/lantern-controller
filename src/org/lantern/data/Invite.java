@@ -29,7 +29,7 @@ public class Invite {
         this.invitee = invitee;
     }
 
-    public static String makeKey(String inviterEmail, String inviteeEmail) {
+    public static String makeId(String inviterEmail, String inviteeEmail) {
         return inviterEmail + "\1" + inviteeEmail;
     }
 

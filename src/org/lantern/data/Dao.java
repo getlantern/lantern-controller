@@ -408,9 +408,12 @@ public class Dao extends DAOBase {
     }
 
     public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,
-        final String invitedEmail) {
-        String key = Invite.makeKey(inviterEmail, invitedEmail);
-        final Invite invite = ofy.find(Invite.class, key);
+        final String inviteeEmail) {
+        Key<LanternUser> parentKey = new Key<LanternUser>(
+                LanternUser.class, inviterEmail);
+        String id = Invite.makeId(inviterEmail, inviteeEmail);
+        final Invite invite = ofy.find(new Key<Invite>(
+                parentKey, Invite.class, id));
         return invite != null;
     }
 
