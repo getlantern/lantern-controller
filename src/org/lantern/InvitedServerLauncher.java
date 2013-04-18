@@ -64,20 +64,14 @@ public class InvitedServerLauncher {
             final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
-             * by the client, but by a Python XMPP bot.
-             * (salt/invsrvlauncher/xmpp-bot.py at lantern_aws, branch
+             * by the client, but by a Python bot.
+             * (salt/invsrvlauncher/invsrvlauncher.py at lantern_aws, branch
              * invsrvlauncher)
              */
             map.put("launch-invsrv-as", inviterEmail);
             map.put("launch-refrtok", refreshToken);
             map.put("launch-bucket", bucket);
-            final String body = JsonUtils.jsonify(map);
-            Message msg = new MessageBuilder()
-                .withMessageType(MessageType.HEADLINE)
-                .withRecipientJids(INVSRVLAUNCHER_JID)
-                .withBody(body)
-                .build();
-            xmpp.sendMessage(msg);
+            new SQSUtil().send(map);
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
