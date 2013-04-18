@@ -53,7 +53,6 @@ public class SQSUtil {
             while (true) {
                 ReceiveMessageRequest req = new ReceiveMessageRequest(
                         NOTIFY_Q);
-                // We only ever get them one at a time, though.
                 req.setMaxNumberOfMessages(10);
                 ReceiveMessageResult res = sqs.receiveMessage(req);
                 List<Message> messages = res.getMessages();
