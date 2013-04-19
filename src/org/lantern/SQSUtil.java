@@ -91,9 +91,9 @@ public class SQSUtil {
     private String encode(final Map<String, Object> map) {
         final String json = JsonUtils.jsonify(map);
         try {
-        return new String(
-                Base64.encodeBase64(json.getBytes("UTF-8")),
-                "UTF-8");
+            return new String(
+                    Base64.encodeBase64(json.getBytes("UTF-8")),
+                    "UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
