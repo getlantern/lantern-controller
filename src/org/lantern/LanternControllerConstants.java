@@ -20,6 +20,8 @@ public class LanternControllerConstants {
     static final String INVITE_EMAIL_BCC_ADDRESS = "invite@getlantern.org";
 
     private static String mandrillApiKey;
+    private static String awsAccessKeyId;
+    private static String awsSecretKey;
 
     public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.0");
 
@@ -27,6 +29,8 @@ public class LanternControllerConstants {
         try {
             PropertiesConfiguration config = new PropertiesConfiguration(LanternControllerConstants.class.getResource("secrets"));
             mandrillApiKey = config.getString("mandrillApiKey");
+            awsAccessKeyId = config.getString("awsAccessKeyId");
+            awsSecretKey = config.getString("awsSecretKey");
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -40,5 +44,11 @@ public class LanternControllerConstants {
 
     public static String getMandrillApiKey() {
         return mandrillApiKey;
+    }
+    public static String getAWSAccessKeyId() {
+        return awsAccessKeyId;
+    }
+    public static String getAWSSecretKey() {
+        return awsSecretKey;
     }
 }

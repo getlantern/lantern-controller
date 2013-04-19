@@ -1,7 +1,5 @@
 package org.lantern;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +24,7 @@ public class PersistController extends HttpServlet {
 
     @Override
     public void doGet(final HttpServletRequest request,
-            final HttpServletResponse response) throws IOException {
-        response.setContentType("text/plain");
+            final HttpServletResponse response) {
 
         MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
 
@@ -89,14 +86,6 @@ public class PersistController extends HttpServlet {
         String stats = dao.getStats();
         cache.put("statsJson", stats, Expiration.byDeltaSeconds(ShardedCounterManager.PERSIST_TIMEOUT));
 
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        final byte[] content = "OK".getBytes("UTF-8");
-        response.setContentLength(content.length);
-
-        final OutputStream os = response.getOutputStream();
-
-        os.write(content);
-        os.flush();
+        LanternControllerUtils.populateOKResponse(response, "OK");
     }
 }

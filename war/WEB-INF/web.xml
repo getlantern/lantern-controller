@@ -24,6 +24,14 @@
     <url-pattern>/persist</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>sqsChecker</servlet-name>
+    <servlet-class>org.lantern.SQSChecker</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>sqsChecker</servlet-name>
+    <url-pattern>/check_sqs</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>
@@ -99,6 +107,14 @@
       <role-name>admin</role-name>
     </auth-constraint>
     </security-constraint>
+  <security-constraint>
+    <web-resource-collection>
+        <url-pattern>/check_sqs</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+  </security-constraint>
  <servlet>
   <servlet-name>SystemServiceServlet</servlet-name>
   <servlet-class>com.google.api.server.spi.SystemServiceServlet</servlet-class>

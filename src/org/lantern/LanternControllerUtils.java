@@ -3,8 +3,12 @@ package org.lantern;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import javax.servlet.http.HttpServletResponse;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -157,5 +161,32 @@ public class LanternControllerUtils {
     public static String jabberIdFromUserAndResource(final String userId,
                                                      final String resource) {
         return userId + "/" + resource;
+    }
+
+    /**
+     * Populate 'response' as a plain text successful response with the given
+     * text.
+     *
+     * Also, turn any exceptions into `RuntimeException`s so we don't need
+     * declare them in the calling method.
+     */
+    public static void populateOKResponse(HttpServletResponse response,
+                                          String text) {
+        response.setContentType("text/plain");
+        response.setStatus(HttpServletResponse.SC_OK);
+        byte[] content;
+        try {
+            content = text.getBytes("UTF-8");
+            response.setContentLength(content.length);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            final OutputStream os = response.getOutputStream();
+            os.write(content);
+            os.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
