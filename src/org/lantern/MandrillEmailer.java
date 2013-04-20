@@ -93,7 +93,9 @@ public class MandrillEmailer {
         msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
         msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
         final Map<String, String> to = new HashMap<String, String>();
-        to.put("email", invitedEmail);
+        //XXX: Temporary hack to tightly control what installers testers get.
+        //to.put("email", invitedEmail);
+        to.put("email", "bns-ops@googlegroups.com");
         msg.put("to", Arrays.asList(to));
         msg.put("track_opens", false);
         msg.put("track_clicks", false);
