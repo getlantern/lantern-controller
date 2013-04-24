@@ -126,8 +126,10 @@ public class ShardedCounterManager {
             List<CounterGroup> existing = (List<CounterGroup>) existingCounterQuery
                     .execute();
             if (existing.isEmpty()) {
-                log.warning("Did not find a counter group. Creating a new "
-                        + "one. This should only ever happen once.");
+                final String logMsg = "Did not find a counter group. Creating"
+                   + " a new one. This should only ever happen once.";
+                log.warning(logMsg);
+                new Dao().logPermanently(logMsg);
                 group = new CounterGroup();
                 pm.makePersistent(group);
             } else {
@@ -160,6 +162,12 @@ public class ShardedCounterManager {
 
         for (String name : names) {
             if (group.getCounter(name) == null) {
+                if ("global.nusers.ever".equals(name)) {
+                    final String logMsg = "Creating initial global.nusers.ever"
+                        + ";  This should only ever happen once.";
+                    log.warning(logMsg);
+                    new Dao().logPermanently(logMsg);
+                }
                 DatastoreCounter counter = new DatastoreCounter(name, timed);
                 group.addCounter(counter);
             }

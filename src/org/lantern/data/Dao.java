@@ -79,6 +79,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LanternInstance.class);
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(InstallerBucket.class);
+        ObjectifyService.register(PermanentLogEntry.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
@@ -846,5 +847,10 @@ public class Dao extends DAOBase {
         ofy.delete(ofy.query(LanternInstance.class));
         log.warning("Sign-in data reset.");
         */
+    }
+
+    public void logPermanently(final String contents) {
+        ofy().put(new PermanentLogEntry(contents));
+        log.info("Logged!");
     }
 }
