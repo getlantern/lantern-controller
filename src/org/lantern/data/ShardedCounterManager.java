@@ -160,6 +160,18 @@ public class ShardedCounterManager {
 
         PersistenceManager pm = PMF.get().getPersistenceManager();
 
+        if (group.getCounter("global.nusers.ever") == null) {
+            Map<String, DatastoreCounter> counters
+                = group.getAllCounters();
+            log.warning("Group has " + counters.size() + " counters");
+            log.warning("Global counters are:");
+            for (Map.Entry<String, DatastoreCounter> e : counters.entrySet()) {
+                if (e.getKey().startsWith("global.")) {
+                    log.warning(e.getKey() + ": " + e.getValue().getCount());
+                }
+            }
+        }
+
         for (String name : names) {
             if (group.getCounter(name) == null) {
                 if ("global.nusers.ever".equals(name)) {
