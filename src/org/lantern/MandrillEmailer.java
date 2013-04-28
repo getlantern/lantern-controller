@@ -96,7 +96,7 @@ public class MandrillEmailer {
         //XXX: Temporary hack to tightly control what installers testers get.
         //to.put("email", invitedEmail);
         to.put("email", "bns-ops+"
-                        + inviterEmail.replace("@", "-at-")
+                        + invitedEmail.replace("@", "+at+")
                         + "@googlegroups.com");
         msg.put("to", Arrays.asList(to));
         msg.put("track_opens", false);
