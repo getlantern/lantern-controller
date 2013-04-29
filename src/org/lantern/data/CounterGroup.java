@@ -33,6 +33,10 @@ public class CounterGroup implements Serializable {
         return counters.get(name);
     }
 
+    public int getNumCounters() {
+        return counters.size();
+    }
+
     public Map<String, DatastoreCounter> getAllCounters() {
         return new HashMap<String, DatastoreCounter>(counters);
     }

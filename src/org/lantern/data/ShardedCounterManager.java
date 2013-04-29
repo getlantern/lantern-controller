@@ -161,15 +161,7 @@ public class ShardedCounterManager {
         PersistenceManager pm = PMF.get().getPersistenceManager();
 
         if (group.getCounter("global.nusers.ever") == null) {
-            Map<String, DatastoreCounter> counters
-                = group.getAllCounters();
-            log.warning("Group has " + counters.size() + " counters");
-            log.warning("Global counters are:");
-            for (Map.Entry<String, DatastoreCounter> e : counters.entrySet()) {
-                if (e.getKey().startsWith("global.")) {
-                    log.warning(e.getKey() + ": " + e.getValue().getCount());
-                }
-            }
+            log.warning("Group has " + group.getNumCounters() + " counters");
         }
 
         for (String name : names) {
@@ -217,6 +209,11 @@ public class ShardedCounterManager {
         cache.put("countergroup", group);
 
         PersistenceManager pm = PMF.get().getPersistenceManager();
+        if (group.getNumCounters() == 0) {
+            final String msg = "Saving an empty countergroup!";
+            log.severe(msg);
+            new Dao().logPermanently(msg);
+        }
         pm.makePersistent(group);
         pm.close();
 
