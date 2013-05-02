@@ -113,8 +113,7 @@ public class Dao extends DAOBase {
             counters.add(dottedPath(country, NPEERS, EVER, GET));
             timedCounters.add(dottedPath(country, BPS));
         }
-        COUNTER_MANAGER.initCounters(counters, false);
-        COUNTER_MANAGER.initCounters(timedCounters, true);
+        COUNTER_MANAGER.initCounters(timedCounters, counters);
     }
 
     public Collection<LanternUser> getAllUsers() {

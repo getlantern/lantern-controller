@@ -26,6 +26,9 @@ public class PersistController extends HttpServlet {
     public void doGet(final HttpServletRequest request,
             final HttpServletResponse response) {
 
+        // If Dao needs to initialize the counters, let that happen before our
+        // own ShardedCounterManager fetches them.
+        new Dao();
         MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
 
         // get cached counters
