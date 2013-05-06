@@ -239,7 +239,7 @@ public class ShardedCounterManager {
                 }
                 log.info("Saving group with " + g.getNumCounters()
                          + " counters.");
-                g.prepareForPersistance();
+                g.prepareForPersistence();
                 pm.makePersistent(g);
                 pm.close();
                 txn.commit();
@@ -301,7 +301,7 @@ public class ShardedCounterManager {
                 PersistenceManager pm = PMF.get().getPersistenceManager();
                 long now = new Date().getTime() / 1000;
                 group.setLastUpdated(now);
-                group.prepareForPersistance();
+                group.prepareForPersistence();
                 pm.makePersistent(group);
                 pm.close();
                 txn.commit();

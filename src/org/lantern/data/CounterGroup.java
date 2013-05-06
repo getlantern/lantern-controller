@@ -70,7 +70,7 @@ public class CounterGroup implements Serializable {
         this.lastUpdated = lastUpdated;
     }
 
-    public void prepareForPersistance() {
+    public void prepareForPersistence() {
         StringBuilder sb = new StringBuilder(50000);
         for (Map.Entry<String, DatastoreCounter> me : counters.entrySet()) {
             DatastoreCounter counter = me.getValue();
