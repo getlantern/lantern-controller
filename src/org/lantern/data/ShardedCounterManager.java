@@ -286,22 +286,27 @@ public class ShardedCounterManager {
         return total;
     }
 
-    public void persistCounters() {
+    public void updateCounters(Map<String, Long> toReplace,
+                               Map<String, Long> toIncrement,
+                               Map<String, Integer> toAddShards) {
         DatastoreService datastore =
                 DatastoreServiceFactory.getDatastoreService();
         for (int tries=10; tries > 0; --tries) {
-            // Note this transaction doesn't protect you from saving a
-            // version of the group older than that in the datastore.
-            // As of this writing (git blame me) I believe this is not a
-            // problem because the only concurrent write to the group comes
-            // from initCounters, and PersistController has taken care to
-            // call that before calling this.  There is still a possible race
-            // condition, but the only thing we'd miss would be the first
-            // minute worth of updates for a newly created counter.
             Transaction txn = datastore.beginTransaction();
             try {
                 PersistenceManager pm = PMF.get().getPersistenceManager();
-                writeGroupToDatastore(pm, group);
+                CounterGroup g = readGroupFromDatastore(pm);
+                for (Map.Entry<String, Long> entry : toReplace.entrySet()) {
+                    g.getCounter(entry.getKey()).setCount(entry.getValue());
+                }
+                for (Map.Entry<String, Long> entry : toIncrement.entrySet()) {
+                    g.getCounter(entry.getKey()).increment(entry.getValue());
+                }
+                for (Map.Entry<String, Integer> entry
+                     : toAddShards.entrySet()) {
+                    g.getCounter(entry.getKey()).addShards(entry.getValue());
+                }
+                writeGroupToDatastore(pm, g);
                 pm.close();
                 txn.commit();
                 if (group.getNumCounters() == 0) {
