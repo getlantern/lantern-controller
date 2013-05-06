@@ -174,16 +174,8 @@ public class ShardedCounterManager {
     }
 
     public long getCount(final String counterName) {
-        Long cachedCount = (Long) cache.get("count" + counterName);
-        if (cachedCount != null) {
-            return cachedCount;
-        }
         loadGroup();
-        DatastoreCounter counter = group.getCounter(counterName);
-        long count = counter.getCount();
-
-        cache.put("count" + counterName, count);
-        return count;
+        return group.getCounter(counterName).getCount();
     }
 
     public void initCounters(Collection<String> timed,

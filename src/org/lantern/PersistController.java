@@ -34,7 +34,7 @@ public class PersistController extends HttpServlet {
         // get cached counters
         ShardedCounterManager manager = new ShardedCounterManager();
         Map<String, DatastoreCounter> counters = manager.getAllCounters();
-        Map<String, Long> cachedCounters = new HashMap<String, Long>();
+        Map<String, Long> cacheUpdates = new HashMap<String, Long>();
         long now = new Date().getTime() / 1000;
         int timeSinceLastPersist = (int) (now - manager.getLastUpdated());
         log.info("Time since last cycle  " + timeSinceLastPersist);
@@ -62,13 +62,10 @@ public class PersistController extends HttpServlet {
                     counter.increment(count);
                 }
             }
-            // and preemptively cache the current count
-            cachedCounters.put("count" + counterName, counter.getCount());
-
             // check the update counter to see if we need new shards
             Long updates = (Long) cache.get("updates" + counterName);
             if (updates != null) {
-                cachedCounters.put("updates" + counterName, 0L);
+                cacheUpdates.put("updates" + counterName, 0L);
                 final int currentShards = counter.getShardCount();
                 final int maxUpdatesPerShard = ShardedCounterManager.MAX_UPDATES_PER_SHARD_PER_SECOND
                         * timeSinceLastPersist;
@@ -80,8 +77,7 @@ public class PersistController extends HttpServlet {
                 }
             }
         }
-        // store and cache the new counter values
-        cache.putAll(cachedCounters);
+        cache.putAll(cacheUpdates);
         manager.persistCounters();
         final Dao dao = new Dao();
 
