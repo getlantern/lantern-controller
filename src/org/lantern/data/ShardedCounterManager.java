@@ -126,7 +126,7 @@ public class ShardedCounterManager {
         group = (CounterGroup) cache.get("countergroup");
         if (group != null)
             // No need to restore() when reading from memcache.  It's only the
-            // Datastore that wont persist the counters hashmap.
+            // Datastore that won't persist the counters hashmap.
             return;
 
         log.info("Forced to load counter group from database.  This will be slow.");
