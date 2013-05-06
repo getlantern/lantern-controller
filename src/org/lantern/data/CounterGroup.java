@@ -103,7 +103,7 @@ public class CounterGroup implements Serializable {
                 s = st.nextToken();
                 StringTokenizer sti = new StringTokenizer(s, ":");
                 String name = sti.nextToken();
-                boolean isTimed = sti.nextToken() == "1";
+                boolean isTimed = sti.nextToken().equals("1");
                 DatastoreCounter dc = new DatastoreCounter(name, isTimed);
                 dc.setCount(Long.parseLong(sti.nextToken()));
                 dc.setShardCount(Integer.parseInt(sti.nextToken()));
