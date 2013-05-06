@@ -137,8 +137,7 @@ public class ShardedCounterManager {
                 final PersistenceManager pm =
                     PMF.get().getPersistenceManager();
                 try {
-                    g = pm.getObjectById(CounterGroup.class, COUNTERGROUPKEY);
-                    g.restore();
+                    g = readGroupFromDatastore(pm);
                     if (g.getNumCounters() == 0) {
                         log.warning("Loading empty countergroup!");
                     } else {
@@ -150,7 +149,7 @@ public class ShardedCounterManager {
                         + " Creating a new one. This should only ever happen"
                         + " once.");
                     g = new CounterGroup();
-                    pm.makePersistent(g);
+                    writeGroupToDatastore(pm, g);
                 }
                 pm.close();
                 txn.commit();
@@ -198,6 +197,19 @@ public class ShardedCounterManager {
         log.info("No need.");
     }
 
+    private CounterGroup readGroupFromDatastore(PersistenceManager pm) {
+        CounterGroup g = pm.getObjectById(CounterGroup.class, COUNTERGROUPKEY);
+        g.restore();
+        return g;
+    }
+
+    private void writeGroupToDatastore(PersistenceManager pm, CounterGroup g) {
+        long now = new Date().getTime() / 1000;
+        g.setLastUpdated(now);
+        g.prepareForPersistence();
+        pm.makePersistent(g);
+    }
+
     private void actuallyInitCounters(Collection<String> timed,
                                       Collection<String> untimed) {
         CounterGroup g;
@@ -208,8 +220,7 @@ public class ShardedCounterManager {
             try {
                 final PersistenceManager pm =
                     PMF.get().getPersistenceManager();
-                g = pm.getObjectById(CounterGroup.class, COUNTERGROUPKEY);
-                g.restore();
+                g = readGroupFromDatastore(pm);
                 for (String name : timed) {
                     if (g.getCounter(name) == null) {
                         DatastoreCounter counter =
@@ -231,8 +242,7 @@ public class ShardedCounterManager {
                 }
                 log.info("Saving group with " + g.getNumCounters()
                          + " counters.");
-                g.prepareForPersistence();
-                pm.makePersistent(g);
+                writeGroupToDatastore(pm, g);
                 pm.close();
                 txn.commit();
                 invalidateGroupCache();
@@ -291,10 +301,7 @@ public class ShardedCounterManager {
             Transaction txn = datastore.beginTransaction();
             try {
                 PersistenceManager pm = PMF.get().getPersistenceManager();
-                long now = new Date().getTime() / 1000;
-                group.setLastUpdated(now);
-                group.prepareForPersistence();
-                pm.makePersistent(group);
+                writeGroupToDatastore(pm, group);
                 pm.close();
                 txn.commit();
                 if (group.getNumCounters() == 0) {
