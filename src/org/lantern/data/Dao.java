@@ -70,7 +70,7 @@ public class Dao extends DAOBase {
     private static final String BPS = "bps";
     private static final String GLOBAL = "global";
 
-    private static final ShardedCounterManager COUNTER_MANAGER = new ShardedCounterManager();
+    private final ShardedCounterManager counterManager = new ShardedCounterManager();
 
     private static final int TXN_RETRIES = 10;
 
@@ -113,7 +113,7 @@ public class Dao extends DAOBase {
             counters.add(dottedPath(country, NPEERS, EVER, GET));
             timedCounters.add(dottedPath(country, BPS));
         }
-        COUNTER_MANAGER.initCounters(timedCounters, counters);
+        new ShardedCounterManager().initCounters(timedCounters, counters);
     }
 
     public Collection<LanternUser> getAllUsers() {
@@ -469,7 +469,7 @@ public class Dao extends DAOBase {
         incrementCounter(DIRECT_BYTES, directBytes);
         incrementCounter(DIRECT_REQUESTS, directRequests);
         if (isUserNew) {
-            COUNTER_MANAGER.increment(TOTAL_USERS);
+            counterManager.increment(TOTAL_USERS);
             if (CensoredUtils.isCensored(countryCode)) {
                 incrementCounter(CENSORED_USERS);
             } else {
@@ -483,15 +483,15 @@ public class Dao extends DAOBase {
     }
 
     private void decrementCounter(String counter) {
-        COUNTER_MANAGER.decrement(counter);
+        counterManager.decrement(counter);
     }
 
     private void incrementCounter(String counter) {
-        COUNTER_MANAGER.increment(counter);
+        counterManager.increment(counter);
     }
 
     private void incrementCounter(String counter, long count) {
-        COUNTER_MANAGER.increment(counter, count);
+        counterManager.increment(counter, count);
     }
 
     public String getStats() {
@@ -556,7 +556,7 @@ public class Dao extends DAOBase {
             }
             add(container, remainder, counterName);
         } else {
-            long count = COUNTER_MANAGER.getCount(counterName);
+            long count = counterManager.getCount(counterName);
             data.put(key, count);
         }
     }
