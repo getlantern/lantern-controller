@@ -125,6 +125,8 @@ public class ShardedCounterManager {
         // try to get from cache
         group = (CounterGroup) cache.get("countergroup");
         if (group != null)
+            // No need to restore() when reading from memcache.  It's only the
+            // Datastore that wont persist the counters hashmap.
             return;
 
         log.info("Forced to load counter group from database.  This will be slow.");
@@ -154,6 +156,9 @@ public class ShardedCounterManager {
                 pm.close();
                 txn.commit();
                 group = g;
+                // No need to prepareForPersistence when writing to memcache.
+                // (And we know persistedCounters is in sync with counters at
+                //  this point, BTW).
                 cache.put("countergroup", g);
                 return;
             } catch (ConcurrentModificationException e) {
