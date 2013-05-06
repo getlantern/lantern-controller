@@ -318,7 +318,7 @@ public class Dao extends DAOBase {
                 log.info("Successfully committed new invite.");
                 break;
             } catch (ConcurrentModificationException e) {
-                log.warning("Trying to add invite: " + e.toString());
+                log.warning("Concurrent modification trying to add invite.");
                 continue;
             } finally {
                 if (ofy.getTxn().isActive()) {
@@ -356,7 +356,7 @@ public class Dao extends DAOBase {
                 log.info("Successfully committed attempt to add invitee.");
                 return true;
             } catch (Exception e) {
-                log.warning("Trying to add invitee: " + e.toString());
+                log.warning("Concurrent modification trying to add invite*e*.");
                 continue;
             } finally {
                 if (ofy.getTxn().isActive()) {
@@ -390,21 +390,37 @@ public class Dao extends DAOBase {
 
     public void decrementInvites(final String userId) {
         log.info("Decrementing invites for "+userId);
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, userId);
-        if (user == null) {
-            return;
+        for (int retries=TXN_RETRIES; retries>0; retries--) {
+            final Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                final LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user == null) {
+                    log.severe("Decrementing invites of uninvited user?");
+                    return;
+                }
+                final int curInvites = user.getInvites();
+                final int newInvites;
+                if (curInvites < 1) {
+                    log.severe("Decrementing invites on user with no invites");
+                    newInvites = 0;
+                } else {
+                    newInvites = curInvites - 1;
+                }
+                user.setInvites(newInvites);
+                ofy.put(user);
+                ofy.getTxn().commit();
+                log.info("Transaction successful.");
+                return;
+            } catch (final ConcurrentModificationException e) {
+                log.info("Concurrent modification! Retrying...");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
+            }
         }
-        final int curInvites = user.getInvites();
-        final int newInvites;
-        if (curInvites < 1) {
-            log.severe("Decrementing invites on user with no invites");
-            newInvites = 0;
-        } else {
-            newInvites = curInvites - 1;
-        }
-        user.setInvites(newInvites);
-        ofy.put(user);
+        log.warning("Too much contention; giving up!");
     }
 
     public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,
@@ -424,13 +440,26 @@ public class Dao extends DAOBase {
     }
 
     public void updateLastAccessed(final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, email);
-
-        if (user != null) {
-            user.setLastAccessed(new Date());
-            ofy.put(user);
+        for (int retries=TXN_RETRIES; retries>0; retries--) {
+            Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                final LanternUser user = ofy.find(LanternUser.class, email);
+                if (user != null) {
+                    user.setLastAccessed(new Date());
+                    ofy.put(user);
+                }
+                ofy.getTxn().commit();
+                return;
+            } catch (ConcurrentModificationException e) {
+                log.warning("Concurrent modification.");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
+            }
         }
+        log.warning("Too much contention!");
     }
 
     public boolean updateUser(final String userId, final long directRequests,
@@ -440,46 +469,56 @@ public class Dao extends DAOBase {
         log.info(
             "Updating user with stats: dr: "+directRequests+" db: "+
             directBytes+" bytesProxied: "+bytesProxied);
+        for (int retries=TXN_RETRIES; retries>0; retries--) {
+            final Objectify ofy = ObjectifyService.beginTransaction();
+            try {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                boolean isUserNew = (user == null);
+                if (isUserNew) {
+                    log.info("Could not find user!!");
+                    user = new LanternUser(userId);
+                }
+                user.setBytesProxied(user.getBytesProxied() + bytesProxied);
+                user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
+                user.setDirectBytes(user.getDirectBytes() + directBytes);
+                user.setDirectRequests(user.getDirectRequests() + directRequests);
 
-        final Objectify ofy = ofy();
-        final LanternUser user;
-        final LanternUser tempUser = ofy.find(LanternUser.class, userId);
-        final boolean isUserNew = tempUser == null;
-        if (isUserNew) {
-            log.info("Could not find user!!");
-            user = new LanternUser(userId);
-        } else {
-            user = tempUser;
-        }
+                ofy.put(user);
+                ofy.getTxn().commit();
+                log.info("Transaction successful.");
 
-        user.setBytesProxied(user.getBytesProxied() + bytesProxied);
-        user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
-        user.setDirectBytes(user.getDirectBytes() + directBytes);
-        user.setDirectRequests(user.getDirectRequests() + directRequests);
+                // Only increment counters on success.
+                incrementCounter(dottedPath(countryCode, BYTES_EVER), bytesProxied);
+                incrementCounter(dottedPath(GLOBAL, BYTES_EVER), bytesProxied);
 
-        ofy.put(user);
+                incrementCounter(dottedPath(countryCode, BPS), bytesProxied);
+                incrementCounter(dottedPath(GLOBAL, BPS), bytesProxied);
 
-        incrementCounter(dottedPath(countryCode, BYTES_EVER), bytesProxied);
-        incrementCounter(dottedPath(GLOBAL, BYTES_EVER), bytesProxied);
-
-        incrementCounter(dottedPath(countryCode, BPS), bytesProxied);
-        incrementCounter(dottedPath(GLOBAL, BPS), bytesProxied);
-
-        incrementCounter(REQUESTS_PROXIED, requestsProxied);
-        incrementCounter(DIRECT_BYTES, directBytes);
-        incrementCounter(DIRECT_REQUESTS, directRequests);
-        if (isUserNew) {
-            counterManager.increment(TOTAL_USERS);
-            if (CensoredUtils.isCensored(countryCode)) {
-                incrementCounter(CENSORED_USERS);
-            } else {
-                log.info("Incrementing uncensored count");
-                incrementCounter(UNCENSORED_USERS);
+                incrementCounter(REQUESTS_PROXIED, requestsProxied);
+                incrementCounter(DIRECT_BYTES, directBytes);
+                incrementCounter(DIRECT_REQUESTS, directRequests);
+                if (isUserNew) {
+                    counterManager.increment(TOTAL_USERS);
+                    if (CensoredUtils.isCensored(countryCode)) {
+                        incrementCounter(CENSORED_USERS);
+                    } else {
+                        log.info("Incrementing uncensored count");
+                        incrementCounter(UNCENSORED_USERS);
+                    }
+                    incrementCounter(countryCode + ".nusers.ever");
+                }
+                return isUserNew;
+            } catch (final ConcurrentModificationException e) {
+                log.info("Concurrent modification! Retrying...");
+                continue;
+            } finally {
+                if (ofy.getTxn().isActive()) {
+                    ofy.getTxn().rollback();
+                }
             }
-            incrementCounter(countryCode + ".nusers.ever");
         }
-
-        return isUserNew;
+        // The caller expects some return value.
+        throw new RuntimeException("Too much contention!");
     }
 
     private void decrementCounter(String counter) {
@@ -597,6 +636,7 @@ public class Dao extends DAOBase {
                     ofy.getTxn().commit();
                     // Increment after committing, because memcache is not
                     // rolled back if the transaction fails.
+                    log.info("Incrementing global.nusers.ever.");
                     incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
                 }
                 return;
