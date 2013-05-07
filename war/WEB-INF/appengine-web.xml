@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
-    <application>lanternctrltest</application>
-    <version>110</version>
+    <application>lanternctrl</application>
+    <version>111</version>
     
     <!-- Configure java.util.logging -->
     <system-properties>
