@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.logging.Logger;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -95,21 +94,19 @@ public class CounterGroup implements Serializable {
         }
         StringTokenizer st = new StringTokenizer(persistedCounters.getValue(),
                                                  ",");
-        String s;
         HashMap<String, DatastoreCounter> c
             = new HashMap<String, DatastoreCounter>(2006);
-        try {
-            while (true) {
-                s = st.nextToken();
-                StringTokenizer sti = new StringTokenizer(s, ":");
-                String name = sti.nextToken();
-                boolean isTimed = sti.nextToken().equals("1");
-                DatastoreCounter dc = new DatastoreCounter(name, isTimed);
-                dc.setCount(Long.parseLong(sti.nextToken()));
-                dc.setShardCount(Integer.parseInt(sti.nextToken()));
-                c.put(name, dc);
-            }
-        } catch (NoSuchElementException e) {}
+
+        while (st.hasMoreTokens()) {
+            String s = st.nextToken();
+            StringTokenizer sti = new StringTokenizer(s, ":");
+            String name = sti.nextToken();
+            boolean isTimed = sti.nextToken().equals("1");
+            DatastoreCounter dc = new DatastoreCounter(name, isTimed);
+            dc.setCount(Long.parseLong(sti.nextToken()));
+            dc.setShardCount(Integer.parseInt(sti.nextToken()));
+            c.put(name, dc);
+        }
         counters = c;
         log.info("Got " + getNumCounters() + " counters.");
     }
