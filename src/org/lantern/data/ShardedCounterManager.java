@@ -21,6 +21,7 @@ package org.lantern.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,14 @@ import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+import javax.jdo.JDOObjectNotFoundException;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.memcache.ErrorHandlers;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
@@ -58,9 +66,16 @@ public class ShardedCounterManager {
     // number of users online (this minute) might be negative.
     private static final Long BASELINE = Long.MAX_VALUE / 2;
 
+    private static final Key COUNTERGROUPKEY = KeyFactory.createKey(
+            CounterGroup.class.getSimpleName(), CounterGroup.singletonKey);
+
     CounterGroup group;
 
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
+    
+    public ShardedCounterManager() {
+        cache.setErrorHandler(ErrorHandlers.getConsistentLogAndContinue(Level.INFO));
+    }
 
     /**
      * Same as increment(name, 1)
@@ -115,70 +130,148 @@ public class ShardedCounterManager {
         // try to get from cache
         group = (CounterGroup) cache.get("countergroup");
         if (group != null)
+            // No need to restore() when reading from memcache.  It's only the
+            // Datastore that won't persist the counters hashmap.
             return;
 
         log.info("Forced to load counter group from database.  This will be slow.");
-
-        final PersistenceManager pm = PMF.get().getPersistenceManager();
-        try {
-            Query existingCounterQuery = pm.newQuery(CounterGroup.class);
-            @SuppressWarnings("unchecked")
-            List<CounterGroup> existing = (List<CounterGroup>) existingCounterQuery
-                    .execute();
-            if (existing.isEmpty()) {
-                final String logMsg = "Did not find a counter group. Creating"
-                   + " a new one. This should only ever happen once.";
-                log.warning(logMsg);
-                new Dao().logPermanently(logMsg);
-                group = new CounterGroup();
-                pm.makePersistent(group);
-            } else {
-                group = existing.get(0);
+        CounterGroup g;
+        DatastoreService datastore =
+            DatastoreServiceFactory.getDatastoreService();
+        for (int tries=10; tries > 0; --tries) {
+            Transaction txn = datastore.beginTransaction();
+            try {
+                final PersistenceManager pm =
+                    PMF.get().getPersistenceManager();
+                try {
+                    g = readGroupFromDatastore(pm);
+                    if (g.getNumCounters() == 0) {
+                        log.warning("Loading empty countergroup!");
+                    } else {
+                        log.info("Group has " + g.getNumCounters()
+                                 + " counters.");
+                    }
+                } catch (JDOObjectNotFoundException e) {
+                    log.warning("Did not find a counter group."
+                        + " Creating a new one. This should only ever happen"
+                        + " once.");
+                    g = new CounterGroup();
+                    writeGroupToDatastore(pm, g);
+                }
+                pm.close();
+                txn.commit();
+                group = g;
+                // No need to prepareForPersistence when writing to memcache.
+                // (And we know persistedCounters is in sync with counters at
+                //  this point, BTW).
+                cache.put("countergroup", g);
+                return;
+            } catch (ConcurrentModificationException e) {
+                log.warning("Concurrent modification!");
+                // If some thread has concurrently succeeded in loading this
+                // group, we don't need to do it again.
+                if (group != null) {
+                    return;
+                }
+            } finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }
             }
-        } finally {
-            pm.close();
         }
-
-        cache.put("countergroup", group);
+        throw new RuntimeException("Too much contention for group!");
     }
 
     public long getCount(final String counterName) {
-        Long cachedCount = (Long) cache.get("count" + counterName);
-        if (cachedCount != null) {
-            return cachedCount;
-        }
         loadGroup();
-        DatastoreCounter counter = group.getCounter(counterName);
-        long count = counter.getCount();
-
-        cache.put("count" + counterName, count);
-        return count;
+        return group.getCounter(counterName).getCount();
     }
 
-    public void initCounters(Collection<String> names, boolean timed) {
+    public void initCounters(Collection<String> timed,
+                             Collection<String> untimed) {
         loadGroup();
-
-        PersistenceManager pm = PMF.get().getPersistenceManager();
-
-        if (group.getCounter("global.nusers.ever") == null) {
-            log.warning("Group has " + group.getNumCounters() + " counters");
-        }
-
-        for (String name : names) {
+        // First pass to avoid touching the Datastore if the group has
+        // all the names, which will be true most often.
+        for (String name : timed) {
             if (group.getCounter(name) == null) {
-                if ("global.nusers.ever".equals(name)) {
-                    final String logMsg = "Creating initial global.nusers.ever"
-                        + ";  This should only ever happen once.";
-                    log.warning(logMsg);
-                    new Dao().logPermanently(logMsg);
-                }
-                DatastoreCounter counter = new DatastoreCounter(name, timed);
-                group.addCounter(counter);
+                actuallyInitCounters(timed, untimed);
+                return;
             }
         }
-        cache.put("countergroup", group);
-        pm.makePersistent(group);
-        pm.close();
+        for (String name : untimed) {
+            if (group.getCounter(name) == null) {
+                actuallyInitCounters(timed, untimed);
+                return;
+            }
+        }
+        log.info("No need.");
+    }
+
+    private CounterGroup readGroupFromDatastore(PersistenceManager pm) {
+        CounterGroup g = pm.getObjectById(CounterGroup.class, COUNTERGROUPKEY);
+        g.restore();
+        return g;
+    }
+
+    private void writeGroupToDatastore(PersistenceManager pm, CounterGroup g) {
+        long now = new Date().getTime() / 1000;
+        g.setLastUpdated(now);
+        g.prepareForPersistence();
+        pm.makePersistent(g);
+    }
+
+    private void actuallyInitCounters(Collection<String> timed,
+                                      Collection<String> untimed) {
+        CounterGroup g;
+        DatastoreService datastore =
+            DatastoreServiceFactory.getDatastoreService();
+        for (int tries=10; tries > 0; --tries) {
+            Transaction txn = datastore.beginTransaction();
+            try {
+                final PersistenceManager pm =
+                    PMF.get().getPersistenceManager();
+                g = readGroupFromDatastore(pm);
+                for (String name : timed) {
+                    if (g.getCounter(name) == null) {
+                        DatastoreCounter counter =
+                            new DatastoreCounter(name, true);
+                        g.addCounter(counter);
+                    }
+                }
+                for (String name : untimed) {
+                    if (g.getCounter(name) == null) {
+                        if ("global.nusers.ever".equals(name)) {
+                            log.warning("Creating initial"
+                                + " global.nusers.ever; "
+                                + "This should only ever happen once.");
+                        }
+                        DatastoreCounter counter =
+                            new DatastoreCounter(name, false);
+                        g.addCounter(counter);
+                    }
+                }
+                log.info("Saving group with " + g.getNumCounters()
+                         + " counters.");
+                writeGroupToDatastore(pm, g);
+                pm.close();
+                txn.commit();
+                invalidateGroupCache();
+                return;
+            } catch (ConcurrentModificationException e) {
+                log.warning("Concurrent modification!");
+            } finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }
+            }
+        }
+        throw new RuntimeException("Too much contention for group!");
+    }
+
+    private void invalidateGroupCache() {
+        log.info("Invalidating group cache.");
+        group = null;
+        cache.delete("countergroup");
     }
 
     public Map<String, DatastoreCounter> getAllCounters() {
@@ -203,20 +296,46 @@ public class ShardedCounterManager {
         return total;
     }
 
-    public void persistCounters() {
-        long now = new Date().getTime() / 1000;
-        group.setLastUpdated(now);
-        cache.put("countergroup", group);
-
-        PersistenceManager pm = PMF.get().getPersistenceManager();
-        if (group.getNumCounters() == 0) {
-            final String msg = "Saving an empty countergroup!";
-            log.severe(msg);
-            new Dao().logPermanently(msg);
+    public void updateCounters(Map<String, Long> toReplace,
+                               Map<String, Long> toIncrement,
+                               Map<String, Integer> toAddShards) {
+        DatastoreService datastore =
+                DatastoreServiceFactory.getDatastoreService();
+        for (int tries=10; tries > 0; --tries) {
+            Transaction txn = datastore.beginTransaction();
+            try {
+                PersistenceManager pm = PMF.get().getPersistenceManager();
+                CounterGroup g = readGroupFromDatastore(pm);
+                for (Map.Entry<String, Long> entry : toReplace.entrySet()) {
+                    g.getCounter(entry.getKey()).setCount(entry.getValue());
+                }
+                for (Map.Entry<String, Long> entry : toIncrement.entrySet()) {
+                    g.getCounter(entry.getKey()).increment(entry.getValue());
+                }
+                for (Map.Entry<String, Integer> entry
+                     : toAddShards.entrySet()) {
+                    g.getCounter(entry.getKey()).addShards(entry.getValue());
+                }
+                writeGroupToDatastore(pm, g);
+                pm.close();
+                txn.commit();
+                if (group.getNumCounters() == 0) {
+                    log.warning("Saving an empty countergroup!");
+                } else {
+                    log.info("Saving group with " + group.getNumCounters()
+                             + " counters.");
+                }
+                invalidateGroupCache();
+                return;
+            } catch (ConcurrentModificationException e) {
+                log.warning("Concurrent modification!");
+            } finally {
+                if (txn.isActive()) {
+                    txn.rollback();
+                }
+            }
         }
-        pm.makePersistent(group);
-        pm.close();
-
+        throw new RuntimeException("Too much contention for group!");
     }
 
     public long getLastUpdated() {
