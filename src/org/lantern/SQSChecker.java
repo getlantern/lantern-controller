@@ -14,7 +14,7 @@ import org.lantern.data.Dao;
 @SuppressWarnings("serial")
 public class SQSChecker extends HttpServlet {
     private static final transient Logger log = Logger
-            .getLogger(PersistController.class.getName());
+            .getLogger(SQSChecker.class.getName());
 
     @Override
     public void doGet(final HttpServletRequest request,
