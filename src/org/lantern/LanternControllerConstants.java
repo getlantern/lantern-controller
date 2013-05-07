@@ -23,7 +23,7 @@ public class LanternControllerConstants {
     private static String awsAccessKeyId;
     private static String awsSecretKey;
 
-    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.0");
+    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
 
     static {
         try {
