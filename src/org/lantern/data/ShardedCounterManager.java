@@ -38,6 +38,7 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.memcache.ErrorHandlers;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
@@ -71,6 +72,10 @@ public class ShardedCounterManager {
     CounterGroup group;
 
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
+    
+    public ShardedCounterManager() {
+        cache.setErrorHandler(ErrorHandlers.getConsistentLogAndContinue(Level.INFO));
+    }
 
     /**
      * Same as increment(name, 1)
