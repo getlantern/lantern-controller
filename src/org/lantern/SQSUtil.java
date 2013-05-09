@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
@@ -26,39 +27,66 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class SQSUtil {
 
-    private final String NOTIFY_Q;
-    private final String SPAWN_REQUEST_Q;
-    {
+    private static final String ENDPOINT = "sqs.ap-southeast-1.amazonaws.com";
+    private static final String REQUEST_Q_NAME;
+    private static final String NOTIFY_Q_NAME;
+    static {
         final String appId = SystemProperty.applicationId.get();
-        NOTIFY_Q = "https://sqs.ap-southeast-1.amazonaws.com/670960738222/notify_"
-                    + appId;
-        SPAWN_REQUEST_Q = "https://sqs.ap-southeast-1.amazonaws.com/670960738222/"
-                    + appId + "_request";
+        REQUEST_Q_NAME = appId + "_request";
+        NOTIFY_Q_NAME = "notify_" + appId;
     }
 
-    private final BasicAWSCredentials creds = new BasicAWSCredentials(
+    private static String REQUEST_Q_URL;
+    private static String NOTIFY_Q_URL;
+
+    private static String getRequestQueueUrl() {
+        if (REQUEST_Q_URL == null) {
+            REQUEST_Q_URL = getQueueUrl(REQUEST_Q_NAME);
+        }
+        return REQUEST_Q_URL;
+    }
+
+    private static String getNotifyQueueUrl() {
+        if (NOTIFY_Q_URL == null) {
+            NOTIFY_Q_URL = getQueueUrl(NOTIFY_Q_NAME);
+        }
+        return NOTIFY_Q_URL;
+    }
+
+    /**
+     * Return the URL of the queue with the given name, creating it if it
+     * doesn't exist yet.
+     */
+    private static String getQueueUrl(String queueName) {
+        AmazonSQSClient client = getClient();
+        Integer visibilityTimeout = 3600;  // seconds
+        return client.createQueue(
+                new CreateQueueRequest(queueName, visibilityTimeout)
+                ).getQueueUrl();
+    }
+
+    private static final BasicAWSCredentials creds = new BasicAWSCredentials(
             LanternControllerConstants.getAWSAccessKeyId(),
             LanternControllerConstants.getAWSSecretKey());
     private final transient Logger log = Logger.getLogger(getClass().getName());
 
     public void send(final Map<String, Object> msgMap) {
-        final AmazonSQSClient sqs = new AmazonSQSClient(creds);
+        final AmazonSQSClient sqs = getClient();
         final String msg = encode(msgMap);
-        SendMessageRequest req = new SendMessageRequest(SPAWN_REQUEST_Q, msg);
-        sqs.sendMessage(req);
+        sqs.sendMessage(new SendMessageRequest(getRequestQueueUrl(), msg));
     }
 
     public List<Map<String, Object>> receive() {
         // The version of the AWS SDK we're using doesn't expose any method to
         // set a timeout in this request, but it returns immediately if the
         // queue is empty.
-        final AmazonSQSClient sqs = new AmazonSQSClient(creds);
+        final AmazonSQSClient sqs = getClient();
         ArrayList<Map<String, Object>> ret =
             new ArrayList<Map<String, Object>>();
         try {
             while (true) {
                 ReceiveMessageRequest req = new ReceiveMessageRequest(
-                        NOTIFY_Q);
+                        getNotifyQueueUrl());
                 req.setMaxNumberOfMessages(10);
                 ReceiveMessageResult res = sqs.receiveMessage(req);
                 List<Message> messages = res.getMessages();
@@ -72,7 +100,7 @@ public class SQSUtil {
                 for (Message msg : messages) {
                     try {
                         DeleteMessageRequest dmreq = new DeleteMessageRequest(
-                                NOTIFY_Q, msg.getReceiptHandle());
+                                getNotifyQueueUrl(), msg.getReceiptHandle());
                         sqs.deleteMessage(dmreq);
                         // Only act on messages we have successfully deleted,
                         // because other instances may have handled the rest,
@@ -91,6 +119,12 @@ public class SQSUtil {
         } catch (DeadlineExceededException e) {
             log.warning("Timed out waiting for SQS messages.");
         }
+        return ret;
+    }
+
+    private static AmazonSQSClient getClient() {
+        AmazonSQSClient ret = new AmazonSQSClient(creds);
+        ret.setEndpoint(ENDPOINT);
         return ret;
     }
 
