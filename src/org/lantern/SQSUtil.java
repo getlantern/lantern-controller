@@ -16,8 +16,8 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
+import com.google.appengine.api.utils.SystemProperty;
 import com.google.apphosting.api.DeadlineExceededException;
-
 import org.apache.commons.codec.binary.Base64;
 
 import org.codehaus.jackson.JsonParseException;
@@ -26,10 +26,16 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class SQSUtil {
 
-    private final String SPAWN_REQUEST_Q =
-        "https://sqs.ap-southeast-1.amazonaws.com/670960738222/spawn_request";
-    private final String NOTIFY_Q =
-        "https://sqs.ap-southeast-1.amazonaws.com/670960738222/lanternctrl_notify";
+    private final String NOTIFY_Q;
+    private final String SPAWN_REQUEST_Q;
+    {
+        final String appId = SystemProperty.applicationId.get();
+        NOTIFY_Q = "https://sqs.ap-southeast-1.amazonaws.com/670960738222/notify_"
+                    + appId;
+        SPAWN_REQUEST_Q = "https://sqs.ap-southeast-1.amazonaws.com/670960738222/"
+                    + appId + "_request";
+    }
+
     private final BasicAWSCredentials creds = new BasicAWSCredentials(
             LanternControllerConstants.getAWSAccessKeyId(),
             LanternControllerConstants.getAWSSecretKey());
