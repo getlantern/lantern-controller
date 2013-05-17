@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
@@ -277,6 +276,12 @@ public class Dao extends DAOBase {
     public boolean hasMoreInvites(final String userId) {
         return getInvites(userId) > 0;
     }
+
+    public boolean isUserInvitedByUser(String sponsor, String guest) {
+        Objectify ofy = ofy();
+        return alreadyInvitedBy(ofy, sponsor, guest);
+    }
+
 
     /**
      * Returns true if the invite was added, false if it wasn't (because it
