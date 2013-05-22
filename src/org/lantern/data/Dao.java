@@ -277,7 +277,7 @@ public class Dao extends DAOBase {
         return getInvites(userId) > 0;
     }
 
-    public boolean isUserInvitedByUser(String sponsor, String guest) {
+    public boolean alreadyInvitedBy(String sponsor, String guest) {
         Objectify ofy = ofy();
         return alreadyInvitedBy(ofy, sponsor, guest);
     }

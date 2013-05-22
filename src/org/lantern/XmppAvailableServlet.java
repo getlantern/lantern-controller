@@ -83,7 +83,7 @@ public class XmppAvailableServlet extends HttpServlet {
             if (!dao.hasMoreInvites(from)) {
                 //This could be a duplicate message, so we need to check to see if we have already
                 //successfully invited this user.
-                if (!dao.isUserInvitedByUser(from, invitedEmail)) {
+                if (!dao.alreadyInvitedBy(from, invitedEmail)) {
                     log.severe("No more invites for user: "+from);
                     inviteFailed(xmpp, presence, invitedEmail, "No invites left");
                 }
