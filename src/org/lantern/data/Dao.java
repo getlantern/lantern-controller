@@ -71,6 +71,8 @@ public class Dao extends DAOBase {
 
     private final ShardedCounterManager counterManager = new ShardedCounterManager();
 
+    private final SettingsManager settingsManager = new SettingsManager();
+
     private static final int TXN_RETRIES = 10;
 
     static {
@@ -896,5 +898,25 @@ public class Dao extends DAOBase {
     public void logPermanently(final String contents) {
         ofy().put(new PermanentLogEntry(contents));
         log.info("Logged!");
+    }
+
+    /** Add n invites to each user.  N may be negative; a user who would have
+     *  negative invites as a result of this instead gets zero invites
+     *
+     * @param n
+     */
+    public void globalAddInvites(int n) {
+        Objectify ofy = ofy();
+        for (LanternUser user : ofy.query(LanternUser.class)) {
+            user.setInvites(Math.max(user.getInvites() + n, 0));
+            ofy.put(user);
+        }
+    }
+    public boolean areInvitesPaused() {
+        return settingsManager.getBoolean("invitesPaused");
+    }
+
+    public void setInvitesPaused(boolean paused) {
+        settingsManager.set("invitesPaused", "true");
     }
 }

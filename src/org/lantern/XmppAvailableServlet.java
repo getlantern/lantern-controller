@@ -76,9 +76,15 @@ public class XmppAvailableServlet extends HttpServlet {
 
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
+
             final String invitedEmail =
                     LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITED_EMAIL);
+            if (dao.areInvitesPaused()) {
+                log.info("Invites are paused, so returning failure");
+                inviteFailed(xmpp, presence, invitedEmail, "Invitations are temporarily disabled");
+                return;
+            }
 
             if (!dao.hasMoreInvites(from)) {
                 //This could be a duplicate message, so we need to check to see if we have already
