@@ -351,7 +351,7 @@ public class Dao extends DAOBase {
                     if (getUserCount() < LanternControllerConstants.MAX_USERS
                         && invitee.getDegree() < 3
                         && invitee.getInvites() < 2) {
-                        invitee.setInvites(2);
+                        invitee.setInvites(getDefaultInvites());
                     }
                     invitee.setSponsor(sponsor);
                     ofy.put(invitee);
@@ -918,5 +918,17 @@ public class Dao extends DAOBase {
 
     public void setInvitesPaused(boolean paused) {
         settingsManager.set("invitesPaused", "true");
+    }
+
+    public void setDefaultInvites(int n) {
+        settingsManager.set("defaultInvites", "" + n);
+    }
+
+    public int getDefaultInvites() {
+        try {
+            return Integer.parseInt(settingsManager.get("defaultInvites"));
+        } catch (NumberFormatException e) {
+            return 2;
+        }
     }
 }

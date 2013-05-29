@@ -89,4 +89,18 @@ public class AdminServlet extends HttpServlet {
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
 
     }
+
+    public void setDefaultInvites(final HttpServletRequest request,
+            final HttpServletResponse response, String[] pathComponents) {
+
+        Dao dao = new Dao();
+
+
+        int n = Integer.parseInt(request.getParameter("n"));
+
+        dao.setDefaultInvites(n);
+
+        LanternControllerUtils.populateOKResponse(response, "Default invites: " + n);
+
+    }
 }
