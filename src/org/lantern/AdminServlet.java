@@ -24,7 +24,8 @@ public class AdminServlet extends HttpServlet {
             final HttpServletResponse response) throws ServletException, IOException {
 
         log.info("get on admin servlet; this should be handled by static files");
-        super.doGet(request, response);
+        response.setHeader("Location", "/admin/index.html");
+        response.setStatus(302);
     }
 
 
