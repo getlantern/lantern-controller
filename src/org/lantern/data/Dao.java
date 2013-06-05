@@ -349,7 +349,6 @@ public class Dao extends DAOBase {
 
                     invitee.setDegree(inviter.getDegree() + 1);
                     if (getUserCount() < LanternControllerConstants.MAX_USERS
-                        && invitee.getDegree() < 3
                         && invitee.getInvites() < 2) {
                         invitee.setInvites(getDefaultInvites());
                     }
@@ -930,5 +929,11 @@ public class Dao extends DAOBase {
         } catch (NumberFormatException e) {
             return 2;
         }
+    }
+
+    public boolean isAdmin(String userId) {
+        Objectify ofy = ofy();
+        LanternUser user = ofy.find(LanternUser.class, userId);
+        return user.getDegree() == 0;
     }
 }

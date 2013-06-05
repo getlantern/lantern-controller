@@ -80,7 +80,7 @@ public class XmppAvailableServlet extends HttpServlet {
             final String invitedEmail =
                     LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITED_EMAIL);
-            if (dao.areInvitesPaused()) {
+            if (dao.areInvitesPaused() && !dao.isAdmin(from)) {
                 log.info("Invites are paused, so returning failure");
                 inviteFailed(xmpp, presence, invitedEmail, "Invitations are temporarily disabled");
                 return;
