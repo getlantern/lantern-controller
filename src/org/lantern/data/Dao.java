@@ -6,6 +6,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -15,6 +16,9 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
+import org.lantern.data.LanternUser.SyncResult;
+import org.lantern.state.Friend;
+import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 
 import com.googlecode.objectify.Key;
@@ -935,5 +939,24 @@ public class Dao extends DAOBase {
         Objectify ofy = ofy();
         LanternUser user = ofy.find(LanternUser.class, userId);
         return user.getDegree() == 0;
+    }
+
+    public List<Friend> syncFriends(String userId, Friends clientFriends) {
+        Objectify ofy = ofy();
+        LanternUser user = ofy.find(LanternUser.class, userId);
+        SyncResult result = user.syncFriendsFromClient(clientFriends);
+        if (result.shouldSave) {
+            ofy.put(user);
+        }
+        return result.changed;
+    }
+
+    public void syncFriend(String userId, Friend clientFriend) {
+        //just sync a single friend up from the client
+        Objectify ofy = ofy();
+        LanternUser user = ofy.find(LanternUser.class, userId);
+        if (user.syncFriendFromClient(clientFriend)) {
+            ofy.put(user);
+        }
     }
 }

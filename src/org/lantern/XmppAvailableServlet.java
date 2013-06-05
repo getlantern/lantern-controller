@@ -27,9 +27,12 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
+import org.lantern.state.Friend;
+import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
+import com.google.appengine.api.xmpp.JID;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.MessageType;
@@ -99,6 +102,8 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
+        handleFriendsSync(doc, from, xmpp);
+
         if (!presence.isAvailable()) {
             log.info(userId + "/" + instanceId + " logging out.");
             dao.setInstanceUnavailable(userId, instanceId);
@@ -129,6 +134,72 @@ public class XmppAvailableServlet extends HttpServlet {
         }
 
         dao.signedIn(from);
+    }
+
+    private boolean handleFriendsSync(Document doc, String fromJid, XMPPService xmpp) {
+        //handle friends sync
+        final String friendsJson =
+                LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
+
+        log.info("Handling friend sync");
+        Dao dao = new Dao();
+
+        String userId = LanternXmppUtils.jidToUserId(fromJid);
+
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new MrBeanModule());
+
+        if (StringUtils.isEmpty(friendsJson)) {
+
+            final String friendJson =
+                    LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
+            if (StringUtils.isEmpty(friendJson)) {
+                return false;
+            }
+
+            log.info("Syncing single friend");
+            Friend clientFriend = safeMap(friendJson, mapper, Friend.class);
+            dao.syncFriend(userId, clientFriend);
+            return true;
+        }
+
+
+        Friends clientFriends = safeMap(friendsJson, mapper, Friends.class);
+
+        log.info("Synced friends count = " + clientFriends.getFriends().size());
+
+        List<Friend> changed = dao.syncFriends(userId, clientFriends);
+        log.info("Changed friends count = " + changed.size());
+        if (changed.size() > 0) {
+            Map<String, Object> response = new HashMap<String, Object>();
+            response.put(LanternConstants.FRIENDS, changed);
+            String json = JsonUtils.jsonify(response);
+
+            Message msg = new MessageBuilder()
+                    .withRecipientJids(new JID(fromJid)).withBody(json)
+                    .withMessageType(MessageType.HEADLINE).build();
+            log.info("Sending response:\n" + json.toString());
+            xmpp.sendMessage(msg);
+        }
+
+        return true;
+    }
+
+    private <T> T safeMap(final String json, final ObjectMapper mapper, Class<T> cls) {
+        try {
+            return mapper.readValue(json, cls);
+        } catch (final UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        } catch (final JsonParseException e) {
+            log.severe("Error parsing client message: " + e.getMessage());
+            throw new RuntimeException(e);
+        } catch (final JsonMappingException e) {
+            log.severe("Error parsing client message: " + e.getMessage());
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            log.severe("Error reading client message: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     private void inviteSucceeded(XMPPService xmpp, Presence presence,
