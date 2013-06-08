@@ -20,7 +20,7 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/lantern-common-0.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-configuration-1.9.jar" sourcepath="/home/leah/.m2/repository/commons-configuration/commons-configuration/1.9/commons-configuration-1.9-sources.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-lang-2.6.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.3.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/aws-sdk-for-java-on-gae-1.1.9.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
