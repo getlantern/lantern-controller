@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,7 +24,9 @@ import org.lantern.state.Friend;
 import org.lantern.state.Friends;
 
 
-public class LanternUser {
+public class LanternUser implements Serializable {
+    private static final long serialVersionUID = 1953109001251375722L;
+
     private final transient Logger log = Logger.getLogger(getClass().getName());
 
     @Id
@@ -80,6 +83,12 @@ public class LanternUser {
 
     @Persistent
     private String serializedFriends;
+
+    @Persistent
+    private String name;
+
+    @Persistent
+    private String refreshToken;
 
     public LanternUser() {
         super();
@@ -335,5 +344,21 @@ public class LanternUser {
         friends.add(clientFriend);
         setFriends(friends);
         return true;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
 }

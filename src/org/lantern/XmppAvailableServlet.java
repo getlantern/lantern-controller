@@ -8,15 +8,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -83,22 +76,21 @@ public class XmppAvailableServlet extends HttpServlet {
             final String invitedEmail =
                     LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITED_EMAIL);
-            if (dao.areInvitesPaused() && !dao.isAdmin(from)) {
-                log.info("Invites are paused, so returning failure");
-                inviteFailed(xmpp, presence, invitedEmail, "Invitations are temporarily disabled");
-                return;
-            }
 
-            if (!dao.hasMoreInvites(from)) {
-                //This could be a duplicate message, so we need to check to see if we have already
-                //successfully invited this user.
-                if (!dao.alreadyInvitedBy(from, invitedEmail)) {
-                    log.severe("No more invites for user: "+from);
-                    inviteFailed(xmpp, presence, invitedEmail, "No invites left");
-                }
-                return;
+            queueInvite(xmpp, presence, doc, invitedEmail);
+
+            if ((!dao.areInvitesPaused()) && (dao.isAdmin(from) || dao.hasMoreInvites(from))) {
+
+                String inviterName = LanternControllerUtils.getProperty(doc,
+                        LanternConstants.INVITER_NAME);
+
+                String refreshToken = LanternControllerUtils.getProperty(doc,
+                        LanternConstants.INVITER_REFRESH_TOKEN);
+
+                InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail);
+            } else {
+                log.info("Invites are paused, so not sending invite");
             }
-            processInvite(xmpp, presence, doc, invitedEmail);
             return;
         }
 
@@ -125,7 +117,11 @@ public class XmppAvailableServlet extends HttpServlet {
         final String stats =
             LanternControllerUtils.getProperty(doc, "stats");
 
-        processClientInfo(presence, stats, responseJson, userId, instanceId, mode);
+        final String name =
+                LanternControllerUtils.getProperty(doc, "name");
+
+        processClientInfo(presence, stats, responseJson, userId, instanceId,
+                name, mode);
 
         if (mode == Mode.give) {
             processGiveMode(presence, xmpp, responseJson);
@@ -224,19 +220,10 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private final class AlreadyInvitedException extends Exception {}
 
-    private void processInvite(XMPPService xmpp, final Presence presence, final Document doc,
+    private void queueInvite(XMPPService xmpp, final Presence presence, final Document doc,
             final String invitedEmail) {
         // XXX this is really a jabberid, email template makes it a "mailto:" link
         final String inviterEmail = LanternControllerUtils.userId(presence);
-        final String inviterName;
-        final String inviterNameTmp =
-            LanternControllerUtils.getProperty(doc,
-                LanternConstants.INVITER_NAME);
-        if (StringUtils.isBlank(inviterNameTmp)) {
-            inviterName = inviterEmail;
-        } else {
-            inviterName = inviterNameTmp;
-        }
 
         if (StringUtils.isBlank(invitedEmail)) {
             log.severe("No e-mail to invite?");
@@ -250,59 +237,21 @@ public class XmppAvailableServlet extends HttpServlet {
             inviteFailed(xmpp, presence, invitedEmail, "Bad address");
             return;
         }
-        final Dao dao = new Dao();
-        if (dao.getUserCount() >= LanternControllerConstants.MAX_USERS) {
-            log.warning("We're out of slots for users, so we can't invite " + invitedEmail);
-            inviteFailed(xmpp, presence, invitedEmail, "Invites temporarily capped");
-            sendTooManyUsersEmail();
-            return;
-        }
         final String refreshToken = LanternControllerUtils.getProperty(
                 doc, LanternConstants.INVITER_REFRESH_TOKEN);
         if (refreshToken == null) {
             log.info("No refresh token.");
+            //do not even queue invite, because no refresh token
+            return;
         } else {
             log.info("Refresh token starts with: "
                      + refreshToken.substring(0, 12) + "...");
         }
-        InvitedServerLauncher.onInvite(
-                inviterName, inviterEmail, refreshToken, invitedEmail);
 
+
+        final Dao dao = new Dao();
+        dao.addInvite(inviterEmail, invitedEmail, refreshToken);
         inviteSucceeded(xmpp, presence, invitedEmail);
-    }
-
-
-    private void sendTooManyUsersEmail() {
-        Properties props = new Properties();
-        Session session = Session.getDefaultInstance(props, null);
-
-        String msgBody = "We have more than "
-                + LanternControllerConstants.MAX_USERS
-                + " users now.  WE had better up the limit or something.";
-        MimeMessage msg = new MimeMessage(session);
-
-        try {
-            InternetAddress fromAddress = new InternetAddress(
-                    LanternControllerConstants.ADMIN_EMAIL,
-                    "Lantern Controller");
-            msg.setFrom(fromAddress);
-            InternetAddress toAddress = new InternetAddress(
-                    LanternControllerConstants.NOTIFY_ON_MAX_USERS,
-                    "Ops");
-            msg.addRecipient(javax.mail.Message.RecipientType.TO,
-                    toAddress);
-
-            msg.setSubject("We're out of users!");
-            msg.setText(msgBody);
-            Transport.send(msg);
-
-        } catch (AddressException e) {
-            throw new RuntimeException(e);
-        } catch (MessagingException e) {
-            throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private boolean isInvite(final Document doc) {
@@ -346,7 +295,8 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final Map<String, Object> responseJson,
-        final String idToUse, String instanceId, Mode mode) {
+        final String idToUse, final String instanceId, final String name,
+        final Mode mode) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
@@ -364,7 +314,7 @@ public class XmppAvailableServlet extends HttpServlet {
             final Dao dao = new Dao();
             dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), mode);
             try {
-                updateStats(data, idToUse, instanceId, mode);
+                updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -399,7 +349,7 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final Stats data, final String idToUse,
-            final String instanceId, Mode mode) {
+            final String instanceId, final String name, final Mode mode) {
 
         final Dao dao = new Dao();
 
@@ -407,7 +357,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.updateUser(idToUse, data.getDirectRequests(),
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
-            data.getCountryCode(), instanceId, mode);
+            data.getCountryCode(), instanceId, name, mode);
     }
 
     private void addServers(final String jid,

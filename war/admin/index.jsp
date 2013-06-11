@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="org.lantern.AdminServlet" %>
+<%@ page import="org.lantern.data.Dao" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -22,9 +23,13 @@ Lantern Controller Admin
 
 <form method="POST" action="/admin/post/setInvitesPaused">
 
-<button type="submit" name="paused" value="true">Pause invites</button><br/>
-<button type="submit" name="paused" value="false">Unpause invites</button>
-
+<% Dao dao = new Dao();
+if (dao.areInvitesPaused()) {
+%>
+Invites are paused.  <button type="submit" name="paused" value="false">Unpause invites</button>
+<% } else { %>
+Invites are unpaused.  <button type="submit" name="paused" value="true">Pause invites</button><br/>
+<% } %>
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
