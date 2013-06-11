@@ -13,7 +13,7 @@ public class LanternControllerConstants {
 
     static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     static final String MANDRILL_API_SEND_TEMPLATE_URL = MANDRILL_API_BASE_URL + "messages/send-template.json";
-    static final String INVITE_EMAIL_TEMPLATE_NAME = "cloud-invite";
+    static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-wrappers";
     static final String INVITE_EMAIL_SUBJECT = "Lantern Invitation";
     static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
     static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";

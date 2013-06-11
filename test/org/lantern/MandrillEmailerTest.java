@@ -24,9 +24,7 @@ public class MandrillEmailerTest {
 
     private final String winInstallerUrl = "";
     
-    private final String deb32InstallerUrl = "";
-    
-    private final String deb64InstallerUrl = "";
+    private final String linuxInstallerUrl = "";
     
     @Test
     public void test() throws Exception {
@@ -37,7 +35,7 @@ public class MandrillEmailerTest {
         }
         final String payload = MandrillEmailer.mandrillJson(inviterName, 
             inviterEmail, invitedEmail, osxInstallerUrl, winInstallerUrl,
-            deb32InstallerUrl, deb64InstallerUrl);
+            linuxInstallerUrl);
         final HttpPost post = new HttpPost(
             LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));

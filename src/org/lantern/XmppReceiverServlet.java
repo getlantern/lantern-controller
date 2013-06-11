@@ -25,11 +25,6 @@ public class XmppReceiverServlet extends HttpServlet {
         final Message msg = xmpp.parseMessage(req);
         
         final String fromJid = msg.getFromJid().getId();
-        if (!LanternXmppUtils.jidToUserId(fromJid).equals(
-                InvitedServerLauncher.INVSRVLAUNCHER_EMAIL)) {
-            log.warning("Chat from unauthorized user: " + fromJid);
-            return;
-        }
         final String body = msg.getBody();
         log.info("Received " + fromJid + " body:\n" + body);
     }

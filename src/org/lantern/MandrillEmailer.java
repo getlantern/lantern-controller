@@ -40,15 +40,14 @@ public class MandrillEmailer {
      * @param invitedEmail The email of the person to invite. 
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
-     * @param deb32InstallerUrl The URL of the Ubuntu 32-bit installer.
-     * @param deb64InstallerUrl The URL of the Ubuntu 64-bit installer.
+     * @param linuxInstallerUrl The URL of the Ubuntu installer.
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
     public static void sendInvite(final String inviterName, 
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String deb32InstallerUrl, final String deb64InstallerUrl)
+        final String linuxInstallerUrl)
         throws IOException {
         log.info("Sending invite to "+invitedEmail);
         if (StringUtils.isBlank(invitedEmail)) {
@@ -57,8 +56,7 @@ public class MandrillEmailer {
         }
         final String json = 
             mandrillJson(inviterName, inviterEmail, invitedEmail, 
-                osxInstallerUrl, winInstallerUrl, deb32InstallerUrl,
-                deb64InstallerUrl);
+                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
         sendEmail(json);
     }
     
@@ -71,15 +69,14 @@ public class MandrillEmailer {
      * @param invitedEmail The email of the person to invite. 
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
-     * @param deb32InstallerUrl The URL of the Ubuntu 32-bit installer.
-     * @param deb64InstallerUrl The URL of the Ubuntu 64-bit installer.
+     * @param linuxInstallerUrl The URL of the Ubuntu installer.
      * @return The generated JSON to send to Mandrill.
      * @throws IOException If there's an error generating the JSON.
      */
     public static String mandrillJson(final String inviterName, 
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String deb32InstallerUrl, final String deb64InstallerUrl) 
+        final String linuxInstallerUrl)
         throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
@@ -116,8 +113,7 @@ public class MandrillEmailer {
 
         mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
         mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));
-        mergeVars.add(mergeVar("DEB32INSTALLERURL", deb32InstallerUrl));
-        mergeVars.add(mergeVar("DEB64INSTALLERURL", deb64InstallerUrl));
+        mergeVars.add(mergeVar("LINUXINSTALLERURL", linuxInstallerUrl));
 
         msg.put("global_merge_vars", mergeVars);
         

@@ -25,13 +25,11 @@ public class InvitedServerLauncher {
         Logger.getLogger(InvitedServerLauncher.class.getName());
 
     public static final String PENDING = "pending";
-    public static final String INVSRVLAUNCHER_EMAIL = "invsrvlauncher@gmail.com";
-    private static final JID INVSRVLAUNCHER_JID = new JID(INVSRVLAUNCHER_EMAIL);
 
     // Contains installers with default fallback servers, for backwards
     // compatibility.
     private static final String
-        DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback";
+        DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
 
     public static void onInvite(final String inviterName,
                                 final String inviterEmail,
@@ -56,11 +54,6 @@ public class InvitedServerLauncher {
             // Ask invsrvlauncher to create an instance for this user.
             log.info("Ordering launch of new invited server for "
                      + inviterEmail);
-            final String bucket = dao.getAndIncrementLeastUsedBucket();
-            if (bucket == null) {
-                log.severe("I have no buckets to store installers for invitees!");
-                return;
-            }
             final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
@@ -70,7 +63,6 @@ public class InvitedServerLauncher {
              */
             map.put("launch-invsrv-as", inviterEmail);
             map.put("launch-refrtok", refreshToken);
-            map.put("launch-bucket", bucket);
             new SQSUtil().send(map);
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
@@ -94,18 +86,18 @@ public class InvitedServerLauncher {
                                         final String inviterEmail,
                                         final String invitedEmail,
                                         final String installerLocation) {
-        final String[] parts = installerLocation.split("/");
+        final String[] parts = installerLocation.split(",");
         assert parts.length == 2;
-        final String bucket = parts[0];
-        final String folder = parts[1];
+        final String folder = parts[0];
+        final String version = parts[1];
         final String baseUrl =
-            "https://" + bucket + ".s3.amazonaws.com/" + folder
-            + "/lantern-" + LanternControllerConstants.LATEST_VERSION;
+            "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
 
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
-                baseUrl + ".dmg", baseUrl + ".exe",
-                baseUrl + "-32bit.deb", baseUrl + "-64bit.deb");
+                baseUrl + "macos_" + version + ".dmg",
+                baseUrl + "windows_" + version + ".exe",
+                baseUrl + "unix_" + version + ".sh");
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }
