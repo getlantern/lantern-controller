@@ -920,7 +920,7 @@ public class Dao extends DAOBase {
     }
 
     public void setInvitesPaused(boolean paused) {
-        settingsManager.set("invitesPaused", "true");
+        settingsManager.set("invitesPaused", "" + paused);
     }
 
     public void setDefaultInvites(int n) {
