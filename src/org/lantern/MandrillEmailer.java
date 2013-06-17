@@ -92,9 +92,7 @@ public class MandrillEmailer {
         final Map<String, String> to = new HashMap<String, String>();
         //XXX: Temporary hack to tightly control what installers testers get.
         //to.put("email", invitedEmail);
-        to.put("email", "bns-ops+"
-                        + invitedEmail.replace("@", "+at+")
-                        + "@googlegroups.com");
+        to.put("email", invitedEmail);
         msg.put("to", Arrays.asList(to));
         msg.put("track_opens", false);
         msg.put("track_clicks", false);
