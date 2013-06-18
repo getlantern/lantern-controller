@@ -148,7 +148,7 @@ public class XmppAvailableServlet extends HttpServlet {
         if (StringUtils.isEmpty(friendsJson)) {
 
             final String friendJson =
-                    LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
+                    LanternControllerUtils.getProperty(doc, LanternConstants.FRIEND);
             if (StringUtils.isEmpty(friendJson)) {
                 return false;
             }
