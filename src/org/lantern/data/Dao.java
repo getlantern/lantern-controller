@@ -2,6 +2,7 @@ package org.lantern.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -927,22 +928,40 @@ public class Dao extends DAOBase {
         return user.getDegree() == 0;
     }
 
-    public List<Friend> syncFriends(String userId, Friends clientFriends) {
-        Objectify ofy = ofy();
-        LanternUser user = ofy.find(LanternUser.class, userId);
-        SyncResult result = user.syncFriendsFromClient(clientFriends);
-        if (result.shouldSave) {
-            ofy.put(user);
+    public List<Friend> syncFriends(final String userId,
+            final Friends clientFriends) {
+        SyncResult result = new RetryingTransaction<SyncResult>() {
+            @Override
+            public SyncResult run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                SyncResult result = user.syncFriendsFromClient(clientFriends);
+                if (result.shouldSave) {
+                    ofy.put(user);
+                }
+                return result;
+            }
+        }.run();
+        if (result != null) {
+            return result.changed;
+        } else {
+            return Collections.emptyList();
         }
-        return result.changed;
     }
 
-    public void syncFriend(String userId, Friend clientFriend) {
+    public void syncFriend(final String userId, final Friend clientFriend) {
         //just sync a single friend up from the client
-        Objectify ofy = ofy();
-        LanternUser user = ofy.find(LanternUser.class, userId);
-        if (user.syncFriendFromClient(clientFriend)) {
-            ofy.put(user);
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user.syncFriendFromClient(clientFriend)) {
+                    ofy.put(user);
+                }
+                return true;
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much transaction contention syncing friend");
         }
     }
 
