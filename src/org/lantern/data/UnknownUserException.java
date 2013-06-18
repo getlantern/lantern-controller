@@ -2,7 +2,7 @@ package org.lantern.data;
 
 
 @SuppressWarnings("serial")
-public class UnknownUserException extends Exception {
+public class UnknownUserException extends RuntimeException {
     public UnknownUserException() {
         super();
     }

@@ -9,3 +9,6 @@ To bring this project into Eclipse, just do the following:
 
 You'll also need to fill in src/org.lantern.secrets.properties with
 the correct data; accessKey must match the one used on getlantern.org
+
+Also create a file from war/WEB-INF/classes/csrf-secret.properties with
+secret=[some random string]
