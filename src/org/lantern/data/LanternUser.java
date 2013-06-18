@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import javax.jdo.annotations.Persistent;
 import javax.persistence.Id;
 
 import org.apache.commons.lang3.StringUtils;
@@ -81,13 +80,10 @@ public class LanternUser implements Serializable {
      */
     private String installerLocation;
 
-    @Persistent
     private String serializedFriends;
 
-    @Persistent
     private String name;
 
-    @Persistent
     private String refreshToken;
 
     public LanternUser() {
