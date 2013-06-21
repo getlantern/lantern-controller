@@ -6,17 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.google.appengine.api.xmpp.JID;
-import com.google.appengine.api.xmpp.Message;
-import com.google.appengine.api.xmpp.XMPPService;
-import com.google.appengine.api.xmpp.XMPPServiceFactory;
-import com.google.appengine.api.xmpp.MessageBuilder;
-import com.google.appengine.api.xmpp.MessageType;
-
-import org.littleshoot.util.ThreadUtils;
-
-import org.lantern.data.UnknownUserException;
 import org.lantern.data.Dao;
+import org.lantern.data.UnknownUserException;
+import org.littleshoot.util.ThreadUtils;
 
 
 public class InvitedServerLauncher {
@@ -31,20 +23,18 @@ public class InvitedServerLauncher {
     private static final String
         DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
 
-    public static void onInvite(final String inviterName,
+    public static void sendInvite(final String inviterName,
                                 final String inviterEmail,
                                 final String refreshToken,
                                 final String invitedEmail) {
 
         final Dao dao = new Dao();
 
-        if (dao.addInvite(inviterEmail, invitedEmail)) {
-            dao.decrementInvites(inviterEmail);
-        } else {
-            log.info("Not adding an invite");
+        if (!dao.sendingInvite(inviterEmail, invitedEmail)) {
+            log.info("Not re-sending an invite");
             return;
         }
-        
+
         String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
         if (installerLocation == null && refreshToken == null) {
             // Inviter is running an old client.
@@ -54,7 +44,6 @@ public class InvitedServerLauncher {
             // Ask invsrvlauncher to create an instance for this user.
             log.info("Ordering launch of new invited server for "
                      + inviterEmail);
-            final XMPPService xmpp = XMPPServiceFactory.getXMPPService();
             Map<String, Object> map = new LinkedHashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
              * by the client, but by a Python bot.
@@ -67,6 +56,8 @@ public class InvitedServerLauncher {
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
+
+        dao.sentInvite(inviterEmail, invitedEmail);
     }
 
     public static void onInvitedServerUp(final String inviterEmail, 

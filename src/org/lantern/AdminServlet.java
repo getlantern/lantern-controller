@@ -3,40 +3,72 @@ package org.lantern;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Properties;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
+
+import com.google.appengine.api.users.User;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
 
 public class AdminServlet extends HttpServlet {
     private static final long serialVersionUID = -2328208258840617005L;
     private static final transient Logger log = Logger
             .getLogger(AdminServlet.class.getName());
+    private static String secret;
 
+    static {
+        final Properties prop = new Properties();
 
-    @Override
-    public void doGet(final HttpServletRequest request,
-            final HttpServletResponse response) throws ServletException, IOException {
-
-        log.info("get on admin servlet; this should be handled by static files");
-        response.setHeader("Location", "/admin/index.html");
-        response.setStatus(302);
+        try {
+            final ClassLoader cl = AdminServlet.class.getClassLoader();
+            prop.load(cl.getResourceAsStream("csrf-secret.properties"));
+            secret = prop.getProperty("secret");
+            if (StringUtils.isBlank(secret)) {
+                throw new RuntimeException(
+                        "Please create a csrf-secret.properties file with field secret");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (NullPointerException e) {
+            throw new RuntimeException("Failed to load CSRF secret", e);
+        }
     }
 
+    public static String getCsrfToken() {
+        UserService userService = UserServiceFactory.getUserService();
+        User user = userService.getCurrentUser();
+        return DigestUtils.sha256Hex(user.getFederatedIdentity() + secret);
+    }
+
+    public static String getCsrfTag() {
+        return "<input type=\"hidden\" name=\"csrfToken\" value=\"" + getCsrfToken() + "\" />";
+    }
 
     @Override
     public void doPost(final HttpServletRequest request,
             final HttpServletResponse response) {
 
+        addCSPHeader(request, response);
+
+        String csrfToken = getCsrfToken();
+        if (!SecurityUtils.constantTimeEquals(csrfToken, request.getParameter("csrfToken"))) {
+            return;
+        }
+
         String path = request.getPathInfo();
         String[] pathComponents = StringUtils.split(path, "/");
 
-        // URL is /admin/{command}[/...]
+        // URL is /admin/post/{command}[/...]
         String command = pathComponents[0];
 
         log.info("Admin command: " + command);
@@ -55,6 +87,19 @@ public class AdminServlet extends HttpServlet {
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Add content-security-policy header
+     *
+     * @param req
+     * @param resp
+     */
+    public static void addCSPHeader(ServletRequest req,
+            HttpServletResponse resp) {
+        String policy = "default-src http://" + req.getServerName()
+                + " 'unsafe-inline' 'unsafe-eval'";
+        resp.addHeader("Content-Security-Policy", policy);
     }
 
     /**
@@ -103,5 +148,36 @@ public class AdminServlet extends HttpServlet {
 
         LanternControllerUtils.populateOKResponse(response, "Default invites: " + n);
 
+    }
+
+    public void approvePendingInvite(final HttpServletRequest request,
+            final HttpServletResponse response, String[] pathComponents) {
+
+        String inviterEmail = request.getParameter("inviter");
+        String invitedEmail = request.getParameter("invitee");
+        String cursor = request.getParameter("cursor");
+
+        log.info("Approving pending invite from " + inviterEmail + " to " + invitedEmail);
+        Dao dao = new Dao();
+
+        LanternUser inviter = dao.getUser(inviterEmail);
+
+        String inviterName = inviter.getName();
+        if (StringUtils.isBlank(inviterName)) {
+            inviterName = inviterEmail;
+        }
+
+        String refreshToken = inviter.getRefreshToken();
+
+        InvitedServerLauncher.sendInvite(
+                inviterName, inviterEmail, refreshToken, invitedEmail);
+
+        log.info("Redirecting");
+        try {
+            response.sendRedirect("/admin/pendingInvites.jsp?cursor=" + cursor);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("Done");
     }
 }

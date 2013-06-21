@@ -2,10 +2,11 @@ package org.lantern.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.ConcurrentModificationException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -15,9 +16,20 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
+import org.lantern.admin.PendingInvites;
+import org.lantern.data.Invite.Status;
+import org.lantern.data.LanternUser.SyncResult;
+import org.lantern.state.Friend;
+import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 
+import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.memcache.Expiration;
+import com.google.appengine.api.memcache.MemcacheService;
+import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.googlecode.objectify.Key;
+import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -73,7 +85,7 @@ public class Dao extends DAOBase {
 
     private final SettingsManager settingsManager = new SettingsManager();
 
-    private static final int TXN_RETRIES = 10;
+    static final int TXN_RETRIES = 10;
 
     static {
         ObjectifyService.register(LanternUser.class);
@@ -123,13 +135,13 @@ public class Dao extends DAOBase {
         return users.list();
     }
 
-    public void setInstanceAvailable(String userId, final String instanceId,
-            final String countryCode, final Mode mode) {
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            final Objectify ofy = ObjectifyService.beginTransaction();
-            try {
-                final ArrayList<String> countersToUpdate
-                    = setInstanceAvailable(
+    public void setInstanceAvailable(final String userId,
+            final String instanceId, final String countryCode, final Mode mode) {
+
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                final ArrayList<String> countersToUpdate = setInstanceAvailable(
                         ofy, userId, instanceId, countryCode, mode);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
@@ -147,23 +159,13 @@ public class Dao extends DAOBase {
                         incrementCounter(counter);
                     }
                 }
-                return;
-            } catch (final ConcurrentModificationException e) {
-                // When a user logs in we get duplicated presence events for
-                // some reason.  This is why we put this method in
-                // a transaction, but we wouldn't really want to retry on this
-                // condition.  We do retry because this transaction can also
-                // fail if someone concurrently modifies the LanternUser that
-                // owns this instance.
-                log.info("Concurrent modification! Retrying...");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return true;
             }
+        }.run();
+
+        if (result == null) {
+            log.warning("Too much contention; giving up!");
         }
-        log.warning("Too much contention; giving up!");
     }
 
     /**
@@ -290,89 +292,45 @@ public class Dao extends DAOBase {
      * already existed, for instance)
      *
      * @param sponsor
-     * @param email
+     * @param inviteeEmail
      * @return
      */
-    public boolean addInvite(final String sponsor, final String email) {
-        // We do two different transactions here: one to add the invite if not
-        // there and, if this succeeds, another one to add the invitee if not
-        // there.
+    public boolean addInvite(final String sponsor, final String inviteeEmail,
+            final String refreshToken) {
+        // We just add the invite object here. We create the invitee when
+        // the invite is sent in sendingInvite
 
-        int retries;
-        Objectify ofy;
-
-        // Initialized only to appease the compiler.
-        LanternUser inviter = new LanternUser("bogus@never.used");
-
-        for (retries=TXN_RETRIES; retries>0; retries--) {
-            ofy = ObjectifyService.beginTransaction();
-            try {
-                inviter = ofy.find(LanternUser.class, sponsor);
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                LanternUser inviter = ofy.find(LanternUser.class, sponsor);
                 if (inviter == null) {
                     log.warning("Could not find sponsor sending invite: " + sponsor);
                     return false;
                 }
 
-                if (alreadyInvitedBy(ofy, sponsor, email)) {
+                if (alreadyInvitedBy(ofy, sponsor, inviteeEmail)) {
                     log.info("Not re-sending e-mail since user is already invited");
                     return false;
                 }
 
-                Invite invite = new Invite(sponsor, email);
+                inviter.setRefreshToken(refreshToken);
+                ofy.put(inviter);
+
+                Invite invite = new Invite(sponsor, inviteeEmail);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
                 log.info("Successfully committed new invite.");
-                break;
-            } catch (ConcurrentModificationException e) {
-                log.warning("Concurrent modification trying to add invite.");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return true;
             }
-        }
+        }.run();
 
-        if (retries == 0) {
+        if (result == null) {
             log.warning("Too much contention trying to add invite; gave up.");
             return false;
         }
 
-        for (retries=TXN_RETRIES; retries>0; retries--) {
-            ofy = ObjectifyService.beginTransaction();
-            try {
-                LanternUser invitee = ofy.find(LanternUser.class, email);
-                if (invitee == null) {
-                    log.info("Adding invitee to database");
-                    invitee = new LanternUser(email);
-
-                    invitee.setDegree(inviter.getDegree() + 1);
-                    if (getUserCount() < LanternControllerConstants.MAX_USERS
-                        && invitee.getInvites() < 2) {
-                        invitee.setInvites(getDefaultInvites());
-                    }
-                    invitee.setSponsor(sponsor);
-                    ofy.put(invitee);
-                } else {
-                    log.info("Invitee exists, nothing to do here.");
-                    return true;
-                }
-                ofy.getTxn().commit();
-                log.info("Successfully committed attempt to add invitee.");
-                return true;
-            } catch (Exception e) {
-                log.warning("Concurrent modification trying to add invite*e*.");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
-            }
-        }
-        // I don't think we should ever see this.
-        log.warning("Contention for a user we're trying to create?");
-        // Anyway, the invite was added, so...
         return true;
     }
 
@@ -382,61 +340,130 @@ public class Dao extends DAOBase {
      */
     public void createInitialUser(final String email) {
         /*
-        final Objectify ofy = ofy();
-        final LanternUser user = new LanternUser(email);
-        user.setDegree(1);
-        user.setEverSignedIn(true);
-        user.setInvites(5);
-        user.setSponsor("adamfisk@gmail.com");
-        ofy.put(user);
-        log.info("Finished adding invite...");
-        */
+         * final Objectify ofy = ofy(); final LanternUser user = new
+         * LanternUser(email); user.setDegree(1); user.setEverSignedIn(true);
+         * user.setInvites(5); user.setSponsor("adamfisk@gmail.com");
+         * ofy.put(user); log.info("Finished adding invite...");
+         */
 
     }
 
-    public void decrementInvites(final String userId) {
-        log.info("Decrementing invites for "+userId);
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            final Objectify ofy = ObjectifyService.beginTransaction();
-            try {
-                final LanternUser user = ofy.find(LanternUser.class, userId);
-                if (user == null) {
-                    log.severe("Decrementing invites of uninvited user?");
-                    return;
+    public boolean sendingInvite(final String inviterEmail,
+            final String inviteeEmail) {
+
+        boolean status = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                final Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
+                long now = System.currentTimeMillis();
+
+                if (invite.getStatus() == Status.sent) {
+                    return false;
+                } else if (invite.getStatus() == Status.sending) {
+                    // we have already decremented the invite count, so we
+                    // don't need to do that. But we might need to send the
+                    // email again if the previous attempt crashed during
+                    // email sending.
+
+                    // we will only attempt to send an email once every minute,
+                    // so that concurrent attempts don't send multiple emails.
+                    if (now - invite.getLastAttempt() > 60 * 1000) {
+                        invite.setLastAttempt(now);
+                        ofy.put(invite);
+                        ofy.getTxn().commit();
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
-                final int curInvites = user.getInvites();
-                final int newInvites;
+                // invite status is queued, so we have never tried sending an
+                // invite
+
+                invite.setStatus(Status.sending);
+                invite.setLastAttempt(now);
+                ofy.put(invite);
+
+                final LanternUser inviter = ofy.find(LanternUser.class,
+                        inviterEmail);
+                if (inviter == null) {
+                    log.severe("Finalizing invites of nonexistent user?");
+                    return false;
+                }
+                final int curInvites = inviter.getInvites();
                 if (curInvites < 1) {
-                    log.severe("Decrementing invites on user with no invites");
-                    newInvites = 0;
+                    log.info("Decrementing invites on user with no invites");
+                    return false;
                 } else {
-                    newInvites = curInvites - 1;
+                    log.info("Decrementing invites for " + inviterEmail);
                 }
-                user.setInvites(newInvites);
-                ofy.put(user);
+                inviter.setInvites(curInvites - 1);
+                ofy.put(inviter);
+
                 ofy.getTxn().commit();
                 log.info("Transaction successful.");
-                return;
-            } catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying...");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return true;
             }
+        }.run();
+
+        createInviteeUser(inviterEmail, inviteeEmail);
+        return status;
+    }
+
+    private boolean createInviteeUser(final String inviterEmail,
+            final String inviteeEmail) {
+
+        // get the inviter outside the loop because we don't care
+        // about concurrent modifications
+        final Objectify ofy = ofy();
+        final LanternUser inviter = ofy.find(LanternUser.class, inviterEmail);
+
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+
+                LanternUser invitee = ofy.find(LanternUser.class, inviteeEmail);
+                if (invitee == null) {
+                    log.info("Adding invitee to database");
+                    invitee = new LanternUser(inviteeEmail);
+
+                    invitee.setDegree(inviter.getDegree() + 1);
+                    if (getUserCount() < LanternControllerConstants.MAX_USERS
+                            && invitee.getInvites() < 2) {
+                        invitee.setInvites(getDefaultInvites());
+                    }
+                    invitee.setSponsor(inviter.getId());
+                    ofy.put(invitee);
+                } else {
+                    log.info("Invitee exists, nothing to do here.");
+                    return true;
+                }
+                ofy.getTxn().commit();
+                log.info("Successfully committed attempt to add invitee.");
+                return true;
+            }
+        }.run();
+
+        if (result == null) {
+            return false;
+        } else {
+            return result;
         }
-        log.warning("Too much contention; giving up!");
     }
 
     public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,
-        final String inviteeEmail) {
-        Key<LanternUser> parentKey = new Key<LanternUser>(
-                LanternUser.class, inviterEmail);
-        String id = Invite.makeId(inviterEmail, inviteeEmail);
-        final Invite invite = ofy.find(new Key<Invite>(
-                parentKey, Invite.class, id));
+            final String inviteeEmail) {
+        final Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
         return invite != null;
+    }
+
+    private Invite getInvite(Objectify ofy, final String inviterEmail,
+            final String inviteeEmail) {
+        Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                inviterEmail);
+        String id = Invite.makeId(inviterEmail, inviteeEmail);
+        final Invite invite = ofy.find(new Key<Invite>(parentKey, Invite.class,
+                id));
+        return invite;
     }
 
     public boolean isInvited(final String email) {
@@ -446,48 +473,45 @@ public class Dao extends DAOBase {
     }
 
     public void updateLastAccessed(final String email) {
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            Objectify ofy = ObjectifyService.beginTransaction();
-            try {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
                 final LanternUser user = ofy.find(LanternUser.class, email);
                 if (user != null) {
                     user.setLastAccessed(new Date());
                     ofy.put(user);
                 }
                 ofy.getTxn().commit();
-                return;
-            } catch (ConcurrentModificationException e) {
-                log.warning("Concurrent modification.");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return true;
             }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention!");
         }
-        log.warning("Too much contention!");
     }
 
     public boolean updateUser(final String userId, final long directRequests,
-        final long directBytes, final long requestsProxied,
-        final long bytesProxied, final String countryCode,
-        final String instanceId, final Mode mode) {
-        log.info(
-            "Updating user with stats: dr: "+directRequests+" db: "+
-            directBytes+" bytesProxied: "+bytesProxied);
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            final Objectify ofy = ObjectifyService.beginTransaction();
-            try {
+            final long directBytes, final long requestsProxied,
+            final long bytesProxied, final String countryCode,
+            final String instanceId, final String name, final Mode mode) {
+        log.info("Updating user with stats: dr: " + directRequests + " db: "
+                + directBytes + " bytesProxied: " + bytesProxied);
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 boolean isUserNew = (user == null);
                 if (isUserNew) {
                     log.info("Could not find user!!");
                     user = new LanternUser(userId);
+                    user.setName(name);
                 }
                 user.setBytesProxied(user.getBytesProxied() + bytesProxied);
-                user.setRequestsProxied(user.getRequestsProxied() + requestsProxied);
+                user.setRequestsProxied(user.getRequestsProxied()
+                        + requestsProxied);
                 user.setDirectBytes(user.getDirectBytes() + directBytes);
-                user.setDirectRequests(user.getDirectRequests() + directRequests);
+                user.setDirectRequests(user.getDirectRequests()
+                        + directRequests);
 
                 ofy.put(user);
                 ofy.getTxn().commit();
@@ -514,17 +538,13 @@ public class Dao extends DAOBase {
                     incrementCounter(countryCode + ".nusers.ever");
                 }
                 return isUserNew;
-            } catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying...");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
             }
+        }.run();
+        if (result == null) {
+            // The caller expects some return value.
+            throw new RuntimeException("Too much contention!");
         }
-        // The caller expects some return value.
-        throw new RuntimeException("Too much contention!");
+        return result;
     }
 
     private void decrementCounter(String counter) {
@@ -631,9 +651,9 @@ public class Dao extends DAOBase {
     }
 
     public void signedIn(final String email) {
-        for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            Objectify ofy = ObjectifyService.beginTransaction();
-            try {
+        new RetryingTransaction<Void>() {
+            @Override
+            public Void run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, email);
                 if (!user.isEverSignedIn()) {
                     log.info("This is a new user.");
@@ -645,28 +665,21 @@ public class Dao extends DAOBase {
                     log.info("Incrementing global.nusers.ever.");
                     incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
                 }
-                return;
-            } catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying transaction...");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return null;
             }
-        }
+        }.run();
     }
 
-    public void setInstanceUnavailable(String userId, final String instanceId) {
-        for (int retries=TXN_RETRIES; retries>0; retries--) {
-            final Objectify ofy = ObjectifyService.beginTransaction();
-            try {
-                final ArrayList<String> countersToUpdate
-                    = setInstanceUnavailable(
+    public void setInstanceUnavailable(final String userId,
+            final String instanceId) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                final ArrayList<String> countersToUpdate = setInstanceUnavailable(
                         ofy, userId, instanceId);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
-                // transaction succeeded.  Since these affect the memcache
+                // transaction succeeded. Since these affect the memcache
                 // rather than the Datastore, there would be no way to roll
                 // them back should this transaction fail.
                 for (String counter : countersToUpdate) {
@@ -678,23 +691,12 @@ public class Dao extends DAOBase {
                         incrementCounter(counter);
                     }
                 }
-                return;
-            } catch (final ConcurrentModificationException e) {
-                // When a user logs in we get duplicated presence events for
-                // some reason.  This is why we put this method in
-                // a transaction, but we wouldn't really want to retry on this
-                // condition.  We do retry because this transaction can also
-                // fail if someone concurrently modifies the LanternUser that
-                // owns this instance.
-                log.info("Concurrent modification! Retrying...");
-                continue;
-            } finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
+                return true;
             }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention; giving up!");
         }
-        log.warning("Too much contention; giving up!");
     }
     public ArrayList<String> setInstanceUnavailable(Objectify ofy, String userId, String instanceId) {
         // As of this writing, we use instanceId to refer to the XMPP
@@ -736,30 +738,26 @@ public class Dao extends DAOBase {
     }
 
     public String getAndSetInstallerLocation(final String email) {
-    	String old = null;
-    	for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            Objectify ofy = ObjectifyService.beginTransaction();
-    		try {
+        RetryingTransaction<String> txn = new RetryingTransaction<String>() {
+            @Override
+            public String run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, email);
-                old = user.getInstallerLocation();
+                String old = user.getInstallerLocation();
                 if (old == null) {
                     user.setInstallerLocation(InvitedServerLauncher.PENDING);
                     ofy.put(user);
                 }
                 ofy.getTxn().commit();
                 return old;
-    		} catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying transaction...");
-    			continue;
-    		} finally {
-                if (ofy.getTxn().isActive()) {
-                    ofy.getTxn().rollback();
-                }
-    		}
-    	}
-    	//XXX: is really returning our best guess better than failing?
-    	log.warning("Gave up because of too much contention!");
-    	return old;
+            }
+        };
+
+        String old = txn.run();
+        if (txn.failed()) {
+            // XXX: is really returning our best guess better than failing?
+            log.warning("Gave up because of too much contention!");
+        }
+        return old;
     }
 
    /** Perform, as an atomic operation, the setting of the installerLocation
@@ -777,47 +775,44 @@ public class Dao extends DAOBase {
     public Collection<String> setInstallerLocationAndGetInvitees(
             final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
-        Collection<String> results = new HashSet<String>();
+        final Collection<String> results = new HashSet<String>();
         // The GAE datastore only gives strong consistency guarantees for
         // queries that specify an 'ancestor' constraint ("ancestor queries").
         // In addition, no other queries are allowed in a transaction.
         //
         // As of this writing, we are only ever querying invites per inviter,
         // hence the grouping.
-        final Key<LanternUser>
-            ancestor = new Key<LanternUser>(LanternUser.class, inviterEmail);
-        for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            // We don't need to reset `results` inside the loop because it will
-            // only ever grow.  If we get a collision, the only point of
-            // retrying is to incorporate any new invites.
-            Objectify txnOfy = ObjectifyService.beginTransaction();
-            try {
-                LanternUser user = txnOfy.find(LanternUser.class,
-                                               inviterEmail);
+        final Key<LanternUser> ancestor = new Key<LanternUser>(
+                LanternUser.class, inviterEmail);
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                // We don't need to reset `results` inside the loop because it
+                // will
+                // only ever grow. If we get a collision, the only point of
+                // retrying is to incorporate any new invites.
+
+                LanternUser user = ofy.find(LanternUser.class, inviterEmail);
                 if (user == null) {
                     throw new UnknownUserException(inviterEmail);
                 }
                 user.setInstallerLocation(installerLocation);
-                txnOfy.put(user);
-                final Query<Invite> invites = txnOfy.query(Invite.class)
-                                                 .ancestor(ancestor);
+                ofy.put(user);
+                final Query<Invite> invites = ofy.query(Invite.class).ancestor(
+                        ancestor);
                 for (Invite invite : invites) {
                     results.add(invite.getInvitee());
                 }
 
-                txnOfy.getTxn().commit();
-                log.info("Returning instances: "+results);
-                return results;
-            } catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying transaction...");
-                continue;
-            } finally {
-                if (txnOfy.getTxn().isActive()) {
-                    txnOfy.getTxn().rollback();
-                }
+                ofy.getTxn().commit();
+                log.info("Returning instances: " + results);
+                return true;
             }
+        }.run();
+
+        if (result == null) {
+            log.warning("Gave up because of too many failed transactions!");
         }
-        log.warning("Gave up because of too many failed transactions!");
         // Since the correctness of this is not critical, returning our best
         // effort guess is better than failing altogether.
         return results;
@@ -841,26 +836,22 @@ public class Dao extends DAOBase {
         // sure to increment whatever we get, we get a balanced bucket usage
         // eventually.
         final InstallerBucket leastUsed = ofy().query(InstallerBucket.class)
-                                            .order("installerLocations").get();
-    	for (int retries=TXN_RETRIES; retries > 0; retries--) {
-            Objectify txnOfy = ObjectifyService.beginTransaction();
-            try {
-                leastUsed.setInstallerLocations(
-                        leastUsed.getInstallerLocations() + 1);
-                txnOfy.put(leastUsed);
-                txnOfy.getTxn().commit();
-                return leastUsed.getId();
-            } catch (final ConcurrentModificationException e) {
-                log.info("Concurrent modification! Retrying transaction...");
-    			continue;
-    		} finally {
-                if (txnOfy.getTxn().isActive()) {
-                    txnOfy.getTxn().rollback();
-                }
-    		}
+                .order("installerLocations").get();
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                leastUsed.setInstallerLocations(leastUsed
+                        .getInstallerLocations() + 1);
+                ofy.put(leastUsed);
+                ofy.getTxn().commit();
+                return null;
+            }
+        }.run();
+        if (result == null) {
+            // If we ever get this we probably want to move to sharded counters
+            // instead.
+            log.warning("Too much contention for buckets; you may want to look into this.");
         }
-        // If we ever get this we probably want to move to sharded counters instead.
-        log.warning("Too much contention for buckets; you may want to look into this.");
         return leastUsed.getId();
     }
 
@@ -916,7 +907,7 @@ public class Dao extends DAOBase {
     }
 
     public void setInvitesPaused(boolean paused) {
-        settingsManager.set("invitesPaused", "true");
+        settingsManager.set("invitesPaused", "" + paused);
     }
 
     public void setDefaultInvites(int n) {
@@ -935,5 +926,100 @@ public class Dao extends DAOBase {
         Objectify ofy = ofy();
         LanternUser user = ofy.find(LanternUser.class, userId);
         return user.getDegree() == 0;
+    }
+
+    public List<Friend> syncFriends(final String userId,
+            final Friends clientFriends) {
+        SyncResult result = new RetryingTransaction<SyncResult>() {
+            @Override
+            public SyncResult run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                SyncResult result = user.syncFriendsFromClient(clientFriends);
+                if (result.shouldSave) {
+                    ofy.put(user);
+                }
+                return result;
+            }
+        }.run();
+        if (result != null) {
+            return result.changed;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    public void syncFriend(final String userId, final Friend clientFriend) {
+        //just sync a single friend up from the client
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            public Boolean run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user.syncFriendFromClient(clientFriend)) {
+                    ofy.put(user);
+                }
+                return true;
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much transaction contention syncing friend");
+        }
+    }
+
+    public void sentInvite(final String inviterEmail, final String invitedEmail) {
+        boolean inviteFinalized = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                Invite invite = getInvite(ofy, inviterEmail, invitedEmail);
+                invite.setStatus(Status.sent);
+                ofy.getTxn().commit();
+                return true;
+            }
+
+        }.run();
+        String status = inviteFinalized ? "" : "not ";
+        log.info("Invite " + status + "finalized: " + inviterEmail + " to "
+                + invitedEmail);
+    }
+
+    public PendingInvites getPendingInvites(String cursorStr) {
+        log.info("getPendingInvites");
+        Objectify ofy = ofy();
+        Query<Invite> query = ofy.query(Invite.class).filter("status",
+                Status.queued);
+
+        if (!StringUtils.isEmpty(cursorStr)) {
+            log.info("setting cursor from " + cursorStr);
+            query.startCursor(Cursor.fromWebSafeString(cursorStr));
+        }
+
+        PendingInvites result = new PendingInvites();
+        QueryResultIterator<Invite> iterator = query.iterator();
+        int i = 0;
+        while (iterator.hasNext() && i++ < 100) {
+            Invite invite = iterator.next();
+            result.addInvite(invite);
+        }
+        log.info("invites = " + i);
+        if (iterator.hasNext()) {
+            log.info("new cursor");
+            Cursor cursor = iterator.getCursor();
+            result.setCursor(cursor.toWebSafeString());
+        }
+        return result;
+    }
+
+    public LanternUser getUser(String email) {
+        MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
+        LanternUser user = (LanternUser) cache.get("user " + email);
+        if (user == null) {
+            try {
+                Objectify ofy = ofy();
+                user = ofy.get(LanternUser.class, email);
+                cache.put("user" + email, user, Expiration.byDeltaSeconds(1000));
+            } catch (NotFoundException e) {
+                return null;
+            }
+        }
+        return user;
     }
 }

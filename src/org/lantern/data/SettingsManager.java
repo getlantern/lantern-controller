@@ -157,12 +157,6 @@ public class SettingsManager {
         pm.makePersistent(s);
     }
 
-    private void invalidateSettingsCache() {
-        log.info("Invalidating settings cache.");
-        settings = null;
-        cache.delete("settings");
-    }
-
     public boolean getBoolean(String name) {
         return "true".equals(get(name));
     }

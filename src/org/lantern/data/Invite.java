@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import javax.persistence.Id;
+
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
@@ -18,6 +19,16 @@ public class Invite {
     private String inviter;
 
     private String invitee;
+
+    public enum Status {
+        queued,
+        sending,
+        sent
+    }
+
+    private Status status = Status.queued;
+
+    private long lastAttempt;
 
     public Invite() {
     };
@@ -41,5 +52,20 @@ public class Invite {
         return invitee;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public long getLastAttempt() {
+        return lastAttempt;
+    }
+
+    public void setLastAttempt(long lastAttempt) {
+        this.lastAttempt = lastAttempt;
+    }
 
 }

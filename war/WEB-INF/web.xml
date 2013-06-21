@@ -109,7 +109,7 @@
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AdminServlet</servlet-name>
-    <url-pattern>/admin/*</url-pattern>
+    <url-pattern>/admin/post/*</url-pattern>
   </servlet-mapping>
   <security-constraint>
     <web-resource-collection>
@@ -122,6 +122,16 @@
       <role-name>admin</role-name>
     </auth-constraint>
   </security-constraint>
+
+<filter>
+   <filter-name>Content Security Policy</filter-name>
+   <filter-class>org.lantern.CSPFilter</filter-class>
+</filter>
+<filter-mapping>
+   <filter-name>Content Security Policy</filter-name>
+   <url-pattern>/admin/*</url-pattern>
+</filter-mapping>
+
  <servlet>
   <servlet-name>SystemServiceServlet</servlet-name>
   <servlet-class>com.google.api.server.spi.SystemServiceServlet</servlet-class>
