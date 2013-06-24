@@ -57,15 +57,9 @@ public class XmppAvailableServlet extends HttpServlet {
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
         final String from = LanternControllerUtils.userId(presence);
-        if (!dao.isInvited(from)) {
-            log.info(from+" not invited!!");
-            processNotInvited(presence, xmpp, responseJson);
-            return;
-        } else {
-            log.info("User is invited: " + presence.getFromJid());
-            dao.updateLastAccessed(from);
-            responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
-        }
+        log.info("User is present: " + presence.getFromJid());
+        dao.updateLastAccessed(from);
+        responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
 
         final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);

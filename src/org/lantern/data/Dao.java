@@ -476,11 +476,19 @@ public class Dao extends DAOBase {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
-                final LanternUser user = ofy.find(LanternUser.class, email);
-                if (user != null) {
-                    user.setLastAccessed(new Date());
-                    ofy.put(user);
+                LanternUser user = ofy.find(LanternUser.class, email);
+                if (user == null) {
+                    user = new LanternUser(email);
+                    //an uninvited user has maximally negative degree
+                    //so that the degree doesn't wrap around to zero
+                    user.setDegree(Integer.MIN_VALUE);
+                    user.setEverSignedIn(true);
+
+                    //uninvited users must have 0 invites
+                    user.setInvites(0);
                 }
+                user.setLastAccessed(new Date());
+                ofy.put(user);
                 ofy.getTxn().commit();
                 return true;
             }
