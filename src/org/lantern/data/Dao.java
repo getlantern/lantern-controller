@@ -937,6 +937,7 @@ public class Dao extends DAOBase {
                 SyncResult result = user.syncFriendsFromClient(clientFriends);
                 if (result.shouldSave) {
                     ofy.put(user);
+                    ofy.getTxn().commit();
                 }
                 return result;
             }
@@ -956,6 +957,7 @@ public class Dao extends DAOBase {
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 if (user.syncFriendFromClient(clientFriend)) {
                     ofy.put(user);
+                    ofy.getTxn().commit();
                 }
                 return true;
             }
