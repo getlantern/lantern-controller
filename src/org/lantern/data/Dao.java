@@ -844,7 +844,7 @@ public class Dao extends DAOBase {
                         .getInstallerLocations() + 1);
                 ofy.put(leastUsed);
                 ofy.getTxn().commit();
-                return null;
+                return true;
             }
         }.run();
         if (result == null) {
