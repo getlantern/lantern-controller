@@ -64,8 +64,9 @@ public class Settings implements Serializable {
     }
 
     public void set(final String name, final String value) {
-        assert !name.contains(":");
-        assert !name.contains(",");
+        if (name.contains(":") || name.contains(",")) {
+            throw new RuntimeException("Setting names must not contain : or ,");
+        }
         settings.put(name, value);
     }
 
@@ -88,6 +89,9 @@ public class Settings implements Serializable {
             String value = entry.getValue();
             sb.append(name);
             sb.append(":");
+            value = value.replace("\\", "\\\\");
+            value = value.replace(":", "\\n");
+            value = value.replace(",", "\\a");
             sb.append(value);
             sb.append(",");
         }
@@ -115,6 +119,9 @@ public class Settings implements Serializable {
             assert parts.length == 2;
             String name = parts[0];
             String value = parts[1];
+            value = value.replace("\\n", ":");
+            value = value.replace("\\a", ",");
+            value = value.replace("\\\\", "\\");
             c.put(name, value);
         }
         settings = c;
