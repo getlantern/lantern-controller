@@ -26,11 +26,12 @@ public class InvitedServerLauncher {
     public static void sendInvite(final String inviterName,
                                 final String inviterEmail,
                                 final String refreshToken,
-                                final String invitedEmail) {
+                                final String invitedEmail,
+                                boolean noCost) {
 
         final Dao dao = new Dao();
 
-        if (!dao.sendingInvite(inviterEmail, invitedEmail)) {
+        if (!dao.sendingInvite(inviterEmail, invitedEmail, noCost)) {
             log.info("Not re-sending an invite");
             return;
         }

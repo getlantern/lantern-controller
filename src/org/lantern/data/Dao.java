@@ -349,7 +349,7 @@ public class Dao extends DAOBase {
     }
 
     public boolean sendingInvite(final String inviterEmail,
-            final String inviteeEmail) {
+            final String inviteeEmail, final boolean noCost) {
 
         boolean status = new RetryingTransaction<Boolean>() {
             @Override
@@ -389,16 +389,20 @@ public class Dao extends DAOBase {
                     log.severe("Finalizing invites of nonexistent user?");
                     return false;
                 }
-                final int curInvites = inviter.getInvites();
-                if (curInvites < 1) {
-                    log.info("Decrementing invites on user with no invites");
-                    return false;
-                } else {
-                    log.info("Decrementing invites for " + inviterEmail);
+                if (!noCost) {
+                    final int curInvites = inviter.getInvites();
+                    if (curInvites < 1) {
+                        if (inviter.getDegree() != 0) {
+                            log.info("Decrementing invites on non-admin user with no invites");
+                            return false;
+                        }
+                        // inviter is admin with no invites
+                    } else {
+                        log.info("Decrementing invites for " + inviterEmail);
+                        inviter.setInvites(curInvites - 1);
+                        ofy.put(inviter);
+                    }
                 }
-                inviter.setInvites(curInvites - 1);
-                ofy.put(inviter);
-
                 ofy.getTxn().commit();
                 log.info("Transaction successful.");
                 return true;

@@ -87,7 +87,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 String refreshToken = LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITER_REFRESH_TOKEN);
 
-                InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail);
+                InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail, false);
             } else {
                 log.info("Invites are paused, so not sending invite");
             }
