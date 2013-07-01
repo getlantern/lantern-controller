@@ -307,7 +307,6 @@ public class XmppAvailableServlet extends HttpServlet {
         mapper.registerModule(new MrBeanModule());
         try {
             final Stats data = mapper.readValue(stats, Stats.class);
-            addInviteData(presence, responseJson);
             // The following will delete the instance if it's not available,
             // updating all counters.
             log.info("Setting instance availability");
@@ -325,16 +324,6 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (final IOException e) {
             log.severe("Error parsing stats: "+e.getMessage());
         }
-    }
-
-    private void addInviteData(final Presence presence,
-        final Map<String, Object> responseJson) {
-
-        final Dao dao = new Dao();
-        final int invites =
-            dao.getInvites(LanternControllerUtils.userId(presence));
-        responseJson.put(LanternConstants.INVITES_KEY, invites);
-
     }
 
     private void sendResponse(final Presence presence, final XMPPService xmpp,
