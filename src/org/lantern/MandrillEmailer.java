@@ -105,7 +105,9 @@ public class MandrillEmailer {
         if (StringUtils.isNotBlank(inviterEmail)) {
             mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
         }
-        if (StringUtils.isNotBlank(inviterName)) {
+        if (StringUtils.isBlank(inviterName)) {
+            mergeVars.add(mergeVar("INVITER_NAME", inviterEmail));
+        } else {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
 
