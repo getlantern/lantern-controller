@@ -54,8 +54,8 @@ public class MandrillEmailer {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
         }
-        final String json = 
-            mandrillJson(inviterName, inviterEmail, invitedEmail, 
+        final String json =
+            mandrillSendEmailJson(inviterName, inviterEmail, invitedEmail,
                 osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
         sendEmail(json);
     }
@@ -73,7 +73,7 @@ public class MandrillEmailer {
      * @return The generated JSON to send to Mandrill.
      * @throws IOException If there's an error generating the JSON.
      */
-    public static String mandrillJson(final String inviterName, 
+    public static String mandrillSendEmailJson(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
         final String linuxInstallerUrl)
@@ -179,4 +179,101 @@ public class MandrillEmailer {
         map.put("content", val);
         return map;
     }
+
+    public static void addEmailToUsersList(final String email,
+            String language) {
+
+        if (StringUtils.isEmpty(language)) {
+            language = "en";
+        }
+        String payload = mailchimpListSubscribeJson(email,
+                LanternControllerConstants.MAILCHIMP_LIST_ID, language);
+
+        URL url = getMailchimpUrl("listSubscribe");
+
+        final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults().
+            followRedirects().validateCertificate().setDeadline(60d);
+        log.info("Sending payload:\n"+payload);
+        final HTTPRequest request =
+            new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
+        try {
+            request.setPayload(payload.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            log.warning("Encoding? "+ThreadUtils.dumpStack());
+            return;
+        }
+
+        final URLFetchService fetcher =
+                URLFetchServiceFactory.getURLFetchService();
+
+        try {
+            final HTTPResponse response = fetcher.fetch(request);
+            final int responseCode = response.getResponseCode();
+            final String body = new String(response.getContent());
+            if (responseCode != 200) {
+                log.warning("Response: " + responseCode);
+                log.warning("Content: " + body);
+            } else {
+                log.info("Sent to mailchimp, response is " + body);
+            }
+
+        } catch (IOException e) {
+            log.warning("Error fetching mailchimp:\n"+ThreadUtils.dumpStack());
+        }
+    }
+
+    private static URL getMailchimpUrl(String method) {
+        String apiKey = LanternControllerConstants.getMailChimpApiKey();
+        if (StringUtils.isBlank(apiKey)) {
+            throw new RuntimeException("No MailChimp API key");
+        }
+        String dc = StringUtils.substringAfter(apiKey, "-");
+
+        final String urlBase = LanternControllerConstants.MAILCHIP_API_URL_BASE;
+        String url = urlBase.replace("<dc>", dc);
+        url = url.replace("<method>", method);
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    /**
+     * Creates JSON compatible with the Mailchimp API.
+     * See http://apidocs.mailchimp.com/api/1.3/listsubscribe.func.php
+     *
+     * @param email The email address to add
+     * @param listId The id of the mailing list to add them to
+     * @param language See http://kb.mailchimp.com/article/can-i-see-what-languages-my-subscribers-use#code
+     * @return The generated JSON to send to Mailchimp.
+     * @throws IOException If there's an error generating the JSON.
+     */
+    public static String mailchimpListSubscribeJson(final String email,
+            final String listId, final String language) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final Map<String, Object> data = new HashMap<String, Object>();
+        data.put("apikey", LanternControllerConstants.getMailChimpApiKey());
+        data.put("id", listId);
+        data.put("email_address", email);
+
+        final Map<String, Object> merge_vars = new HashMap<String, Object>();
+        merge_vars.put("MC_LANGUAGE", language);
+
+        data.put("merge_vars", merge_vars);
+        data.put("double_optin", false);
+        data.put("update_existing", true);
+        data.put("replace_interests", false);
+        data.put("send_welcome", false);
+
+        try {
+            return mapper.writeValueAsString(data);
+        } catch (final JsonGenerationException e) {
+            throw new RuntimeException("Could not generate JSON", e);
+        } catch (final JsonMappingException e) {
+            throw new RuntimeException("Could not map JSON", e);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -16,6 +16,7 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
+import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.data.LanternUser.SyncResult;
@@ -654,10 +655,10 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void signedIn(final String email) {
-        new RetryingTransaction<Void>() {
+    public void signedIn(final String email, final String language) {
+        Boolean result = new RetryingTransaction<Boolean>() {
             @Override
-            public Void run(Objectify ofy) {
+            public Boolean run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, email);
                 if (!user.isEverSignedIn()) {
                     log.info("This is a new user.");
@@ -668,10 +669,15 @@ public class Dao extends DAOBase {
                     // rolled back if the transaction fails.
                     log.info("Incrementing global.nusers.ever.");
                     incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
+                    return true;
                 }
-                return null;
+                return false;
             }
         }.run();
+
+        if (result != null && result) {
+            MandrillEmailer.addEmailToUsersList(email, language);
+        }
     }
 
     public void setInstanceUnavailable(final String userId,

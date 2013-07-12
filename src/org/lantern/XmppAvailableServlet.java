@@ -129,7 +129,10 @@ public class XmppAvailableServlet extends HttpServlet {
             processGetMode(presence, xmpp, responseJson);
         }
 
-        dao.signedIn(from);
+        final String language =
+                LanternControllerUtils.getProperty(doc, "language");
+
+        dao.signedIn(from, language);
     }
 
     private boolean handleFriendsSync(Document doc, String fromJid, XMPPService xmpp) {
