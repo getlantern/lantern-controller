@@ -33,7 +33,7 @@ public class MandrillEmailerTest {
             // Ignore the test
             return;
         }
-        final String payload = MandrillEmailer.mandrillJson(inviterName, 
+        final String payload = MandrillEmailer.mandrillSendEmailJson(inviterName, 
             inviterEmail, invitedEmail, osxInstallerUrl, winInstallerUrl,
             linuxInstallerUrl);
         final HttpPost post = new HttpPost(

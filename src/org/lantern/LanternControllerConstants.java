@@ -1,8 +1,5 @@
 package org.lantern;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
@@ -22,12 +19,14 @@ public class LanternControllerConstants {
     private static String mandrillApiKey;
     private static String awsAccessKeyId;
     private static String awsSecretKey;
+    private static String mailChimpApiKey;
 
     public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
 
     static {
         try {
             PropertiesConfiguration config = new PropertiesConfiguration(LanternControllerConstants.class.getResource("secrets"));
+            mailChimpApiKey = config.getString("mailchimpApiKey");
             mandrillApiKey = config.getString("mandrillApiKey");
             awsAccessKeyId = config.getString("awsAccessKeyId");
             awsSecretKey = config.getString("awsSecretKey");
@@ -41,6 +40,8 @@ public class LanternControllerConstants {
     public static final int MAX_USERS = 100;
     public static final String ADMIN_EMAIL = "admin@getlantern.org";
     public static final String NOTIFY_ON_MAX_USERS = "admin@getlantern.org";
+    public static final String MAILCHIMP_LIST_ID = "cdc1af284e";
+    public static final String MAILCHIP_API_URL_BASE = "http://<dc>.api.mailchimp.com/1.3/?method=<method>";
 
     public static String getMandrillApiKey() {
         return mandrillApiKey;
@@ -50,5 +51,8 @@ public class LanternControllerConstants {
     }
     public static String getAWSSecretKey() {
         return awsSecretKey;
+    }
+    public static String getMailChimpApiKey() {
+        return mailChimpApiKey;
     }
 }
