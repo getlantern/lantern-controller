@@ -948,22 +948,17 @@ public class Dao extends DAOBase {
                         userId);
                 Collection<Friend> clientFriendList = clientFriends.getFriends();
                 @SuppressWarnings("unchecked")
-                Key<TrustRelationship>[] keys = new Key[clientFriendList.size()];
-                int i = 0;
 
-                for (Friend friend : clientFriendList) {
-                    String id = friend.getEmail();
-                    keys[i++] = Key.create(parentKey, TrustRelationship.class, id);
+                Query<TrustRelationship> relationships = ofy.query(TrustRelationship.class).ancestor(
+                        parentKey);
+                Map<String, TrustRelationship> relationshipSet = new HashMap<String, TrustRelationship>();
+                for (TrustRelationship relationship : relationships) {
+                    relationshipSet.put(relationship.getId(), relationship);
                 }
-                //these are the relationships that the controller already
-                //knows about
-                Map<Key<TrustRelationship>, TrustRelationship> relationships = ofy.get(keys);
-
                 boolean save = false;
                 for (Friend friend : clientFriendList) {
                     String id = friend.getEmail();
-                    Key<TrustRelationship> key = Key.create(parentKey, TrustRelationship.class, id);
-                    TrustRelationship trust = relationships.get(key);
+                    TrustRelationship trust = relationshipSet.get(id);
                     if (trust == null) {
                         //controller has never heard of this relationship
                         trust = new TrustRelationship(parentKey, friend);
@@ -979,11 +974,11 @@ public class Dao extends DAOBase {
                         ofy.put(trust);
                         save = true;
                     }
-                    relationships.remove(key);
+                    relationshipSet.remove(id);
                 }
                 //now handle the relationships that the controller is aware of
                 //but the client is not
-                for (TrustRelationship relationship: relationships.values()) {
+                for (TrustRelationship relationship: relationshipSet.values()) {
                     Friend friend = new Friend(relationship.getId());
                     friend.setLastUpdated(relationship.getLastUpdated());
                     friend.setStatus(relationship.getStatus());
