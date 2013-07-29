@@ -69,7 +69,7 @@ public class TrustRelationship implements Serializable {
      * @return whether this needs to be persisted
      */
     public boolean update(Friend friend) {
-        if (this.lastUpdated > friend.getLastUpdated()) {
+        if (isNewerThan(friend)) {
             return false;
         }
 
