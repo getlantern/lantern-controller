@@ -20,6 +20,7 @@ public class LanternControllerConstants {
     private static String awsAccessKeyId;
     private static String awsSecretKey;
     private static String mailChimpApiKey;
+    private static String rallyAccessToken;
 
 
     static {
@@ -29,6 +30,7 @@ public class LanternControllerConstants {
             mandrillApiKey = config.getString("mandrillApiKey");
             awsAccessKeyId = config.getString("awsAccessKeyId");
             awsSecretKey = config.getString("awsSecretKey");
+            rallyAccessToken = config.getString("rallyAccessToken");
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -53,5 +55,8 @@ public class LanternControllerConstants {
     }
     public static String getMailChimpApiKey() {
         return mailChimpApiKey;
+    }
+    public static String getRallyAccessToken() {
+        return rallyAccessToken;
     }
 }
