@@ -21,7 +21,6 @@ public class LanternControllerConstants {
     private static String awsSecretKey;
     private static String mailChimpApiKey;
 
-    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
 
     static {
         try {
