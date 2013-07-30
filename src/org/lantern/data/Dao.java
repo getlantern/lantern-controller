@@ -1010,7 +1010,7 @@ public class Dao extends DAOBase {
                 Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                         userId);
                 Key<TrustRelationship> key = new Key<TrustRelationship>(parentKey, TrustRelationship.class, id);
-                TrustRelationship trust = ofy.get(key);
+                TrustRelationship trust = ofy.find(key);
                 if (trust == null) {
                     trust = new TrustRelationship(parentKey, clientFriend);
                     ofy.put(trust);
