@@ -19,7 +19,6 @@ import org.lantern.LanternControllerUtils;
 import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
-import org.lantern.data.LanternUser.SyncResult;
 import org.lantern.state.Friend;
 import org.lantern.state.Friends;
 import org.lantern.state.Mode;
@@ -94,6 +93,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(InstallerBucket.class);
         ObjectifyService.register(PermanentLogEntry.class);
+        ObjectifyService.register(TrustRelationship.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
@@ -940,20 +940,60 @@ public class Dao extends DAOBase {
 
     public List<Friend> syncFriends(final String userId,
             final Friends clientFriends) {
-        SyncResult result = new RetryingTransaction<SyncResult>() {
+        List<Friend> result = new RetryingTransaction<List<Friend>>() {
             @Override
-            public SyncResult run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                SyncResult result = user.syncFriendsFromClient(clientFriends);
-                if (result.shouldSave) {
-                    ofy.put(user);
+            public List<Friend> run(Objectify ofy) {
+                List<Friend> updated = new ArrayList<Friend>();
+                Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                        userId);
+                Collection<Friend> clientFriendList = clientFriends.getFriends();
+                @SuppressWarnings("unchecked")
+
+                Query<TrustRelationship> relationships = ofy.query(TrustRelationship.class).ancestor(
+                        parentKey);
+                Map<String, TrustRelationship> relationshipSet = new HashMap<String, TrustRelationship>();
+                for (TrustRelationship relationship : relationships) {
+                    relationshipSet.put(relationship.getId(), relationship);
+                }
+                boolean save = false;
+                for (Friend friend : clientFriendList) {
+                    String id = friend.getEmail();
+                    TrustRelationship trust = relationshipSet.get(id);
+                    if (trust == null) {
+                        //controller has never heard of this relationship
+                        trust = new TrustRelationship(parentKey, friend);
+                        ofy.put(trust);
+                        save = true;
+                    } else if (trust.isNewerThan(friend)) {
+                        //controller version is newer
+                        friend.setLastUpdated(trust.getLastUpdated());
+                        friend.setStatus(trust.getStatus());
+                        updated.add(friend);
+                    } else if (trust.update(friend)) {
+                        //client version is newer
+                        ofy.put(trust);
+                        save = true;
+                    }
+                    relationshipSet.remove(id);
+                }
+                //now handle the relationships that the controller is aware of
+                //but the client is not
+                for (TrustRelationship relationship: relationshipSet.values()) {
+                    Friend friend = new Friend(relationship.getId());
+                    friend.setLastUpdated(relationship.getLastUpdated());
+                    friend.setStatus(relationship.getStatus());
+                    updated.add(friend);
+                }
+                //TODO In the long run, we want to save the last update in LanternUser
+                //for efficiently checking if we need to send the complete list of friend changes
+                if (save) {
                     ofy.getTxn().commit();
                 }
-                return result;
+                return updated;
             }
         }.run();
         if (result != null) {
-            return result.changed;
+            return result;
         } else {
             return Collections.emptyList();
         }
@@ -961,14 +1001,24 @@ public class Dao extends DAOBase {
 
     public void syncFriend(final String userId, final Friend clientFriend) {
         //just sync a single friend up from the client
+        //if the client's version is the less up-to-date version,
+        //we'll handle that elsewhere
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                if (user.syncFriendFromClient(clientFriend)) {
-                    ofy.put(user);
+                String id = clientFriend.getEmail();
+                Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                        userId);
+                Key<TrustRelationship> key = new Key<TrustRelationship>(parentKey, TrustRelationship.class, id);
+                TrustRelationship trust = ofy.find(key);
+                if (trust == null) {
+                    trust = new TrustRelationship(parentKey, clientFriend);
+                    ofy.put(trust);
+                    ofy.getTxn().commit();
+                } else if (trust.update(clientFriend)) {
                     ofy.getTxn().commit();
                 }
+
                 return true;
             }
         }.run();
