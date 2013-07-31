@@ -1028,16 +1028,20 @@ public class Dao extends DAOBase {
     }
 
     public void sentInvite(final String inviterEmail, final String invitedEmail) {
-        boolean inviteFinalized = new RetryingTransaction<Boolean>() {
+        Boolean inviteFinalized = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 Invite invite = getInvite(ofy, inviterEmail, invitedEmail);
                 invite.setStatus(Status.sent);
+                ofy.put(invite);
                 ofy.getTxn().commit();
                 return true;
             }
 
         }.run();
+
+        if (inviteFinalized == null)
+            inviteFinalized = false;
         String status = inviteFinalized ? "" : "not ";
         log.info("Invite " + status + "finalized: " + inviterEmail + " to "
                 + invitedEmail);
