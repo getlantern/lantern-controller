@@ -115,7 +115,12 @@ public class QueryDonations extends HttpServlet {
                 final String amount = don.get(amountKey).toString();
                 log.info("Trying to enqueue " + amount + "-cent donation "
                          + id + " from " + email);
-                // These endpoints will be called iff the transaction succeeds.
+                // This endpoint will be called iff the transaction succeeds.
+                // (I have checked that this also applies to transactions
+                // started via Objectify, by commenting out the commit below
+                // and noting that the log above gets triggered but the
+                // endpoint doesn't get requests).
+                //
                 // Also, App Engine will make sure to keep retrying as long as
                 // we don't return 200 OK.
                 //
