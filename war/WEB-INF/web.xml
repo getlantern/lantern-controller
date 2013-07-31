@@ -48,6 +48,14 @@
     <url-pattern>/process_donation</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>mockRally</servlet-name>
+    <servlet-class>org.lantern.MockRally</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>mockRally</servlet-name>
+    <url-pattern>/mock_rally</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>

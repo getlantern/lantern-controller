@@ -25,6 +25,7 @@ import com.google.apphosting.api.DeadlineExceededException;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
+import com.google.appengine.api.utils.SystemProperty;
 
 import org.lantern.data.DonationCursor;
 
@@ -36,13 +37,17 @@ public class QueryDonations extends HttpServlet {
         "https://rally.org/api/causes/iD1Ibm17EAA/donations?access_token="
         + LanternControllerConstants.getRallyAccessToken();
 
+    // For testing.
+    /*private String queryUrl = "http://" + SystemProperty.applicationId.get()
+                              + ".appspot.com/mock_rally?";*/
+
     private static final transient Logger log = Logger
             .getLogger(QueryDonations.class.getName());
 
    // https://developers.google.com/appengine/docs/java/taskqueue/#Java_Tasks_within_transactions
     private static final int MAX_TASKS_PER_TRANSACTION = 5;
 
-    private static final int MAX_DONATIONS_PER_PAGE = 25;
+    public static final int MAX_DONATIONS_PER_PAGE = 25;
 
     static {
         ObjectifyService.register(DonationCursor.class);
