@@ -23,7 +23,7 @@ public class LatestProcessedDonation implements Serializable {
     public static final String singletonId = "the1";
 
     @Id
-    private final String id = singletonId;
+    private String id = singletonId;
 
     // Used to avoid fetching too many old results.  rally.org will report
     // donation time with precision up to seconds, but finest granularity for
@@ -56,7 +56,18 @@ public class LatestProcessedDonation implements Serializable {
         this.donationId = donationId;
     }
 
+    public void incrementPage() {
+        page += 1;
+    }
+
     // Only dumb boilerplate getters and setters below...
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public int getYear() {
         return year;

@@ -32,6 +32,22 @@
     <url-pattern>/check_sqs</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>queryDonations</servlet-name>
+    <servlet-class>org.lantern.QueryDonations</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>queryDonations</servlet-name>
+    <url-pattern>/query_donations</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>processDonation</servlet-name>
+    <servlet-class>org.lantern.ProcessDonation</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>processDonation</servlet-name>
+    <url-pattern>/process_donation</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>

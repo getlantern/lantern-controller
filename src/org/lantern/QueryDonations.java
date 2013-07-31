@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -17,46 +18,117 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
-//import org.lantern.data.Dao;
+import com.googlecode.objectify.Objectify;
+import com.googlecode.objectify.ObjectifyService;
+
+import com.google.apphosting.api.DeadlineExceededException;
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import static com.google.appengine.api.taskqueue.TaskOptions.Builder.*;
+
+import org.lantern.data.LatestProcessedDonation;
+
 
 @SuppressWarnings("serial")
 public class QueryDonations extends HttpServlet {
 
-    private static final String queryUrl =
+    private final String queryUrl =
         "https://rally.org/api/causes/iD1Ibm17EAA/donations?access_token="
         + LanternControllerConstants.getRallyAccessToken();
 
     private static final transient Logger log = Logger
             .getLogger(QueryDonations.class.getName());
 
-    private static final int DONATIONS_PER_PAGE = 25;
+   // https://developers.google.com/appengine/docs/java/taskqueue/#Java_Tasks_within_transactions
+    private static final int MAX_TASKS_PER_TRANSACTION = 5;
 
-    // How many pages will we fetch and accumulate into a Task Queue task.
-    // To save tasks and requests.
-    private static final int PAGES_PER_BATCH = 5;
+    private static final int MAX_DONATIONS_PER_PAGE = 25;
+
+    static {
+        ObjectifyService.register(LatestProcessedDonation.class);
+    }
 
     @Override
     public void doGet(final HttpServletRequest request,
                       final HttpServletResponse response) {
-        StringBuilder s = new StringBuilder();
-        List<Map<String, Object>> l = parseJsonDonations(getDonationsInputStream());
-        for (Map<String, Object> donation : l) {
-            s.append("id: ");
-            s.append(donation.get("id").toString());
-            s.append("\n");
-            s.append("email: ");
-            s.append(donation.get("email").toString());
-            s.append("\n");
-            s.append("amount_cents: ");
-            s.append(Integer.toString((Integer)donation.get("amount_cents")));
-            s.append("\n");
+        try {
+            while (!doOneBatch());
+        } catch (final ConcurrentModificationException e) {
+            log.info("Concurrent modification; exiting.");
+        // Let's document this as one of the normal termination conditions and
+        // prevent this from looking too alarming in the logs.
+        } catch (final DeadlineExceededException e) {
+            log.info("GAE timed me out; exiting.");
         }
-        LanternControllerUtils.populateOKResponse(response, s.toString());
+        LanternControllerUtils.populateOKResponse(response, "OK");
     }
 
-    private InputStream getDonationsInputStream() {
+    /**
+     * Read up to MAX_TASKS_PER_TRANSACTION donations, enqueue them for further
+     * processing, and update LatestProcessedDonation.
+     */
+    private boolean doOneBatch() throws ConcurrentModificationException {
+        final String idKey = LanternControllerConstants.DONATION_ID_KEY;
+        final String emailKey = LanternControllerConstants.DONATION_EMAIL_KEY;
+        final String amountKey
+            = LanternControllerConstants.DONATION_AMOUNT_KEY;
+        final Objectify ofy = ObjectifyService.beginTransaction();
+        final Queue tq = QueueFactory.getDefaultQueue();
         try {
-            return new URL(queryUrl).openStream();
+            LatestProcessedDonation latest = ofy.find(
+                    LatestProcessedDonation.class,
+                    LatestProcessedDonation.singletonId);
+            if (latest == null) {
+                latest = new LatestProcessedDonation();
+            }
+            List<Map<String, Object>> dons
+                = parseJson(getInputStream(latest));
+            int begin = latest.getIndex() + 1;
+            // Not inclusive.
+            int end = Math.min(begin + MAX_TASKS_PER_TRANSACTION,
+                               dons.size());
+            for (int i=begin; i<end; i++) {
+                Map<String, Object> don = dons.get(i);
+                final String id = don.get(idKey).toString();
+                final String email = don.get(emailKey).toString();
+                final String amount = don.get(amountKey).toString();
+                log.info("Trying to enqueue " + amount + "-cent donation "
+                         + id + " from " + email);
+                // These endpoints will be called iff the transaction succeeds.
+                // Also, App Engine will make sure to keep retrying as long as
+                // we don't return 200 OK.
+                //
+                // See https://developers.google.com/appengine/docs/java/taskqueue/#Java_Tasks_within_transactions
+                tq.add(withUrl("/process_donation")
+                       .param(idKey, id)
+                       .param(emailKey, email)
+                       .param(amountKey, amount));
+            }
+            //XXX: consider date changes!
+            if (end < MAX_DONATIONS_PER_PAGE) {
+                latest.setIndex(end - 1);
+            } else {
+                latest.incrementPage();
+                latest.setIndex(-1);
+            }
+            ofy.put(latest);
+            ofy.getTxn().commit();
+            return (end == dons.size()
+                    && dons.size() < MAX_DONATIONS_PER_PAGE);
+        } finally {
+            if (ofy.getTxn().isActive()) {
+                ofy.getTxn().rollback();
+            }
+        }
+    }
+
+    private InputStream getInputStream(LatestProcessedDonation d) {
+        String url = String.format("%s&start_date=%d/%02d/%02d&page=%d",
+                                   queryUrl, d.getYear(), d.getMonth(),
+                                   d.getDay(), d.getPage());
+        log.info("Fetching URL " + url);
+        try {
+            return new URL(url).openStream();
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
@@ -64,7 +136,7 @@ public class QueryDonations extends HttpServlet {
         }
     }
 
-    private List<Map<String, Object>> parseJsonDonations(InputStream is) {
+    private List<Map<String, Object>> parseJson(InputStream is) {
         ObjectMapper om = new ObjectMapper();
         try {
             @SuppressWarnings("unchecked")

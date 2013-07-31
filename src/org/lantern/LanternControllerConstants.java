@@ -44,6 +44,10 @@ public class LanternControllerConstants {
     public static final String MAILCHIMP_LIST_ID = "cdc1af284e";
     public static final String MAILCHIP_API_URL_BASE = "http://<dc>.api.mailchimp.com/1.3/?method=<method>";
 
+    public static final String DONATION_ID_KEY = "id";
+    public static final String DONATION_EMAIL_KEY = "email";
+    public static final String DONATION_AMOUNT_KEY = "amount_cents";
+
     public static String getMandrillApiKey() {
         return mandrillApiKey;
     }
