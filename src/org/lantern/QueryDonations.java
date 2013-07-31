@@ -24,7 +24,7 @@ import com.googlecode.objectify.ObjectifyService;
 import com.google.apphosting.api.DeadlineExceededException;
 import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
-import static com.google.appengine.api.taskqueue.TaskOptions.Builder.*;
+import com.google.appengine.api.taskqueue.TaskOptions;
 
 import org.lantern.data.DonationCursor;
 
@@ -53,6 +53,7 @@ public class QueryDonations extends HttpServlet {
                       final HttpServletResponse response) {
         try {
             while (!doOneBatch());
+        // As soon as we detect any overlap we bail out to prevent waste.
         } catch (final ConcurrentModificationException e) {
             log.info("Concurrent modification; exiting.");
         // Let's document this as one of the normal termination conditions and
@@ -66,6 +67,8 @@ public class QueryDonations extends HttpServlet {
     /**
      * Read up to MAX_TASKS_PER_TRANSACTION donations, enqueue them for further
      * processing, and update DonationCursor.
+     *
+     * @return true when done with all donations.
      */
     private boolean doOneBatch() throws ConcurrentModificationException {
         final String idKey = LanternControllerConstants.DONATION_ID_KEY;
@@ -86,6 +89,20 @@ public class QueryDonations extends HttpServlet {
             // Not inclusive.
             int end = Math.min(begin + MAX_TASKS_PER_TRANSACTION,
                                dons.size());
+
+            // The loop and the return statement at the end would work alright
+            // without this, but we'd be checking anyway to avoid rewriting
+            // an unchanged cursor, so we might just as well bail here.
+            if (begin >= end) {
+                return true;
+            }
+
+            String lastDate = cursor.getDate();
+            // This will become the index of the first donation that has the
+            // same date as the last donation of this batch.  We use this to
+            // update the date in the cursor.
+            int firstWithLastDate = begin;
+
             for (int i=begin; i<end; i++) {
                 Map<String, Object> don = dons.get(i);
                 final String id = don.get(idKey).toString();
@@ -98,23 +115,41 @@ public class QueryDonations extends HttpServlet {
                 // we don't return 200 OK.
                 //
                 // See https://developers.google.com/appengine/docs/java/taskqueue/#Java_Tasks_within_transactions
-                tq.add(withUrl("/process_donation")
+                tq.add(TaskOptions.Builder.withUrl("/process_donation")
                        .param(idKey, id)
                        .param(emailKey, email)
                        .param(amountKey, amount));
+                final String don_date = don.get("created_at").toString()
+                                           .split(" ")[0];
+                // The rally.org API docs [1] say donations come in
+                // chronological order and that the date format is YYYY-MM-DD,
+                // which can be compared lexicographically.
+                //
+                // [1] https://rally.org/corp/dev
+                if (don_date.compareTo(lastDate) > 0) {
+                    lastDate = don_date;
+                    firstWithLastDate = i;
+                }
             }
-            //XXX: consider date changes!
-            if (end < MAX_DONATIONS_PER_PAGE) {
+            // We have made sure above that we've gotten at least one result.
+            cursor.setDonationId(dons.get(end-1).get(idKey).toString());
+            if (lastDate != cursor.getDate()) {
+                cursor.setDate(lastDate);
+                // Since MAX_TASKS_PER_TRANSACTION is much smaller than
+                // MAX_DONATIONS_PER_PAGE, we're not past the first page of
+                // results for the new start_date.
+                cursor.setPage(1);
+                cursor.setIndex(end - firstWithLastDate);
+            } else if (end < MAX_DONATIONS_PER_PAGE) {
                 cursor.setIndex(end);
             } else {
                 cursor.incrementPage();
                 cursor.setIndex(0);
             }
-            if (end - 1 >= 0) {
-                cursor.setDonationId(dons.get(end-1).get(idKey).toString());
-            }
             ofy.put(cursor);
             ofy.getTxn().commit();
+            // We're done when we have processed up to the end of a page
+            // shorter than MAX_DONATIONS_PER_PAGE.
             return (end == dons.size()
                     && dons.size() < MAX_DONATIONS_PER_PAGE);
         } finally {
