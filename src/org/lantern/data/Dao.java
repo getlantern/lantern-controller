@@ -94,6 +94,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(InstallerBucket.class);
         ObjectifyService.register(PermanentLogEntry.class);
+        ObjectifyService.register(UserCredit.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
@@ -1033,5 +1034,35 @@ public class Dao extends DAOBase {
             }
         }
         return user;
+    }
+
+    /**
+     * Add or withdraw `amount` from `email`'s account, if possible.
+     *
+     * We never allow the account to go into red numbers.
+     */
+    public int addCredit(final String email, final int amount) {
+        Integer result = new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, email);
+                if (uc == null) {
+                    uc = new UserCredit(email);
+                }
+                uc.setBalance(uc.getBalance() + amount);
+                if (uc.getBalance() < 0) {
+                    //XXX: see what's the most convenient way to deal with this
+                    // when we handle payments.
+                    throw new RuntimeException("Insufficient funds");
+                }
+                ofy.put(uc);
+                ofy.getTxn().commit();
+                return uc.getBalance();
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException("Too much contention adding credit");
+        }
+        return result;
     }
 }

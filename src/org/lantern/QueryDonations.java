@@ -57,7 +57,11 @@ public class QueryDonations extends HttpServlet {
     public void doGet(final HttpServletRequest request,
                       final HttpServletResponse response) {
         try {
-            while (!doOneBatch());
+            while (!doOneBatch()) {
+                // Let the Datastore catch breath; we get spurious
+                // `ConcurrentModificationException`s otherwise.
+                Thread.sleep(1000);
+            }
         // As soon as we detect any overlap we bail out to prevent waste.
         } catch (final ConcurrentModificationException e) {
             log.info("Concurrent modification; exiting.");
@@ -65,6 +69,9 @@ public class QueryDonations extends HttpServlet {
         // prevent this from looking too alarming in the logs.
         } catch (final DeadlineExceededException e) {
             log.info("GAE timed me out; exiting.");
+        // Required by `Thread.sleep`.
+        } catch (final InterruptedException e) {
+            log.info("Interrupted while sleeping; exiting.");
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
