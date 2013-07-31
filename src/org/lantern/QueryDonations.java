@@ -26,7 +26,7 @@ import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import static com.google.appengine.api.taskqueue.TaskOptions.Builder.*;
 
-import org.lantern.data.LatestProcessedDonation;
+import org.lantern.data.DonationCursor;
 
 
 @SuppressWarnings("serial")
@@ -45,7 +45,7 @@ public class QueryDonations extends HttpServlet {
     private static final int MAX_DONATIONS_PER_PAGE = 25;
 
     static {
-        ObjectifyService.register(LatestProcessedDonation.class);
+        ObjectifyService.register(DonationCursor.class);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class QueryDonations extends HttpServlet {
 
     /**
      * Read up to MAX_TASKS_PER_TRANSACTION donations, enqueue them for further
-     * processing, and update LatestProcessedDonation.
+     * processing, and update DonationCursor.
      */
     private boolean doOneBatch() throws ConcurrentModificationException {
         final String idKey = LanternControllerConstants.DONATION_ID_KEY;
@@ -75,15 +75,14 @@ public class QueryDonations extends HttpServlet {
         final Objectify ofy = ObjectifyService.beginTransaction();
         final Queue tq = QueueFactory.getDefaultQueue();
         try {
-            LatestProcessedDonation latest = ofy.find(
-                    LatestProcessedDonation.class,
-                    LatestProcessedDonation.singletonId);
-            if (latest == null) {
-                latest = new LatestProcessedDonation();
+            DonationCursor cursor = ofy.find(
+                    DonationCursor.class,
+                    DonationCursor.singletonId);
+            if (cursor == null) {
+                cursor = new DonationCursor();
             }
-            List<Map<String, Object>> dons
-                = parseJson(getInputStream(latest));
-            int begin = latest.getIndex() + 1;
+            List<Map<String, Object>> dons = parseJson(getInputStream(cursor));
+            int begin = cursor.getIndex();
             // Not inclusive.
             int end = Math.min(begin + MAX_TASKS_PER_TRANSACTION,
                                dons.size());
@@ -106,12 +105,15 @@ public class QueryDonations extends HttpServlet {
             }
             //XXX: consider date changes!
             if (end < MAX_DONATIONS_PER_PAGE) {
-                latest.setIndex(end - 1);
+                cursor.setIndex(end);
             } else {
-                latest.incrementPage();
-                latest.setIndex(-1);
+                cursor.incrementPage();
+                cursor.setIndex(0);
             }
-            ofy.put(latest);
+            if (end - 1 >= 0) {
+                cursor.setDonationId(dons.get(end-1).get(idKey).toString());
+            }
+            ofy.put(cursor);
             ofy.getTxn().commit();
             return (end == dons.size()
                     && dons.size() < MAX_DONATIONS_PER_PAGE);
@@ -122,10 +124,9 @@ public class QueryDonations extends HttpServlet {
         }
     }
 
-    private InputStream getInputStream(LatestProcessedDonation d) {
-        String url = String.format("%s&start_date=%d/%02d/%02d&page=%d",
-                                   queryUrl, d.getYear(), d.getMonth(),
-                                   d.getDay(), d.getPage());
+    private InputStream getInputStream(DonationCursor d) {
+        String url = String.format("%s&start_date=%s&page=%d",
+                                   queryUrl, d.getDate(), d.getPage());
         log.info("Fetching URL " + url);
         try {
             return new URL(url).openStream();
