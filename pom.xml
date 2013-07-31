@@ -122,8 +122,6 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>src</sourceDirectory>
-    <testSourceDirectory>test</testSourceDirectory>
     <extensions>
       <extension>
         <groupId>org.springframework.build</groupId>
