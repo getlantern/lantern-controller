@@ -141,6 +141,8 @@
       <url-pattern>/persist/*</url-pattern>
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
+      <url-pattern>/query_donations</url-pattern>
+      <url-pattern>/process_donation</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
