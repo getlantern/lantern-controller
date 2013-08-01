@@ -83,10 +83,14 @@ public class MandrillEmailer {
         throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("key", LanternControllerConstants.getMandrillApiKey());
+        String mandrillApiKey = LanternControllerConstants.getMandrillApiKey();
+        if (mandrillApiKey == null || mandrillApiKey.equals("secret")) {
+            throw new RuntimeException("Please correct your secrets file to include the Mandrill API key");
+        }
+        data.put("key", mandrillApiKey);
 
         final Map<String, Object> msg = new HashMap<String, Object>();
-        
+
         msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
         msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
         msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
