@@ -161,6 +161,9 @@
         <groupId>com.google.appengine</groupId>
         <artifactId>appengine-maven-plugin</artifactId>
         <version>${appengine.target.version}</version>
+        <configuration>                                     
+          <port>8000</port>
+        </configuration>
       </plugin>
     </plugins>
   </build>
