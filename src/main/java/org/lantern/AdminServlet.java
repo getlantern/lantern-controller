@@ -26,7 +26,16 @@ public class AdminServlet extends HttpServlet {
             .getLogger(AdminServlet.class.getName());
     private static String secret;
 
-    static {
+    public static String getCsrfToken() {
+        UserService userService = UserServiceFactory.getUserService();
+        User user = userService.getCurrentUser();
+        return DigestUtils.sha256Hex(user.getFederatedIdentity() + loadSecret());
+    }
+
+    private static String loadSecret() {
+        if (StringUtils.isNotBlank(secret)) {
+            return secret;
+        }
         final Properties prop = new Properties();
 
         try {
@@ -37,17 +46,12 @@ public class AdminServlet extends HttpServlet {
                 throw new RuntimeException(
                         "Please create a csrf-secret.properties file with field secret");
             }
+            return secret;
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (NullPointerException e) {
             throw new RuntimeException("Failed to load CSRF secret", e);
         }
-    }
-
-    public static String getCsrfToken() {
-        UserService userService = UserServiceFactory.getUserService();
-        User user = userService.getCurrentUser();
-        return DigestUtils.sha256Hex(user.getFederatedIdentity() + secret);
     }
 
     public static String getCsrfTag() {
@@ -179,5 +183,9 @@ public class AdminServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
         log.info("Done");
+    }
+
+    public static void setSecret(final String secret) {
+        AdminServlet.secret = secret;
     }
 }
