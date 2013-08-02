@@ -208,7 +208,7 @@ public class LanternUser implements Serializable {
         instancesSignedIn = 0;
     }
     public void resetCountryCodes() {
-        countryCodes = new HashSet<String>();
+        countryCodes = "";
     }
 */
 
