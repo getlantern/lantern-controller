@@ -27,7 +27,7 @@ public class LanternUser implements Serializable {
 
     private Date created = new Date();
 
-    private final Set<String> countryCodes = new HashSet<String>();
+    private String countryCodes = "";
 
     private int invites;
 
@@ -185,11 +185,22 @@ public class LanternUser implements Serializable {
     }
 
     public boolean countrySeen(String countryCode) {
-        return !countryCodes.add(countryCode);
+        if (countryCodes.contains(countryCode + ".")) {
+            return true;
+        } else {
+            countryCodes += countryCode + ".";
+            return false;
+        }
     }
 
     public Set<String> getCountryCodes() {
-        return countryCodes;
+        Set<String> out = new HashSet<String>();
+        for (String code : countryCodes.split(".")) {
+            if (code.length() == 2) {
+                out.add(code);
+            }
+        }
+        return out;
     }
 
 /*  Uncomment for datastore reset scripts.
