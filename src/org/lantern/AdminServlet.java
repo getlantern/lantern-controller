@@ -3,15 +3,19 @@ package org.lantern;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
 import org.lantern.data.LanternUser;
@@ -47,7 +51,21 @@ public class AdminServlet extends HttpServlet {
     public static String getCsrfToken() {
         UserService userService = UserServiceFactory.getUserService();
         User user = userService.getCurrentUser();
-        return DigestUtils.sha256Hex(user.getFederatedIdentity() + secret);
+        SecretKeySpec keySpec = new SecretKeySpec(secret.getBytes(),
+                "HmacSHA256");
+
+        Mac mac;
+        try {
+            mac = Mac.getInstance("HmacSHA256");
+            mac.init(keySpec);
+            byte[] result = mac.doFinal(user.getFederatedIdentity().getBytes());
+
+            return Base64.encodeBase64String(result);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String getCsrfTag() {
