@@ -195,7 +195,7 @@ public class LanternUser implements Serializable {
 
     public Set<String> getCountryCodes() {
         Set<String> out = new HashSet<String>();
-        for (String code : countryCodes.split(".")) {
+        for (String code : countryCodes.split("\\.")) {
             if (code.length() == 2) {
                 out.add(code);
             }
