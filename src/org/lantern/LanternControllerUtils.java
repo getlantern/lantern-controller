@@ -154,7 +154,7 @@ public class LanternControllerUtils {
         return LanternXmppUtils.jidToInstanceId(message.getFromJid().getId());
     }
 
-    public static String instanceId(Presence presence) {
+    public static String resourceId(Presence presence) {
         return LanternXmppUtils.jidToInstanceId(presence.getFromJid().getId());
     }
 

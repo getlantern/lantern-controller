@@ -46,8 +46,6 @@ public class LanternUser implements Serializable {
 
     private Date lastAccessed = new Date();
 
-    private int instancesSignedIn = 0;
-
     /**
      * The instances we have seen running in behalf of this user.
      *
@@ -162,22 +160,6 @@ public class LanternUser implements Serializable {
 
     public void setLastAccessed(Date lastAccessed) {
         this.lastAccessed = lastAccessed;
-    }
-
-    public boolean anyInstancesSignedIn() {
-        return instancesSignedIn > 0;
-    }
-
-    public void incrementInstancesSignedIn() {
-        instancesSignedIn ++;
-    }
-
-    public void decrementInstancesSignedIn() {
-        //if instancesSignedIn is zero, there is a bug
-        if (instancesSignedIn > 0)
-            instancesSignedIn --;
-        else
-            log.warning("Instances signed in for " + this + " is already zero");
     }
 
     public boolean instanceIdSeen(String instanceId) {
