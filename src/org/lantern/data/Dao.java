@@ -1065,4 +1065,34 @@ public class Dao extends DAOBase {
         }
         return result;
     }
+
+    public void setRefreshToken(final String userId, final String token) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                try {
+                    LanternUser user = ofy.get(LanternUser.class, userId);
+                    user.setRefreshToken(token);
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                    return true;
+                } catch (NotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention setting refresh token.");
+        }
+    }
+
+    public boolean needsRefreshToken(final String userId) {
+        try {
+            LanternUser user = ofy().get(LanternUser.class, userId);
+            return (user.getInstallerLocation() != null
+                    && user.getRefreshToken() == null);
+        } catch (NotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

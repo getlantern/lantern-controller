@@ -85,7 +85,7 @@ public class XmppAvailableServlet extends HttpServlet {
                         LanternConstants.INVITER_NAME);
 
                 String refreshToken = LanternControllerUtils.getProperty(doc,
-                        LanternConstants.INVITER_REFRESH_TOKEN);
+                        LanternConstants.REFRESH_TOKEN);
 
                 InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail, false);
             } else {
@@ -101,6 +101,17 @@ public class XmppAvailableServlet extends HttpServlet {
             dao.setInstanceUnavailable(userId, instanceId);
             return;
         }
+        String refreshToken = LanternControllerUtils.getProperty(
+                doc, LanternConstants.REFRESH_TOKEN);
+        if (refreshToken != null && !refreshToken.equals("")) {
+            log.info("Received refresh token.");
+            dao.setRefreshToken(userId, refreshToken);
+        } else if (dao.needsRefreshToken(userId)) {
+            log.info("Requesting refresh token.");
+            responseJson.put(LanternConstants.NEED_REFRESH_TOKEN,
+                             Boolean.TRUE);
+        }
+
         String modeStr = LanternControllerUtils.getProperty(doc, "mode");
         Mode mode;
         if ("give".equals(modeStr)) {
@@ -241,7 +252,7 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         final String refreshToken = LanternControllerUtils.getProperty(
-                doc, LanternConstants.INVITER_REFRESH_TOKEN);
+                doc, LanternConstants.REFRESH_TOKEN);
         if (refreshToken == null) {
             log.info("No refresh token.");
             //do not even queue invite, because no refresh token
