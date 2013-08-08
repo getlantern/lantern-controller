@@ -29,6 +29,9 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
@@ -411,26 +414,26 @@ public class Dao extends DAOBase {
             }
         }.run();
 
-        createInviteeUser(inviterEmail, inviteeEmail);
+        createUser(inviterEmail, inviteeEmail);
         return status;
     }
 
-    private boolean createInviteeUser(final String inviterEmail,
-            final String inviteeEmail) {
+    public boolean createUser(final String sponsorEmail,
+                              final String newUserEmail) {
 
         // get the inviter outside the loop because we don't care
         // about concurrent modifications
         final Objectify ofy = ofy();
-        final LanternUser inviter = ofy.find(LanternUser.class, inviterEmail);
+        final LanternUser inviter = ofy.find(LanternUser.class, sponsorEmail);
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
 
-                LanternUser invitee = ofy.find(LanternUser.class, inviteeEmail);
+                LanternUser invitee = ofy.find(LanternUser.class, newUserEmail);
                 if (invitee == null) {
-                    log.info("Adding invitee to database");
-                    invitee = new LanternUser(inviteeEmail);
+                    log.info("Adding new user to database");
+                    invitee = new LanternUser(newUserEmail);
 
                     invitee.setDegree(inviter.getDegree() + 1);
                     if (getUserCount() < LanternControllerConstants.MAX_USERS
@@ -440,11 +443,11 @@ public class Dao extends DAOBase {
                     invitee.setSponsor(inviter.getId());
                     ofy.put(invitee);
                 } else {
-                    log.info("Invitee exists, nothing to do here.");
+                    log.info("User exists, nothing to do here.");
                     return true;
                 }
                 ofy.getTxn().commit();
-                log.info("Successfully committed attempt to add invitee.");
+                log.info("Successfully committed attempt to add new user.");
                 return true;
             }
         }.run();
@@ -1073,6 +1076,15 @@ public class Dao extends DAOBase {
                 try {
                     LanternUser user = ofy.get(LanternUser.class, userId);
                     user.setRefreshToken(token);
+                    // If the proxy for this user is ready to accept the token,
+                    // send it and advance the state.
+                    String loc = user.getInstallerLocation();
+                    String cnst = LanternControllerConstants.FPS_PENDING_TOKEN;
+                    if (loc.startsWith(cnst)) {
+                        String locProper = loc.substring(cnst.length(),
+                                                         loc.length());
+                        sendTokenAndAdvanceState(user, locProper);
+                    }
                     ofy.put(user);
                     ofy.getTxn().commit();
                     return true;
@@ -1084,6 +1096,49 @@ public class Dao extends DAOBase {
         if (result == null) {
             log.warning("Too much contention setting refresh token.");
         }
+    }
+
+    public boolean setInstallerLocationAndCheckToken(
+            final String userId, final String installerLocation) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                try {
+                    LanternUser user = ofy.get(LanternUser.class, userId);
+                    boolean hadToken;
+                    String status;
+                    if (user.getRefreshToken() == null) {
+                        hadToken = false;
+                        user.setInstallerLocation(
+                                LanternControllerConstants.FPS_PENDING_TOKEN
+                                + installerLocation);
+                    } else {
+                        hadToken = true;
+                        sendTokenAndAdvanceState(user, installerLocation);
+                    }
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                    return hadToken;
+                } catch (NotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention setting installer location.");
+        }
+        return result;
+    }
+
+    private void sendTokenAndAdvanceState(final LanternUser user,
+                                          final String installerLocation) {
+        user.setInstallerLocation(
+            LanternControllerConstants.FPS_PENDING_COMPLETION
+            + installerLocation);
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder.withUrl("/send_token")
+               .param("user", user.getId())
+               .param("token", user.getRefreshToken()));
     }
 
     public boolean needsRefreshToken(final String userId) {

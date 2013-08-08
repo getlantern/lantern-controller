@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
 
 
 @SuppressWarnings("serial")
@@ -33,9 +34,21 @@ public class ProcessDonation extends HttpServlet {
         int newBalance = dao.addCredit(email, amount);
         log.info(email + " has " + newBalance + " cents now.");
         if (newBalance >= LAUNCH_UPFRONT_COST) {
-            log.info("That's enough to launch a proxy.");
-        } else {
-            log.info("That's not yet enough to launch a proxy.");
+            LanternUser user = dao.getUser(email);
+            if (user == null) {
+                if (dao.getUser("lanterndonors@gmail.com") == null) {
+                    dao.createUser("lanternuser@gmail.com",
+                                   "lanterndonors@gmail.com");
+                }
+                dao.createUser("lanterndonors@gmail.com", email);
+                user = dao.getUser(email);
+            }
+            if (user.getInstallerLocation() == null) {
+                log.info("Launching server for " + email);
+                // DRY warning: lantern_aws/salt/cloudmaster/cloudmaster.py
+                InvitedServerLauncher.orderServerLaunch(email,
+                                                        "<tokenless-donor>");
+            }
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
     }

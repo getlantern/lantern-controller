@@ -31,29 +31,23 @@ public class SQSChecker extends HttpServlet {
          * DRY Warning: The key strings in these messages are not in
          * LanternConstants because they are shared with Python code.
          */
-        // Invitee server reports it's up and running.
-        final String inviterEmail = (String)msg.get("invsrvup-user");
-        if (inviterEmail != null) {
+        // Fallback proxy reports it's up and running.
+        final String userId = (String)msg.get("invsrvup-user");
+        if (userId != null) {
             final String installerLocation = (String)msg.get(
                     "invsrvup-insloc");
             if (installerLocation == null) {
-                log.severe(
-                        inviterEmail
-                        + " sent invsrv-up with no installer location.");
+                log.severe(userId
+                           + " sent invsrv-up with no installer location.");
                 return;
             }
-            InvitedServerLauncher.onInvitedServerUp(inviterEmail,
-                                                    installerLocation);
-            return;
-        }
-        // New buckets for installers have been created.
-        final List<String> bucketList = (List<String>)msg.get(
-                "register-buckets");
-        if (bucketList != null) {
-            final Dao dao = new Dao();
-            for (String bucketName : bucketList) {
-                dao.addInstallerBucket(bucketName);
+            final String status = (String)msg.get("invsrvup-status");
+            if (status == null) {
+                log.severe(userId + " sent invsrv-up with no status.");
             }
+            InvitedServerLauncher.onFallbackProxyUp(userId,
+                                                    installerLocation,
+                                                    status);
             return;
         }
         log.warning("I don't understand this message: " + msg);

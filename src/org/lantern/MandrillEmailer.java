@@ -55,71 +55,101 @@ public class MandrillEmailer {
             throw new IOException("Invited e-mail required!!");
         }
         final String json =
-            mandrillSendEmailJson(inviterName, inviterEmail, invitedEmail,
+            mandrillSendInviteEmailJson(inviterName, inviterEmail, invitedEmail,
                 osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
         sendEmail(json);
     }
     
     /**
-     * Creates JSON compatible with the Mandrill API. Public for testing.
-     * See https://mandrillapp.com/api/docs/messages.html#method=send-template
-     * 
-     * @param inviterName The name of the person doing the inviting.
-     * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite. 
+     * Send an e-mail requesting a sponsor to log in to activate their proxy.
+     *
+     * @param email The email of the sponsor
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
-     * @return The generated JSON to send to Mandrill.
-     * @throws IOException If there's an error generating the JSON.
+     * @throws IOException If there's any error accessing Mandrill, generating
+     * the JSON, etc.
      */
-    public static String mandrillSendEmailJson(final String inviterName,
-        final String inviterEmail, final String invitedEmail,
+    public static void sendTokenRequest(final String email,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl)
+        final String linuxInstallerUrl) throws IOException {
+        log.info("Sending token request to " + email);
+        sendInstallerEmail(
+            email, osxInstallerUrl, winInstallerUrl, linuxInstallerUrl,
+            LanternControllerConstants.TOKEN_REQUEST_EMAIL_TEMPLATE_NAME,
+            LanternControllerConstants.TOKEN_REQUEST_EMAIL_SUBJECT,
+            LanternControllerConstants.TOKEN_REQUEST_EMAIL_FROM_ADDRESS,
+            LanternControllerConstants.TOKEN_REQUEST_EMAIL_BCC_ADDRESS);
+    }
+
+    /**
+     * Send an e-mail notifying the user that the proxy they sponsor is ready.
+     *
+     * @param email The email of the sponsor
+     * @param osxInstallerUrl The URL of the OS X installer.
+     * @param winInstallerUrl The URL of the Windows installer.
+     * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @throws IOException If there's any error accessing Mandrill, generating
+     * the JSON, etc.
+     */
+    public static void sendProxyReady(final String email,
+        final String osxInstallerUrl, final String winInstallerUrl,
+        final String linuxInstallerUrl) throws IOException {
+        log.info("Sending proxy-ready notification to " + email);
+        sendInstallerEmail(
+                email, osxInstallerUrl, winInstallerUrl, linuxInstallerUrl,
+                LanternControllerConstants.PROXY_READY_EMAIL_TEMPLATE_NAME,
+                LanternControllerConstants.PROXY_READY_EMAIL_SUBJECT,
+                LanternControllerConstants.PROXY_READY_EMAIL_FROM_ADDRESS,
+                LanternControllerConstants.PROXY_READY_EMAIL_BCC_ADDRESS);
+    }
+
+    public static void sendInstallerEmail(final String email,
+        final String osxInstallerUrl, final String winInstallerUrl,
+        final String linuxInstallerUrl, final String templateName,
+        final String subject, final String from, final String bcc)
         throws IOException {
-        final ObjectMapper mapper = new ObjectMapper();
+        if (StringUtils.isBlank(email)) {
+            throw new IOException("Blank e-mail address.");
+        }
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        addMergeVar(mv, "OSXINSTALLERURL", osxInstallerUrl);
+        addMergeVar(mv, "WININSTALLERURL", winInstallerUrl);
+        addMergeVar(mv, "LINUXINSTALLERURL", linuxInstallerUrl);
+        sendEmail(mandrillSendEmailJson(
+                    email, templateName, subject, from, bcc, mv));
+    }
+
+    private static String mandrillSendEmailJson(
+            final String email,
+            final String template,
+            final String subject,
+            final String from,
+            final String bcc,
+            final List<Map<String, String>> mergeVars) throws IOException {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("key", LanternControllerConstants.getMandrillApiKey());
-        data.put("template_name", LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME);
+        data.put("template_name", template);
         data.put("template_content", new String[]{});
      
         final Map<String, Object> msg = new HashMap<String, Object>();
-        
-        msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
-        msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
-        msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
+        msg.put("subject", subject);
+        msg.put("from_email", from);
+        msg.put("from_name", LanternControllerConstants.EMAIL_FROM_NAME);
         final Map<String, String> to = new HashMap<String, String>();
-        //XXX: Temporary hack to tightly control what installers testers get.
-        //to.put("email", invitedEmail);
-        to.put("email", invitedEmail);
+        to.put("email", email);
         msg.put("to", Arrays.asList(to));
         msg.put("track_opens", false);
         msg.put("track_clicks", false);
         msg.put("auto_text", true);
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
-        msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS);
-        final List<Map<String, String>> mergeVars = 
-            new ArrayList<Map<String,String>>();
-        if (StringUtils.isNotBlank(inviterEmail)) {
-            mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
-        }
-        if (StringUtils.isBlank(inviterName)) {
-            mergeVars.add(mergeVar("INVITER_NAME", inviterEmail));
-        } else {
-            mergeVars.add(mergeVar("INVITER_NAME", inviterName));
-        }
-
-        mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
-        mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));
-        mergeVars.add(mergeVar("LINUXINSTALLERURL", linuxInstallerUrl));
-
-        msg.put("global_merge_vars", mergeVars);
-        
+        msg.put("bcc_address", bcc);
         data.put("message", msg);
+        msg.put("global_merge_vars", mergeVars);
         try {
-            return mapper.writeValueAsString(data);
+            return new ObjectMapper().writeValueAsString(data);
         } catch (final JsonGenerationException e) {
             throw new IOException("Could not generate JSON", e);
         } catch (final JsonMappingException e) {
@@ -127,6 +157,46 @@ public class MandrillEmailer {
         } catch (final IOException e) {
             throw e;
         }
+    }
+
+    /**
+     * Creates JSON compatible with the Mandrill API. Public for testing.
+     * See https://mandrillapp.com/api/docs/messages.html#method=send-template
+     *
+     * @param inviterName The name of the person doing the inviting.
+     * @param inviterEmail The email of the person doing the inviting.
+     * @param invitedEmail The email of the person to invite.
+     * @param osxInstallerUrl The URL of the OS X installer.
+     * @param winInstallerUrl The URL of the Windows installer.
+     * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @return The generated JSON to send to Mandrill.
+     * @throws IOException If there's an error generating the JSON.
+     */
+    public static String mandrillSendInviteEmailJson(final String inviterName,
+        final String inviterEmail, final String invitedEmail,
+        final String osxInstallerUrl, final String winInstallerUrl,
+        final String linuxInstallerUrl)
+        throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        if (StringUtils.isNotBlank(inviterEmail)) {
+            addMergeVar(mv, "INVITER_EMAIL", inviterEmail);
+        }
+        if (StringUtils.isBlank(inviterName)) {
+            addMergeVar(mv, "INVITER_NAME", inviterEmail);
+        } else {
+            addMergeVar(mv, "INVITER_NAME", inviterName);
+        }
+        addMergeVar(mv, "OSXINSTALLERURL", osxInstallerUrl);
+        addMergeVar(mv, "WININSTALLERURL", winInstallerUrl);
+        addMergeVar(mv, "LINUXINSTALLERURL", linuxInstallerUrl);
+        return mandrillSendEmailJson(
+                inviterEmail,
+                LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME,
+                LanternControllerConstants.INVITE_EMAIL_SUBJECT,
+                LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
+                LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS,
+                mv);
     }
 
 
@@ -171,6 +241,11 @@ public class MandrillEmailer {
         //final Queue queue = QueueFactory.getDefaultQueue();
         //queue.add(withPayload(task));
         //task.run();
+    }
+
+    private static void addMergeVar(List<Map<String, String>> mergeVars,
+                                    final String key, final String value) {
+        mergeVars.add(mergeVar(key, value));
     }
 
     private static Map<String, String> mergeVar(final String key, final String val) {
