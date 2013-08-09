@@ -190,7 +190,7 @@ public class Dao extends DAOBase {
 
         if (instance != null && StringUtils.equals(instance.getResource(), resource)) {
             //this is an available message for the same resource as
-            //is currently in use, so it must be bogus.
+            //so we are already counting this instance as online
             return Collections.emptyList();
         }
 
