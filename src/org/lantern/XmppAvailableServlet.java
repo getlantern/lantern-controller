@@ -68,7 +68,9 @@ public class XmppAvailableServlet extends HttpServlet {
         }
 
         final String userId = LanternXmppUtils.jidToUserId(from);
-        final String instanceId = LanternControllerUtils.instanceId(presence);
+        final String resource = LanternControllerUtils.resourceId(presence);
+        final String instanceId = LanternControllerUtils.getProperty(doc,
+                "instanceId");
 
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
@@ -97,8 +99,8 @@ public class XmppAvailableServlet extends HttpServlet {
         handleFriendsSync(doc, from, xmpp);
 
         if (!presence.isAvailable()) {
-            log.info(userId + "/" + instanceId + " logging out.");
-            dao.setInstanceUnavailable(userId, instanceId);
+            log.info(userId + "/" + resource + " logging out.");
+            dao.setInstanceUnavailable(userId, resource);
             return;
         }
         String refreshToken = LanternControllerUtils.getProperty(
@@ -132,7 +134,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "name");
 
         processClientInfo(presence, stats, responseJson, userId, instanceId,
-                name, mode);
+                name, mode, resource);
 
         if (mode == Mode.give) {
             processGiveMode(presence, xmpp, responseJson);
@@ -310,12 +312,17 @@ public class XmppAvailableServlet extends HttpServlet {
     private void processClientInfo(final Presence presence,
         final String stats, final Map<String, Object> responseJson,
         final String idToUse, final String instanceId, final String name,
-        final Mode mode) {
+        final Mode mode, final String resource) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
             return;
         }
+        if (StringUtils.isBlank(instanceId)) {
+            log.info("Old client; not tracking stats");
+            return;
+        }
+
         log.info("Processing stats!");
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());
@@ -325,9 +332,9 @@ public class XmppAvailableServlet extends HttpServlet {
             // updating all counters.
             log.info("Setting instance availability");
             final Dao dao = new Dao();
-            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), mode);
+            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), mode, resource);
             try {
-                updateStats(data, idToUse, instanceId, name, mode);
+                updateStats(data, idToUse, name, mode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -352,7 +359,7 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final Stats data, final String idToUse,
-            final String instanceId, final String name, final Mode mode) {
+            final String name, final Mode mode) {
 
         final Dao dao = new Dao();
 
@@ -360,7 +367,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.updateUser(idToUse, data.getDirectRequests(),
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
-            data.getCountryCode(), instanceId, name, mode);
+            data.getCountryCode(), name, mode);
     }
 
     private void addServers(final String jid,

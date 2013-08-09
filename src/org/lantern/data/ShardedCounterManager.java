@@ -23,15 +23,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.jdo.PersistenceManager;
-import javax.jdo.Query;
 import javax.jdo.JDOObjectNotFoundException;
+import javax.jdo.PersistenceManager;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -184,7 +182,13 @@ public class ShardedCounterManager {
 
     public long getCount(final String counterName) {
         loadGroup();
-        return group.getCounter(counterName).getCount();
+        DatastoreCounter counter = group.getCounter(counterName);
+        if (counter == null) {
+            group.addCounter(counter);
+            return 0;
+        } else {
+            return counter.getCount();
+        }
     }
 
     public void initCounters(Collection<String> timed,

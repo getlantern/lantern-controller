@@ -332,7 +332,7 @@ public class MandrillEmailer {
         data.put("email_address", email);
 
         final Map<String, Object> merge_vars = new HashMap<String, Object>();
-        merge_vars.put("MC_LANGUAGE", language);
+        merge_vars.put("LANG", language);
 
         data.put("merge_vars", merge_vars);
         data.put("double_optin", false);
