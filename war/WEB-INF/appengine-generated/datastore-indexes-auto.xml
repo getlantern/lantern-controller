@@ -4,5 +4,8 @@
         <property name="available" direction="asc"/>
         <property name="lastUpdated" direction="asc"/>
     </datastore-index>
+    <datastore-index kind="LanternInstance" ancestor="true" source="manual">
+        <property name="resource" direction="asc"/>
+    </datastore-index>
 </datastore-indexes>
 
