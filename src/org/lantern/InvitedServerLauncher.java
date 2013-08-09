@@ -78,6 +78,7 @@ public class InvitedServerLauncher {
             }
         } else if (status.equals("setup_complete")) {
             try {
+                sendProxyReady(userId, installerLocation);
                 final Collection<String> invitees
                     = dao.setInstallerLocationAndGetInvitees(
                         userId, installerLocation);
@@ -117,6 +118,18 @@ public class InvitedServerLauncher {
                                              m.get("windows"), m.get("linux"));
         } catch (final IOException e) {
             log.warning("Could not send token request e-mail!\n"
+                        + ThreadUtils.dumpStack());
+        }
+    }
+
+    private static void sendProxyReady(final String userId,
+                                       final String installerLocation) {
+        try {
+            Map<String, String> m = parseInstallerLocation(installerLocation);
+            MandrillEmailer.sendProxyReady(userId, m.get("osx"),
+                                           m.get("windows"), m.get("linux"));
+        } catch (final IOException e) {
+            log.warning("Could not send proxy ready e-mail!\n"
                         + ThreadUtils.dumpStack());
         }
     }
