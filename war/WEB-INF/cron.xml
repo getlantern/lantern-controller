@@ -9,6 +9,11 @@
   <cron>
     <url>/check_sqs</url>
     <description>Check the incoming SQS queue for notifications.</description>
-    <schedule>every 2 minutes</schedule>
+    <schedule>every 1 minutes</schedule>
+  </cron>
+  <cron>
+    <url>/query_donations</url>
+    <description>Check rally.org for donations.</description>
+    <schedule>every 1 minutes</schedule>
   </cron>
 </cronentries>
