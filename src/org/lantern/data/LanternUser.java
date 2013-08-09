@@ -47,15 +47,6 @@ public class LanternUser implements Serializable {
     private Date lastAccessed = new Date();
 
     /**
-     * The instances we have seen running in behalf of this user.
-     *
-     * Instances are identified by XMPP resource, so if you want to use these
-     * to key into the LanternInstances table, you need to obtain the full
-     * jabberId. @see LanternControllerUtils.jabberIdFromUserAndResource .
-     */
-    private final HashSet<String> instanceIds = new HashSet<String>();
-
-    /**
      * The location where invitees of this user should get their installers.
      *
      * This is in `bucket/folder` format, where bucket is the name of an
@@ -160,10 +151,6 @@ public class LanternUser implements Serializable {
 
     public void setLastAccessed(Date lastAccessed) {
         this.lastAccessed = lastAccessed;
-    }
-
-    public boolean instanceIdSeen(String instanceId) {
-        return !instanceIds.add(instanceId);
     }
 
     public boolean countrySeen(String countryCode) {
