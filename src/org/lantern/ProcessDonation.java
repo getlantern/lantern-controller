@@ -51,10 +51,13 @@ public class ProcessDonation extends HttpServlet {
             if (dao.getAndSetInstallerLocation(
                         email, LanternControllerConstants.FPS_PENDING_START)
                  == null) {
+                String token = dao.getUser(email).getRefreshToken();
+                if (token == null) {
+                    // DRY warning: lantern_aws/salt/cloudmaster/cloudmaster.py
+                    token = "<tokenless-donor>";
+                }
                 log.info("Launching server for " + email);
-                // DRY warning: lantern_aws/salt/cloudmaster/cloudmaster.py
-                InvitedServerLauncher.orderServerLaunch(email,
-                                                        "<tokenless-donor>");
+                InvitedServerLauncher.orderServerLaunch(email, token);
             }
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
