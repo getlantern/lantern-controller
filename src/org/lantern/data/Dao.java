@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
 import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
+import org.lantern.LanternConstants;
 import org.lantern.LanternControllerConstants;
 import org.lantern.LanternControllerUtils;
 import org.lantern.MandrillEmailer;
@@ -1147,8 +1148,8 @@ public class Dao extends DAOBase {
             + installerLocation);
         QueueFactory.getDefaultQueue().add(
             TaskOptions.Builder.withUrl("/send_token")
-               .param("user", user.getId())
-               .param("token", user.getRefreshToken()));
+               .param(LanternControllerConstants.ID_KEY, user.getId())
+               .param(LanternConstants.REFRESH_TOKEN, user.getRefreshToken()));
     }
 
     public boolean needsRefreshToken(final String userId) {

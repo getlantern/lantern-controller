@@ -19,8 +19,10 @@ public class SendToken extends HttpServlet {
     public void doPost(final HttpServletRequest request,
                        final HttpServletResponse response) {
         Map<String, Object> m = new HashMap<String, Object>();
-        m.put("feed-token-for", request.getParameter("user"));
-        m.put("feed-refrtok", request.getParameter("token"));
+        m.put("feed-token-for", request.getParameter(
+                                      LanternControllerConstants.ID_KEY));
+        m.put("feed-refrtok", request.getParameter(
+                                      LanternConstants.REFRESH_TOKEN));
         new SQSUtil().send(m);
         LanternControllerUtils.populateOKResponse(response, "OK");
     }

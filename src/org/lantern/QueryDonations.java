@@ -83,10 +83,9 @@ public class QueryDonations extends HttpServlet {
      * @return true when done with all donations.
      */
     private boolean doOneBatch() throws ConcurrentModificationException {
-        final String idKey = LanternControllerConstants.DONATION_ID_KEY;
-        final String emailKey = LanternControllerConstants.DONATION_EMAIL_KEY;
-        final String amountKey
-            = LanternControllerConstants.DONATION_AMOUNT_KEY;
+        final String idKey = LanternControllerConstants.ID_KEY;
+        final String emailKey = LanternControllerConstants.EMAIL_KEY;
+        final String amountKey = LanternControllerConstants.AMOUNT_KEY;
         final Objectify ofy = ObjectifyService.beginTransaction();
         final Queue tq = QueueFactory.getDefaultQueue();
         try {

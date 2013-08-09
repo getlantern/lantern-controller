@@ -56,6 +56,14 @@
     <url-pattern>/mock_rally</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>sendToken</servlet-name>
+    <servlet-class>org.lantern.SendToken</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>sendToken</servlet-name>
+    <url-pattern>/send_token</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>

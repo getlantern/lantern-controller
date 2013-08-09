@@ -62,10 +62,10 @@ public class MockRally extends HttpServlet {
     @Override
     public void doGet(final HttpServletRequest request,
                       final HttpServletResponse response) {
-        final String idKey = LanternControllerConstants.DONATION_ID_KEY;
-        final String emailKey = LanternControllerConstants.DONATION_EMAIL_KEY;
+        final String idKey = LanternControllerConstants.ID_KEY;
+        final String emailKey = LanternControllerConstants.EMAIL_KEY;
         final String amountKey
-            = LanternControllerConstants.DONATION_AMOUNT_KEY;
+            = LanternControllerConstants.AMOUNT_KEY;
         String start_date = request.getParameter("start_date");
         if (start_date == null) {
             start_date = "1970-01-01";

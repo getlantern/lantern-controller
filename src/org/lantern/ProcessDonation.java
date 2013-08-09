@@ -30,11 +30,11 @@ public class ProcessDonation extends HttpServlet {
     public void doPost(final HttpServletRequest request,
                        final HttpServletResponse response) {
         final String id = request.getParameter(
-                LanternControllerConstants.DONATION_ID_KEY);
+                LanternControllerConstants.ID_KEY);
         final String email = request.getParameter(
-                LanternControllerConstants.DONATION_EMAIL_KEY);
+                LanternControllerConstants.EMAIL_KEY);
         final int amount = Integer.parseInt(request.getParameter(
-                    LanternControllerConstants.DONATION_AMOUNT_KEY));
+                    LanternControllerConstants.AMOUNT_KEY));
         log.info("Processing " + amount + "-cent donation " + id
                  + " from " + email);
         Dao dao = new Dao();
