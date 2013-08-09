@@ -19,6 +19,13 @@ public class ProcessDonation extends HttpServlet {
     // In US dollar cents.
     private static int LAUNCH_UPFRONT_COST = 2000;
 
+    //XXX: For testing; disable when deploying to the real controller!
+    /*@Override
+    public void doGet(final HttpServletRequest request,
+                      final HttpServletResponse response) {
+        doPost(request, response);
+    }*/
+
     @Override
     public void doPost(final HttpServletRequest request,
                        final HttpServletResponse response) {
@@ -37,7 +44,7 @@ public class ProcessDonation extends HttpServlet {
             LanternUser user = dao.getUser(email);
             if (user == null) {
                 if (dao.getUser("lanterndonors@gmail.com") == null) {
-                    dao.createUser("lanternuser@gmail.com",
+                    dao.createUser("adamfisk@gmail.com",
                                    "lanterndonors@gmail.com");
                 }
                 dao.createUser("lanterndonors@gmail.com", email);

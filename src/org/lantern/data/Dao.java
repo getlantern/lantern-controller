@@ -424,24 +424,28 @@ public class Dao extends DAOBase {
         // get the inviter outside the loop because we don't care
         // about concurrent modifications
         final Objectify ofy = ofy();
-        final LanternUser inviter = ofy.find(LanternUser.class, sponsorEmail);
+        final LanternUser sponsor = ofy.find(LanternUser.class, sponsorEmail);
+        if (sponsor == null) {
+            throw new RuntimeException("Bogus sponsor.");
+        }
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
 
-                LanternUser invitee = ofy.find(LanternUser.class, newUserEmail);
-                if (invitee == null) {
+                LanternUser newUser =
+                    ofy.find(LanternUser.class, newUserEmail);
+                if (newUser == null) {
                     log.info("Adding new user to database");
-                    invitee = new LanternUser(newUserEmail);
+                    newUser = new LanternUser(newUserEmail);
 
-                    invitee.setDegree(inviter.getDegree() + 1);
+                    newUser.setDegree(newUser.getDegree() + 1);
                     if (getUserCount() < LanternControllerConstants.MAX_USERS
-                            && invitee.getInvites() < 2) {
-                        invitee.setInvites(getDefaultInvites());
+                            && newUser.getInvites() < 2) {
+                        newUser.setInvites(getDefaultInvites());
                     }
-                    invitee.setSponsor(inviter.getId());
-                    ofy.put(invitee);
+                    newUser.setSponsor(sponsor.getId());
+                    ofy.put(newUser);
                 } else {
                     log.info("User exists, nothing to do here.");
                     return true;
