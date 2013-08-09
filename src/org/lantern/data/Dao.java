@@ -755,14 +755,20 @@ public class Dao extends DAOBase {
         return counters;
     }
 
-    public String getAndSetInstallerLocation(final String email) {
+    /**
+     * If the installerLocation of this user is null, set it to the given one.
+     *
+     * @return the old installerLocation.
+     */
+    public String getAndSetInstallerLocation(final String userId,
+                                             final String installerLocation) {
         RetryingTransaction<String> txn = new RetryingTransaction<String>() {
             @Override
             public String run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, email);
+                LanternUser user = ofy.find(LanternUser.class, userId);
                 String old = user.getInstallerLocation();
                 if (old == null) {
-                    user.setInstallerLocation(InvitedServerLauncher.PENDING);
+                    user.setInstallerLocation(installerLocation);
                     ofy.put(user);
                 }
                 ofy.getTxn().commit();
@@ -772,8 +778,8 @@ public class Dao extends DAOBase {
 
         String old = txn.run();
         if (txn.failed()) {
-            // XXX: is really returning our best guess better than failing?
-            log.warning("Gave up because of too much contention!");
+            throw new RuntimeException(
+                    "Transaction failed trying to get+set location.");
         }
         return old;
     }

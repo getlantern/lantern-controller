@@ -41,16 +41,16 @@ public class ProcessDonation extends HttpServlet {
         int newBalance = dao.addCredit(email, amount);
         log.info(email + " has " + newBalance + " cents now.");
         if (newBalance >= LAUNCH_UPFRONT_COST) {
-            LanternUser user = dao.getUser(email);
-            if (user == null) {
+            if (dao.getUser(email) == null) {
                 if (dao.getUser("lanterndonors@gmail.com") == null) {
                     dao.createUser("adamfisk@gmail.com",
                                    "lanterndonors@gmail.com");
                 }
                 dao.createUser("lanterndonors@gmail.com", email);
-                user = dao.getUser(email);
             }
-            if (user.getInstallerLocation() == null) {
+            if (dao.getAndSetInstallerLocation(
+                        email, LanternControllerConstants.FPS_PENDING_START)
+                 == null) {
                 log.info("Launching server for " + email);
                 // DRY warning: lantern_aws/salt/cloudmaster/cloudmaster.py
                 InvitedServerLauncher.orderServerLaunch(email,

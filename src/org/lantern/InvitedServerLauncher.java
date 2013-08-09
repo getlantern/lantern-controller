@@ -36,7 +36,8 @@ public class InvitedServerLauncher {
             return;
         }
 
-        String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
+        String installerLocation =
+            dao.getAndSetInstallerLocation(inviterEmail, PENDING);
         if (installerLocation == null && refreshToken == null) {
             // Inviter is running an old client.
             sendInviteEmail(inviterName, inviterEmail, invitedEmail,
