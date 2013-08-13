@@ -58,7 +58,7 @@ public class AdminServlet extends HttpServlet {
         try {
             mac = Mac.getInstance("HmacSHA256");
             mac.init(keySpec);
-            byte[] result = mac.doFinal(user.getFederatedIdentity().getBytes());
+            byte[] result = mac.doFinal(user.getEmail().getBytes());
 
             return Base64.encodeBase64String(result);
         } catch (NoSuchAlgorithmException e) {
