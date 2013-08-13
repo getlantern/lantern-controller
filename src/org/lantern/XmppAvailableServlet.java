@@ -94,7 +94,7 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
-        handleFriendsSync(doc, from, xmpp);
+        handleFriendsSync(doc, presence.getFromJid(), xmpp);
 
         if (!presence.isAvailable()) {
             log.info(userId + "/" + instanceId + " logging out.");
@@ -135,7 +135,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.signedIn(from, language);
     }
 
-    private boolean handleFriendsSync(Document doc, String fromJid, XMPPService xmpp) {
+    private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
         //handle friends sync
         final String friendsJson =
                 LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
@@ -143,7 +143,7 @@ public class XmppAvailableServlet extends HttpServlet {
         log.info("Handling friend sync");
         Dao dao = new Dao();
 
-        String userId = LanternXmppUtils.jidToUserId(fromJid);
+        String userId = fromJid.getId();
 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());
@@ -175,7 +175,7 @@ public class XmppAvailableServlet extends HttpServlet {
             String json = JsonUtils.jsonify(response);
 
             Message msg = new MessageBuilder()
-                    .withRecipientJids(new JID(fromJid)).withBody(json)
+                    .withRecipientJids(fromJid).withBody(json)
                     .withMessageType(MessageType.HEADLINE).build();
             log.info("Sending response:\n" + json.toString());
             xmpp.sendMessage(msg);
