@@ -67,6 +67,8 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
+        checkForUpdates(doc, presence.getFromJid());
+
         final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);
 
@@ -133,6 +135,75 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(from, language);
+    }
+
+    private void checkForUpdates(Document doc, JID jid) {
+        XMPPService xmpp = XMPPServiceFactory.getXMPPService();
+
+        final String version =
+                LanternControllerUtils.getProperty(doc,
+                        LanternConstants.VERSION_KEY);
+        if (StringUtils.isBlank(version)) {
+            log.info("Client version is empty");
+            return;
+        }
+        VersionNumber clientVersion = new VersionNumber(version);
+        log.info("Client version is " + clientVersion);
+
+        Dao dao = new Dao();
+        VersionNumber serverVersion = dao.getLatestClientVersion();
+        if (serverVersion == null) {
+            log.warning("Please set the clientVersion setting");
+            return;
+        }
+        if (serverVersion.compareTo(clientVersion) > 0) {
+            //server version is newer
+            Map<String, Object> update = new HashMap<String, Object>();
+            update.put(LanternConstants.UPDATE_VERSION_KEY,
+                    serverVersion.toString());
+
+            final String os = LanternControllerUtils.getProperty(doc, "os");
+            final String arch = LanternControllerUtils.getProperty(doc, "ar");
+            if (StringUtils.isBlank(os) || StringUtils.isBlank(arch)) {
+                log.warning("Client did not send OS or arch");
+                return;
+            }
+            String jarUrl = getJarUrl(os, arch);
+            if (jarUrl == null) {
+                log.warning("Unknown os/arch" + os + ", " + arch);
+                return;
+            }
+            update.put(LanternConstants.UPDATE_URL_KEY, jarUrl);
+
+            Map<String, Object> response = new HashMap<String, Object>();
+            response.put(LanternConstants.UPDATE_KEY, update);
+            String json = JsonUtils.jsonify(response);
+
+            Message msg = new MessageBuilder()
+                    .withRecipientJids(jid).withBody(json)
+                    .withMessageType(MessageType.HEADLINE).build();
+            log.info("Sending response:\n" + json.toString());
+            xmpp.sendMessage(msg);
+        }
+    }
+
+    private String getJarUrl(final String os, final String arch) {
+        String jarUrl;
+        if (os.contains("OS X")) {
+            jarUrl = "https://s3.amazonaws.com/lantern/latest.dmg.jar";
+        } else if (os.contains("Windows")) {
+            jarUrl = "https://s3.amazonaws.com/lantern/latest.exe.jar";
+        } else if (os.contains("Linux")) {
+            if (arch.contains("64")) {
+                jarUrl = "https://s3.amazonaws.com/lantern/latest-64.deb.jar";
+            } else {
+                jarUrl = "https://s3.amazonaws.com/lantern/latest-32.deb.jar";
+            }
+        } else {
+            log.warning("Client OS unknown: " + os);
+            return null;
+        }
+        return jarUrl;
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
@@ -220,8 +291,6 @@ public class XmppAvailableServlet extends HttpServlet {
         responseJson.put(LanternConstants.FAILED_INVITES_KEY, failedInvites);
         sendResponse(presence, xmpp, responseJson);
     }
-
-    private final class AlreadyInvitedException extends Exception {}
 
     private void queueInvite(XMPPService xmpp, final Presence presence, final Document doc,
             final String invitedEmail) {
