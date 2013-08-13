@@ -64,6 +64,7 @@ public class SettingsManager {
     public void set(final String name, final String value) {
         loadSettings();
         settings.set(name, value);
+        cache.put("settings", settings);
 
         DatastoreService datastore =
                 DatastoreServiceFactory.getDatastoreService();
