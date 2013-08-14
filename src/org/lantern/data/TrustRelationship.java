@@ -82,7 +82,16 @@ public class TrustRelationship implements Serializable {
     }
 
     public boolean isNewerThan(Friend friend) {
-        return lastUpdated > friend.getLastUpdated();
+        // this is actually a bit complicated. We want "friend" or "rejected"
+        // to override "pending", because "pending" friends are only
+        // automatically generated, while "friend" or "rejected" requires
+        // user action.
+        if ((status == Status.pending) == (friend.getStatus() == Status.pending)) {
+            //both are pending or neither are
+            return lastUpdated > friend.getLastUpdated();
+        }
+
+        return friend.getStatus() == Status.pending;
     }
 
     public String getId() {
