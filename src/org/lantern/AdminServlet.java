@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -197,5 +198,23 @@ public class AdminServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
         log.info("Done");
+    }
+
+    public static Map<String, String> getAllSettings() {
+        Dao dao = new Dao();
+        return dao.getAllSettings();
+    }
+
+    public void setSetting(final HttpServletRequest request,
+            final HttpServletResponse response, String[] pathComponents) {
+        String name = request.getParameter("name");
+        String value = request.getParameter("value");
+        Dao dao = new Dao();
+        dao.setSetting(name, value);
+        try {
+            response.sendRedirect("/admin/index.jsp");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

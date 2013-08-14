@@ -16,6 +16,7 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
+import org.lantern.VersionNumber;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.state.Friend;
@@ -1115,5 +1116,21 @@ public class Dao extends DAOBase {
             }
         }
         return user;
+    }
+
+    public VersionNumber getLatestClientVersion() {
+        String clientVersion = settingsManager.get("clientVersion");
+        if (StringUtils.isBlank(clientVersion)) {
+            return null;
+        }
+        return new VersionNumber(clientVersion);
+    }
+
+    public Map<String, String> getAllSettings() {
+        return settingsManager.getAllSettings();
+    }
+
+    public void setSetting(String name, String value) {
+        settingsManager.set(name, value);
     }
 }
