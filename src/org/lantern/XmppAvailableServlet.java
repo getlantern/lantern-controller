@@ -215,7 +215,7 @@ public class XmppAvailableServlet extends HttpServlet {
         log.info("Handling friend sync");
         Dao dao = new Dao();
 
-        String userId = fromJid.getId();
+        String userId = LanternXmppUtils.jidToUserId(fromJid.getId());
 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());

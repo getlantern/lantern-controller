@@ -948,7 +948,6 @@ public class Dao extends DAOBase {
                 Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                         userId);
                 Collection<Friend> clientFriendList = clientFriends.getFriends();
-                @SuppressWarnings("unchecked")
 
                 Query<TrustRelationship> relationships = ofy.query(TrustRelationship.class).ancestor(
                         parentKey);
