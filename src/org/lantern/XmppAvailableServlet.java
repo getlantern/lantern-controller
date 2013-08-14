@@ -67,8 +67,6 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
-        checkForUpdates(doc, presence.getFromJid());
-
         final String userId = LanternXmppUtils.jidToUserId(from);
         final String instanceId = LanternControllerUtils.instanceId(presence);
 
@@ -96,7 +94,9 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
-        handleFriendsSync(doc, presence.getFromJid(), xmpp);
+        checkForUpdates(doc, presence.getFromJid(), responseJson);
+
+        handleFriendsSync(doc, presence.getFromJid(), responseJson, xmpp);
 
         if (!presence.isAvailable()) {
             log.info(userId + "/" + instanceId + " logging out.");
@@ -137,7 +137,8 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.signedIn(from, language);
     }
 
-    private void checkForUpdates(Document doc, JID jid) {
+    private void checkForUpdates(final Document doc, final JID jid,
+            final Map<String, Object> response) {
         XMPPService xmpp = XMPPServiceFactory.getXMPPService();
 
         final String version =
@@ -175,7 +176,6 @@ public class XmppAvailableServlet extends HttpServlet {
             }
             update.put(LanternConstants.UPDATE_URL_KEY, jarUrl);
 
-            Map<String, Object> response = new HashMap<String, Object>();
             response.put(LanternConstants.UPDATE_KEY, update);
             String json = JsonUtils.jsonify(response);
 
@@ -206,7 +206,8 @@ public class XmppAvailableServlet extends HttpServlet {
         return jarUrl;
     }
 
-    private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
+    private boolean handleFriendsSync(final Document doc, final JID fromJid,
+            final Map<String, Object> response, final XMPPService xmpp) {
         //handle friends sync
         final String friendsJson =
                 LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
@@ -233,7 +234,6 @@ public class XmppAvailableServlet extends HttpServlet {
             return true;
         }
 
-
         Friends clientFriends = safeMap(friendsJson, mapper, Friends.class);
 
         log.info("Synced friends count = " + clientFriends.getFriends().size());
@@ -241,7 +241,6 @@ public class XmppAvailableServlet extends HttpServlet {
         List<Friend> changed = dao.syncFriends(userId, clientFriends);
         log.info("Changed friends count = " + changed.size());
         if (changed.size() > 0) {
-            Map<String, Object> response = new HashMap<String, Object>();
             response.put(LanternConstants.FRIENDS, changed);
             String json = JsonUtils.jsonify(response);
 
