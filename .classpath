@@ -22,5 +22,6 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/aws-sdk-for-java-on-gae-1.1.9.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/lantern-common-0.0.5.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-io-2.4.jar" sourcepath="/war/WEB-INF/lib/commons-io-2.4-sources.tar.gz"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
