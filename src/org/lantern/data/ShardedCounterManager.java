@@ -184,6 +184,7 @@ public class ShardedCounterManager {
         loadGroup();
         DatastoreCounter counter = group.getCounter(counterName);
         if (counter == null) {
+            counter = new DatastoreCounter(counterName);
             group.addCounter(counter);
             return 0;
         } else {

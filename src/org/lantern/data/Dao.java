@@ -24,6 +24,7 @@ import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
@@ -307,7 +308,58 @@ public class Dao extends DAOBase {
         return alreadyInvitedBy(ofy, sponsor, guest);
     }
 
+    /**
+     * Deletes the friend of the specified user.
+     * 
+     * @param user The email address of the user.
+     * @param friend The email address of the friend of that user.
+     */
+    public void deleteFriend(final String user, final String friend) {
+        final LanternUser lu = getUser(user);
+        final QueryResultIterable<TrustRelationship> children = 
+                getChildren(lu, TrustRelationship.class);
+        
+        for (final TrustRelationship tr : children) {
+            if (tr.getId().equals(friend)) {
+                System.out.println("Found friend: "+tr.getId());
+                final Objectify ofy = ofy();
+                ofy.delete(tr);
+                break;
+            }
+        }
+    }
 
+    /**
+     * Lists the friends of the specified user.
+     * 
+     * @param user The email address of the user to list friends for.
+     * @return The email addresses of those friends.
+     */
+    public Collection<String> listFriends(final String user) {
+        final LanternUser lu = getUser(user);
+        final QueryResultIterable<TrustRelationship> children = 
+            getChildren(lu, TrustRelationship.class);
+        
+        final Collection<String> friends = new ArrayList<String>();
+        for (final TrustRelationship tr : children) {
+            friends.add(tr.getId());
+        }
+        return friends;
+    }
+    
+    /**
+     * Utility method to get the children of a given ancestor.
+     * 
+     * @param parent The parent object.
+     * @param clazz The class of the children.
+     * @return The iterable query results.
+     */
+    private <T, V> QueryResultIterable<T> getChildren(final V parent, 
+        final Class<T> clazz) {
+        final Objectify ofy = ofy();
+        return ofy.query(clazz).ancestor(ofy.getFactory().getKey(parent)).fetch();
+    }
+    
     /**
      * Returns true if the invite was added, false if it wasn't (because it
      * already existed, for instance)

@@ -1,9 +1,11 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -44,7 +47,7 @@ public class MandrillEmailer {
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
-    public static void sendInvite(final String inviterName, 
+    public static void sendInvite(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
         final String linuxInstallerUrl)
@@ -59,7 +62,7 @@ public class MandrillEmailer {
                 osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
         sendEmail(json);
     }
-    
+
     /**
      * Send an e-mail requesting a sponsor to log in to activate their proxy.
      *
@@ -129,14 +132,18 @@ public class MandrillEmailer {
             final String bcc,
             final List<Map<String, String>> mergeVars) throws IOException {
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("key", LanternControllerConstants.getMandrillApiKey());
         data.put("template_name", template);
         data.put("template_content", new String[]{});
-     
         final Map<String, Object> msg = new HashMap<String, Object>();
         msg.put("subject", subject);
         msg.put("from_email", from);
         msg.put("from_name", LanternControllerConstants.EMAIL_FROM_NAME);
+        String mandrillApiKey = LanternControllerConstants.getMandrillApiKey();
+        if (mandrillApiKey == null || mandrillApiKey.equals("secret")) {
+            throw new RuntimeException("Please correct your secrets file to include the Mandrill API key");
+        }
+        data.put("key", mandrillApiKey);
+
         final Map<String, String> to = new HashMap<String, String>();
         to.put("email", email);
         msg.put("to", Arrays.asList(to));
@@ -146,8 +153,15 @@ public class MandrillEmailer {
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
         msg.put("bcc_address", bcc);
-        data.put("message", msg);
+
+        String body = getTemplate(template);
+        if (body == null) {
+            throw new RuntimeException("Could not find template invite-notification");
+        }
+
+        msg.put("html", body);
         msg.put("global_merge_vars", mergeVars);
+        data.put("message", msg);
         try {
             return new ObjectMapper().writeValueAsString(data);
         } catch (final JsonGenerationException e) {
@@ -161,7 +175,7 @@ public class MandrillEmailer {
 
     /**
      * Creates JSON compatible with the Mandrill API. Public for testing.
-     * See https://mandrillapp.com/api/docs/messages.html#method=send-template
+     * See https://mandrillapp.com/api/docs/messages.html#method=send
      *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
@@ -200,10 +214,27 @@ public class MandrillEmailer {
     }
 
 
+    private static String getTemplate(String name) {
+        String filename = name + ".html";
+        InputStream stream = MandrillEmailer.class
+                .getResourceAsStream(filename);
+        if (stream == null) {
+            throw new RuntimeException("No such template " + name);
+        }
+        String result = null;
+        try {
+            result = IOUtils.toString(stream, Charset.forName("UTF-8"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+
+    }
+
     public static void sendEmail(final String payload) {
         final URL url;
         try {
-            url = new URL(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
+            url = new URL(LanternControllerConstants.MANDRILL_API_SEND_URL);
         } catch (final MalformedURLException e) {
             log.warning("Malformed: " + ThreadUtils.dumpStack());
             return;
