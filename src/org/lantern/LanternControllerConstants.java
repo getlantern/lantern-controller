@@ -80,6 +80,17 @@ public class LanternControllerConstants {
     // as an anonymous proxy.)
     public static final String FPS_PENDING_COMPLETION = "(pending-completion)";
 
+    /**
+     * Estimate of average cost to run a proxy for a month, in US dollar cents.
+     */
+    private static final int PROXY_MONTHLY_COST = 1500;
+
+    /**
+     * Amount we plan to spend in supporting proxies, in US dollar cents.
+     */
+    private static final int PROXY_MONTHLY_BUDGET = 50000;
+
+
     public static String getMandrillApiKey() {
         return mandrillApiKey;
     }

@@ -64,6 +64,38 @@
     <url-pattern>/send_token</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>chargeForProxies</servlet-name>
+    <servlet-class>org.lantern.ChargeForProxies</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>chargeForProxies</servlet-name>
+    <url-pattern>/charge_for_proxies</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>sendCreditWarning</servlet-name>
+    <servlet-class>org.lantern.SendCreditWarning</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>sendCreditWarning</servlet-name>
+    <url-pattern>/send_credit_warning</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>chargeProxy</servlet-name>
+    <servlet-class>org.lantern.ChargeProxy</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>chargeProxy</servlet-name>
+    <url-pattern>/charge_proxy</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>shutdownProxy</servlet-name>
+    <servlet-class>org.lantern.ShutdownProxy</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>shutdownProxy</servlet-name>
+    <url-pattern>/shutdown_proxy</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>

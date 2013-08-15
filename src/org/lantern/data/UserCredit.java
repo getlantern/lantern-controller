@@ -48,6 +48,30 @@ public class UserCredit implements Serializable {
     private int balance = 0;
 
     /**
+     * Are we running a proxy sponsored by this user?
+     *
+     * We use this to know whether we should charge the user's account.
+     *
+     * We can't just use LanternUser.getInstallerLocation() because some users
+     * got their proxies through the invite system.
+     *
+     * We count a proxy as running as soon as we have ordered its launch,
+     * because that's pretty much when we start paying for it ourselves.
+     */
+    // We could encode this info into `runningProxySince` but this is simpler
+    // to index and query for in the Datastore.
+    private boolean isProxyRunning = false;
+
+    /**
+     * Since when has the proxy for this user been running.
+     *
+     * In milliseconds since the UNIX epoch.
+     *
+     * Not to unduly charge the full first billing period.
+     */
+    private long proxyRunningSince;
+
+    /**
      * How many months has this user funded their server, in total.
      *
      * In addition to being interesting on its own, this helps maintain
@@ -58,6 +82,15 @@ public class UserCredit implements Serializable {
     // Auxiliary stats for use in getAverageStreak.
     private boolean isLastMonthFunded = false;
     private int numStreaks = 0;
+
+    /**
+     * When deciding which unfunded proxies to prune, we keep the ones with
+     * the highest value in this field.
+     *
+     * This is derived from other fields, but we still save it so it can be
+     * used as an order in a Datastore query.
+     */
+    private float creditScore = 0.0;
 
     public UserCredit() {
         super();
@@ -72,8 +105,6 @@ public class UserCredit implements Serializable {
      * How many consecutive months does this user keep paying for their server,
      * on average.
      *
-     * Not including the current streak.
-     *
      * This encourages continuity of service.  A user that funds their server
      * for six months in a row provides a better experience to their invitees
      * than one that does so for six alternate months in a year.
@@ -82,36 +113,36 @@ public class UserCredit implements Serializable {
      * servers where otherwise they could expect us to pick them up.
      */
     public float getAverageStreak() {
-        if (numStreaks == 0) {
-            return 0;
-        } else {
-            return fundedMonths / numStreaks;
-        }
+        return fundedMonths / (numStreaks + fundedLastMonth ? 1 : 0);
     }
 
     /**
-     * Only call once a month.
+     * Used to determine which proxies we keep up.
+     *
+     * We reserve the right to change this anytime.
      */
-    //XXX: move to wherever we have the transaction.
-   /* public boolean payMonth(int cost) {
-        boolean paid = (balance > cost);
-        if (paid) {
-            balance -= paid;
-        }
-        if (funded) {
+    public void updateCreditScore() {
+        creditScore = getAverageStreak() * 10 + fundedMonths;
+    }
+
+    /**
+     * Call once per 'billing period'.
+     */
+    public void pay(int cost) {
+        balance -= cost;
+        boolean enough = (balance >= 0);
+        if (enough) {
             monthsFunded++;
         }
-        if (funded && !fundedLastMonth) {
+        if (enough && !fundedLastMonth) {
             numStreaks++;
         }
-        fundedLastMonth = funded;
-        funded = false;
-        return paid;
+        isLastMonthFunded = enough;
     }
 
     public void addBalance(int cents) {
         balance += cents;
-    }*/
+    }
 
     // Only dumb boilerplate getters and setters below...
 
@@ -129,6 +160,30 @@ public class UserCredit implements Serializable {
 
     public void setBalance(int balance) {
         this.balance = balance;
+    }
+
+    public boolean getIsProxyRunning() {
+        return isProxyRunning;
+    }
+
+    public void setIsProxyRunning(boolean isProxyRunning) {
+        this.isProxyRunning = isProxyRunning;
+    }
+
+    public long getProxyRunningSince() {
+        return proxyRunningSince;
+    }
+
+    public void setProxyRunningSince(long proxyRunningSince) {
+        this.proxyRunningSince = proxyRunningSince;
+    }
+
+    public float getCreditScore() {
+        return creditScore;
+    }
+
+    public void setCreditScore(float creditScore) {
+        this.creditScore = creditScore;
     }
 
     public int getFundedMonths() {

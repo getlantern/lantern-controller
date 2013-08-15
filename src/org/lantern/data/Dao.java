@@ -1243,4 +1243,59 @@ public class Dao extends DAOBase {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Get UserCredit instances with a proxy running.
+     */
+    public Iterable<UserCredit> getRunningProxies() {
+        return ofy.query(UserCredit.class).filter("isProxyRunning=", true);
+    }
+
+    /**
+     * Get UserCredit instances with a proxy running and balance less than
+     * `minBalance`.
+     *
+     * We don't need to make a special case for the first month because we ask
+     * users to fund at least a month up front before we start a proxy for
+     * them.
+     */
+    public Iterable<UserCredit> getLowBalanceProxies(int minBalance) {
+        return ofy.query(UserCredit.class).filter("isProxyRunning=", true)
+                                          .filter("balance<", minBalance);
+    }
+
+    /**
+     * Get UserCredit instances with a proxy running and balance less than
+     * `minBalance`.
+     *
+     * Return only entries after `offset`, in decreasing `creditScore` order.
+     */
+    public Iterable<UserCredit> getOverdueProxies(int offset) {
+        return ofy.query(UserCredit.class).filter("isProxyRunning=", true)
+                                          .filter("balance<", 0)
+                                          .order("-creditScore")
+                                          .offset(offset);
+    }
+
+    public void chargeProxy(final String userId, final int amountCents) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    return null;
+                }
+                uc.pay(amountCents);
+                if (uc.getBalance() < 0) {
+                    uc.updateCreditScore();
+                }
+                ofy.put(uc);
+                ofy.getTxn().commit();
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to charge proxy.");
+        }
+    }
 }
