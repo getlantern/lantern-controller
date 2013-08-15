@@ -28,7 +28,13 @@ if raw_input("Shall I bump version? (y/N)") in 'yY':
                     1,
                     re.MULTILINE)
     file(filename, 'w').write(bumped)
+    print "OK, version bumped."
+    print
+    print "Note that this may cause the csrf-secret.properties file to be deleted"
+    print "on deploy.  You can check this in the logs of the new version, before"
+    print "you make it current.  If you see errors there, rerun this script"
+    print "without bumping and all should be fine."
 else:
-    print "OK, left version alone."
+    print "OK, version left alone."
 
 print "Ready to deploy!"
