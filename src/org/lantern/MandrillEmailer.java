@@ -32,15 +32,15 @@ import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
  */
 public class MandrillEmailer {
 
-    private static final transient Logger log = 
+    private static final transient Logger log =
         Logger.getLogger(MandrillEmailer.class.getName());
-    
+
     /**
      * Sends a Lantern invite e-mail using the Mandrill API.
-     * 
+     *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite. 
+     * @param invitedEmail The email of the person to invite.
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
@@ -62,14 +62,14 @@ public class MandrillEmailer {
                 osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
         sendEmail(json);
     }
-    
+
     /**
      * Creates JSON compatible with the Mandrill API. Public for testing.
      * See https://mandrillapp.com/api/docs/messages.html#method=send
      *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite. 
+     * @param invitedEmail The email of the person to invite.
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
@@ -124,12 +124,12 @@ public class MandrillEmailer {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
 
-        mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
-        mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));
-        mergeVars.add(mergeVar("LINUXINSTALLERURL", linuxInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_DMG", osxInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_EXE", winInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_DEB", linuxInstallerUrl));
 
         msg.put("global_merge_vars", mergeVars);
-        
+
         data.put("message", msg);
         try {
             return mapper.writeValueAsString(data);
@@ -172,7 +172,7 @@ public class MandrillEmailer {
         final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults().
             followRedirects().validateCertificate().setDeadline(60d);
         log.info("Sending payload:\n"+payload);
-        final HTTPRequest request = 
+        final HTTPRequest request =
             new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
             //new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
         try {
@@ -181,10 +181,10 @@ public class MandrillEmailer {
             log.warning("Encoding? "+ThreadUtils.dumpStack());
             return;
         }
-        
-        final URLFetchService fetcher = 
+
+        final URLFetchService fetcher =
                 URLFetchServiceFactory.getURLFetchService();
-        
+
         try {
             final HTTPResponse response = fetcher.fetch(request);
             final int responseCode = response.getResponseCode();
