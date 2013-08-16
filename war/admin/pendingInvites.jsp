@@ -31,12 +31,17 @@
 <%
 	//this is the cursor used to request this page
 	String cursor = request.getParameter("cursor");
+
 	pageContext.setAttribute("cursor", cursor);
     Dao dao = new Dao();
 	PendingInvites pendingInvites = dao.getPendingInvites(cursor);
 	pageContext.setAttribute("pendingInvites", pendingInvites);
 	for (Invite invite : pendingInvites.getInvites()) {
 	    LanternUser inviter = dao.getUser(invite.getInviter());
+	    if (inviter == null) {
+	        //this is an impossible invite.  We will ignore it.
+	        continue;
+	    }
 	    LanternUser invitee = dao.getUser(invite.getInvitee());
 	    pageContext.setAttribute("inviter", inviter);
 	    pageContext.setAttribute("invitee_email", invite.getInvitee());
