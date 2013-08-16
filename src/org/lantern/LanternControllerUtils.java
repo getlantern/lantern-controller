@@ -143,13 +143,14 @@ public class LanternControllerUtils {
     }
 
     public static String userId(final Message message) {
-        return LanternXmppUtils.jidToUserId(message.getFromJid().getId());
+        return LanternXmppUtils.jidToUserId(message.getFromJid().getId()).toLowerCase();
     }
 
     public static String userId(final Presence presence) {
-        return LanternXmppUtils.jidToUserId(presence.getFromJid().getId());
+        return LanternXmppUtils.jidToUserId(presence.getFromJid().getId()).toLowerCase();
     }
 
+    @Deprecated
     public static String instanceId(final Message message) {
         return LanternXmppUtils.jidToInstanceId(message.getFromJid().getId());
     }
