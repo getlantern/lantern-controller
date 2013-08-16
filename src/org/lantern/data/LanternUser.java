@@ -167,6 +167,10 @@ public class LanternUser implements Serializable {
     }
 
     public boolean countrySeen(String countryCode) {
+        if (countryCodes == null) {
+            countryCodes = countryCode + ".";
+            return false;
+        }
         if (countryCodes.contains(countryCode + ".")) {
             return true;
         } else {
@@ -177,9 +181,11 @@ public class LanternUser implements Serializable {
 
     public Set<String> getCountryCodes() {
         Set<String> out = new HashSet<String>();
-        for (String code : countryCodes.split("\\.")) {
-            if (code.length() == 2) {
-                out.add(code);
+        if (countryCodes != null) {
+            for (String code : countryCodes.split("\\.")) {
+                if (code.length() == 2) {
+                    out.add(code);
+                }
             }
         }
         return out;
