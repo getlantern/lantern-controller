@@ -87,7 +87,8 @@ public class ChargeForProxies extends HttpServlet {
         Queue q = QueueFactory.getDefaultQueue();
         // We only fetch the ones after MAX_SUBSIDIZED_PROXIES because
         // collecting payments left the others in the right state.
-        Iterable<UserCredit> overdue = dao.getOverdueProxies(MAX_SUBSIDIZED_PROXIES);
+        Iterable<UserCredit> overdue
+                = dao.getOverdueProxies(MAX_SUBSIDIZED_PROXIES);
         for (UserCredit c : overdue) {
             // Do the actual shutdown in a task queue, to make sure we don't
             // time out.

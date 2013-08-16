@@ -1396,4 +1396,57 @@ public class Dao extends DAOBase {
                     "Too much contention trying to update UserCredit.");
         }
     }
+
+    /**
+     * @return true iff we should abort shutdown because the user's balance has
+     * become positive.
+     */
+    public boolean recordProxyShutdown(final String userId) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    throw new RuntimeException("No UserCredit to update");
+                }
+                if (uc.getBalance() >= 0) {
+                    return true;
+                }
+                if (uc.getIsProxyRunning()) {
+                    log.info("Setting isProxyRunning to false.");
+                    // We have tentatively charged a user for a month.  If we
+                    // are shutting down their proxy we need to roll back that
+                    // payment.
+                    //
+                    // We know we charged a full month, since users can't
+                    // default on their first month.
+                    uc.addBalance(
+                            LanternControllerConstants.PROXY_MONTHLY_COST);
+                    uc.setIsProxyRunning(false);
+                    ofy.put(uc);
+                } else {
+                    log.warning("isProxyRunning was already false?");
+                }
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user == null) {
+                    throw new RuntimeException("No LanternUser to update");
+                }
+                if (user.getInstallerLocation() == null) {
+                    log.warning(userId + "'s installerLocation was null?");
+                } else {
+                    log.info("Clearing " + userId + "'s installerLocation.");
+                    user.setInstallerLocation(null);
+                    ofy.put(user);
+                }
+                ofy.getTxn().commit();
+                return false;
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to record proxy shutdown.");
+        }
+        //XXX: do something about orphaned invitees!
+        return result;
+    }
 }

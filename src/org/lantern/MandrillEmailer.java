@@ -139,6 +139,19 @@ public class MandrillEmailer {
                       mv));
     }
 
+    public static void sendProxyShutdown(final String email)
+            throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        addMergeVar(mv, "RALLY_PAGE", LanternControllerConstants.RALLY_PAGE);
+        addMergeVar(mv, "EMAIL", email);
+        sendEmail(mandrillSendEmailJson(
+                      email,
+                      "proxy-shutdown",
+                      "Lantern server shut down",
+                      mv));
+    }
+
     private static String formatCents(int centsAmount) {
         int dollars = (int) centsAmount / 100;
         int cents = centsAmount % 100;
