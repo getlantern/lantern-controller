@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
-import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternConstants;
 import org.lantern.LanternControllerConstants;
@@ -29,7 +28,6 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
-import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
@@ -961,10 +959,6 @@ public class Dao extends DAOBase {
         return leastUsed.getId();
     }
 
-    private boolean emailsMatch(final String one, final String other) {
-        return one.trim().equalsIgnoreCase(other.trim());
-    }
-
     public int getUserCount() {
         Objectify ofy = ofy();
         return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
@@ -1251,7 +1245,6 @@ public class Dao extends DAOBase {
                 try {
                     LanternUser user = ofy.get(LanternUser.class, userId);
                     boolean hadToken;
-                    String status;
                     if (user.getRefreshToken() == null) {
                         hadToken = false;
                         user.setInstallerLocation(
@@ -1300,7 +1293,7 @@ public class Dao extends DAOBase {
      * Get UserCredit instances with a proxy running.
      */
     public Iterable<UserCredit> getRunningProxies() {
-        return ofy.query(UserCredit.class).filter("isProxyRunning=", true);
+        return ofy().query(UserCredit.class).filter("isProxyRunning=", true);
     }
 
     /**
@@ -1312,7 +1305,7 @@ public class Dao extends DAOBase {
      * them.
      */
     public Iterable<UserCredit> getLowBalanceProxies(int minBalance) {
-        return ofy.query(UserCredit.class).filter("isProxyRunning=", true)
+        return ofy().query(UserCredit.class).filter("isProxyRunning=", true)
                                           .filter("balance<", minBalance);
     }
 
@@ -1323,7 +1316,7 @@ public class Dao extends DAOBase {
      * Return only entries after `offset`, in decreasing `creditScore` order.
      */
     public Iterable<UserCredit> getOverdueProxies(int offset) {
-        return ofy.query(UserCredit.class).filter("isProxyRunning=", true)
+        return ofy().query(UserCredit.class).filter("isProxyRunning=", true)
                                           .filter("balance<", 0)
                                           .order("-creditScore")
                                           .offset(offset);
@@ -1343,11 +1336,16 @@ public class Dao extends DAOBase {
                 }
                 ofy.put(uc);
                 ofy.getTxn().commit();
+                return true;
             }
         }.run();
         if (result == null) {
             throw new RuntimeException(
                     "Too much contention trying to charge proxy.");
         }
+    }
+
+    public UserCredit getUserCredit(final String userId) {
+        return ofy().find(UserCredit.class, userId);
     }
 }

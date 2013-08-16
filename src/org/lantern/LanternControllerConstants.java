@@ -14,29 +14,6 @@ public class LanternControllerConstants {
             = MANDRILL_API_BASE_URL + "messages/send.json";
     static final String EMAIL_FROM_NAME = "Lantern Beta";
 
-    static final String INVITE_EMAIL_TEMPLATE_NAME = "invite-notification";
-    static final String INVITE_EMAIL_SUBJECT = "Lantern Invitation";
-    static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
-    static final String INVITE_EMAIL_BCC_ADDRESS = "invite@getlantern.org";
-
-    static final String TOKEN_REQUEST_EMAIL_TEMPLATE_NAME = "token-request";
-    static final String TOKEN_REQUEST_EMAIL_SUBJECT =
-        "Log in to complete setup";
-    //XXX: perhaps create new emails for these.
-    static final String TOKEN_REQUEST_EMAIL_FROM_ADDRESS =
-        "invite@getlantern.org";
-    static final String TOKEN_REQUEST_EMAIL_BCC_ADDRESS =
-        "invite@getlantern.org";
-
-    static final String PROXY_READY_EMAIL_TEMPLATE_NAME = "proxy-ready";
-    static final String PROXY_READY_EMAIL_SUBJECT =
-        "Your Lantern server is ready";
-    //XXX: perhaps create new emails for these.
-    static final String PROXY_READY_EMAIL_FROM_ADDRESS =
-        "invite@getlantern.org";
-    static final String PROXY_READY_EMAIL_BCC_ADDRESS =
-        "invite@getlantern.org";
-
     private static String mandrillApiKey;
     private static String awsAccessKeyId;
     private static String awsSecretKey;
@@ -85,13 +62,14 @@ public class LanternControllerConstants {
     /**
      * Estimate of average cost to run a proxy for a month, in US dollar cents.
      */
-    private static final int PROXY_MONTHLY_COST = 1500;
+    public static final int PROXY_MONTHLY_COST = 1500;
 
     /**
      * Amount we plan to spend in supporting proxies, in US dollar cents.
      */
-    private static final int PROXY_MONTHLY_BUDGET = 50000;
+    public static final int PROXY_MONTHLY_BUDGET = 50000;
 
+    public static final String RALLY_PAGE = "https://rally.org/lantern-test";
 
     public static String getMandrillApiKey() {
         return mandrillApiKey;

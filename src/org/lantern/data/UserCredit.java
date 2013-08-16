@@ -90,7 +90,7 @@ public class UserCredit implements Serializable {
      * This is derived from other fields, but we still save it so it can be
      * used as an order in a Datastore query.
      */
-    private float creditScore = 0.0;
+    private float creditScore = 0.0f;
 
     public UserCredit() {
         super();
@@ -113,7 +113,7 @@ public class UserCredit implements Serializable {
      * servers where otherwise they could expect us to pick them up.
      */
     public float getAverageStreak() {
-        return fundedMonths / (numStreaks + fundedLastMonth ? 1 : 0);
+        return fundedMonths / (numStreaks + (isLastMonthFunded ? 1 : 0));
     }
 
     /**
@@ -132,9 +132,9 @@ public class UserCredit implements Serializable {
         balance -= cost;
         boolean enough = (balance >= 0);
         if (enough) {
-            monthsFunded++;
+            fundedMonths++;
         }
-        if (enough && !fundedLastMonth) {
+        if (enough && !isLastMonthFunded) {
             numStreaks++;
         }
         isLastMonthFunded = enough;

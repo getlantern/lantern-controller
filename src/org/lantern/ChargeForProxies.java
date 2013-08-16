@@ -1,5 +1,6 @@
 package org.lantern;
 
+import java.util.GregorianCalendar;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -11,7 +12,7 @@ import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 
 import org.lantern.data.Dao;
-import org.lantern.data.LanternUser;
+import org.lantern.data.UserCredit;
 
 
 @SuppressWarnings("serial")
@@ -36,8 +37,8 @@ public class ChargeForProxies extends HttpServlet {
      * How many proxies we can afford with our budget.
      */
     private static final int MAX_SUBSIDIZED_PROXIES
-        = Math.floor(LanternControllerConstants.PROXY_MONTHLY_BUDGET
-                     / LanternControllerConstants.PROXY_MONTHLY_COST);
+        = (int) Math.floor(LanternControllerConstants.PROXY_MONTHLY_BUDGET
+                           / LanternControllerConstants.PROXY_MONTHLY_COST);
 
     @Override
     public void doGet(final HttpServletRequest request,
@@ -61,11 +62,12 @@ public class ChargeForProxies extends HttpServlet {
     private void issueWarnings() {
         Dao dao = new Dao();
         Queue q = QueueFactory.getDefaultQueue();
-        for (UserCredit c : dao.getOverdueProxies(MONTHLY_COST)) {
+        for (UserCredit c : dao.getLowBalanceProxies(
+                    LanternControllerConstants.PROXY_MONTHLY_COST)) {
             // Do the actual sending of messages in a task queue, to make sure
             // we don't time out.
             q.add(TaskOptions.Builder.withUrl("/send_credit_warning")
-                    .param(LanternControllerConstants.EMAIL_KEY, c.userId));
+                    .param(LanternControllerConstants.EMAIL_KEY, c.getUserId()));
         }
     }
 
@@ -76,7 +78,7 @@ public class ChargeForProxies extends HttpServlet {
             // Do the actual update (and, perhaps sending of messages) in a
             // task queue, to make sure we don't time out.
             q.add(TaskOptions.Builder.withUrl("/charge_proxy")
-                    .param(LanternControllerConstants.ID_KEY, c.userId));
+                    .param(LanternControllerConstants.ID_KEY, c.getUserId()));
         }
     }
 
@@ -85,13 +87,12 @@ public class ChargeForProxies extends HttpServlet {
         Queue q = QueueFactory.getDefaultQueue();
         // We only fetch the ones after MAX_SUBSIDIZED_PROXIES because
         // collecting payments left the others in the right state.
-        Iterable<UserCredit> overdue = dao.getOverdueProxies(
-                MONTHLY_COST, MAX_SUBSIDIZED_PROXIES);
+        Iterable<UserCredit> overdue = dao.getOverdueProxies(MAX_SUBSIDIZED_PROXIES);
         for (UserCredit c : overdue) {
             // Do the actual shutdown in a task queue, to make sure we don't
             // time out.
             q.add(TaskOptions.Builder.withUrl("/shutdown_proxy")
-                    .param(LanternControllerConstants.ID_KEY, c.userId));
+                    .param(LanternControllerConstants.ID_KEY, c.getUserId()));
         }
     }
 }
