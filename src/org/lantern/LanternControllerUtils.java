@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import javax.servlet.http.HttpServletResponse;
-
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
@@ -143,20 +142,15 @@ public class LanternControllerUtils {
     }
 
     public static String userId(final Message message) {
-        return LanternXmppUtils.jidToUserId(message.getFromJid().getId()).toLowerCase();
+        return LanternXmppUtils.jidToEmail(message.getFromJid().getId());
     }
 
     public static String userId(final Presence presence) {
-        return LanternXmppUtils.jidToUserId(presence.getFromJid().getId()).toLowerCase();
-    }
-
-    @Deprecated
-    public static String instanceId(final Message message) {
-        return LanternXmppUtils.jidToInstanceId(message.getFromJid().getId());
+        return LanternXmppUtils.jidToEmail(presence.getFromJid().getId());
     }
 
     public static String resourceId(Presence presence) {
-        return LanternXmppUtils.jidToInstanceId(presence.getFromJid().getId());
+        return LanternXmppUtils.jidToResourceId(presence.getFromJid().getId());
     }
 
     public static String jabberIdFromUserAndResource(final String userId,
