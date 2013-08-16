@@ -119,7 +119,7 @@ public class QueryDonations extends HttpServlet {
                 final String id = don.get(idKey).toString();
                 final String email = don.get(emailKey).toString();
                 final String amount = don.get(amountKey).toString();
-                log.info("Trying to enqueue " + amount + "-cent donation "
+                log.info("Trying to enqueue " + amount + "-cent payment "
                          + id + " from " + email);
                 // This endpoint will be called iff the transaction succeeds.
                 // (I have checked that this also applies to transactions
@@ -131,7 +131,7 @@ public class QueryDonations extends HttpServlet {
                 // we don't return 200 OK.
                 //
                 // See https://developers.google.com/appengine/docs/java/taskqueue/#Java_Tasks_within_transactions
-                tq.add(TaskOptions.Builder.withUrl("/process_donation")
+                tq.add(TaskOptions.Builder.withUrl("/process_payment")
                        .param(idKey, id)
                        .param(emailKey, email)
                        .param(amountKey, amount));

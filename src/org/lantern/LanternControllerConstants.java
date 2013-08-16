@@ -65,6 +65,22 @@ public class LanternControllerConstants {
     public static final int PROXY_MONTHLY_COST = 1500;
 
     /**
+     * Minimum payment necessary to first launch a server, in US dollar cents.
+     *
+     * This must be no smaller than PROXY_MONTHLY_COST.
+     */
+    public static int LAUNCH_UPFRONT_COST = PROXY_MONTHLY_COST;
+
+    static {
+        // We're assuming this in Dao.getLowBalanceProxies.
+        if (LAUNCH_UPFRONT_COST < PROXY_MONTHLY_COST) {
+            throw new RuntimeException(
+                "Initial payment must be at least enough"
+                + " to pay for a month.");
+        }
+    }
+
+    /**
      * Amount we plan to spend in supporting proxies, in US dollar cents.
      */
     public static final int PROXY_MONTHLY_BUDGET = 50000;

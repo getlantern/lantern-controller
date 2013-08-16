@@ -1293,7 +1293,7 @@ public class Dao extends DAOBase {
      * Get UserCredit instances with a proxy running.
      */
     public Iterable<UserCredit> getRunningProxies() {
-        return ofy().query(UserCredit.class).filter("isProxyRunning=", true);
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true);
     }
 
     /**
@@ -1305,8 +1305,8 @@ public class Dao extends DAOBase {
      * them.
      */
     public Iterable<UserCredit> getLowBalanceProxies(int minBalance) {
-        return ofy().query(UserCredit.class).filter("isProxyRunning=", true)
-                                          .filter("balance<", minBalance);
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true)
+                                            .filter("balance <", minBalance);
     }
 
     /**
@@ -1316,24 +1316,76 @@ public class Dao extends DAOBase {
      * Return only entries after `offset`, in decreasing `creditScore` order.
      */
     public Iterable<UserCredit> getOverdueProxies(int offset) {
-        return ofy().query(UserCredit.class).filter("isProxyRunning=", true)
-                                          .filter("balance<", 0)
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true)
+                                          .filter("balance <", 0)
                                           .order("-creditScore")
                                           .offset(offset);
     }
 
-    public void chargeProxy(final String userId, final int amountCents) {
+    /**
+     * Calculate amount and charge this user's proxy for this month.
+     *
+     * Quantity may be less than the monthly rate if the server started running
+     * during this month.
+     *
+     * @return the quantity charged.
+     */
+    public int chargeProxy(final String userId) {
+        final long millisPerDay = 1000L * 60L * 60L * 24L;
+        // assume 30 days a month.
+        final double costPerDay
+            = LanternControllerConstants.PROXY_MONTHLY_COST / 30;
+        Integer result = new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    return null;
+                }
+                long millisRun = new Date().getTime()
+                                 - uc.getProxyRunningSince();
+                double daysRun = ((double) millisRun) / (double) millisPerDay;
+                int cost;
+                if (daysRun >= 30.0) {
+                    cost = LanternControllerConstants.PROXY_MONTHLY_COST;
+                } else {
+                    cost = (int) Math.ceil(costPerDay * daysRun);
+                }
+                log.info("Charging " + userId + " " + cost + " cents.");
+                if (cost == 0) {
+                    // Avoid touching the datastore for nothing.
+                    return 0;
+                }
+                uc.pay(cost);
+                if (uc.getBalance() < 0) {
+                    uc.updateCreditScore();
+                }
+                ofy.put(uc);
+                ofy.getTxn().commit();
+                return cost;
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to charge proxy.");
+        }
+        return result;
+    }
+
+    public UserCredit getUserCredit(final String userId) {
+        return ofy().find(UserCredit.class, userId);
+    }
+
+    public void recordProxyLaunch(final String userId) {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 UserCredit uc = ofy.find(UserCredit.class, userId);
                 if (uc == null) {
-                    return null;
+                    throw new RuntimeException("No UserCredit to update");
                 }
-                uc.pay(amountCents);
-                if (uc.getBalance() < 0) {
-                    uc.updateCreditScore();
-                }
+                uc.setIsProxyRunning(true);
+                uc.setProxyRunningSince(new Date().getTime());
                 ofy.put(uc);
                 ofy.getTxn().commit();
                 return true;
@@ -1341,11 +1393,7 @@ public class Dao extends DAOBase {
         }.run();
         if (result == null) {
             throw new RuntimeException(
-                    "Too much contention trying to charge proxy.");
+                    "Too much contention trying to update UserCredit.");
         }
-    }
-
-    public UserCredit getUserCredit(final String userId) {
-        return ofy().find(UserCredit.class, userId);
     }
 }

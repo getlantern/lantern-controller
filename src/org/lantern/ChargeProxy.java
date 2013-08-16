@@ -1,5 +1,6 @@
 package org.lantern;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -26,9 +27,24 @@ public class ChargeProxy extends HttpServlet {
     @Override
     public void doPost(final HttpServletRequest request,
                        final HttpServletResponse response) {
-        new Dao().chargeProxy(
-                request.getParameter(LanternControllerConstants.ID_KEY),
-                LanternControllerConstants.PROXY_MONTHLY_COST);
+        Dao dao = new Dao();
+        final String userId = request.getParameter(
+                LanternControllerConstants.ID_KEY);
+        final int centsCharged = dao.chargeProxy(userId);
+        final int newBalance = dao.getUserCredit(userId).getBalance();
+        // Don't send an email if the server was launched so recently that we
+        // aren't charging anything this month.
+        if (centsCharged > 0) {
+            try {
+                MandrillEmailer.sendProxyCharged(userId, centsCharged,
+                                                 newBalance);
+            } catch (final IOException e) {
+                // Don't rethrow this error since this task will be rescheduled
+                // unless we return 200 OK, and missing this notification is
+                // preferrable to charging the user multiple times.
+                log.severe("Couldn't send notification email: " + e);
+            }
+        }
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
 }

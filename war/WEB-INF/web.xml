@@ -40,12 +40,12 @@
     <url-pattern>/query_donations</url-pattern>
   </servlet-mapping>
   <servlet>
-    <servlet-name>processDonation</servlet-name>
-    <servlet-class>org.lantern.ProcessDonation</servlet-class>
+    <servlet-name>processPayment</servlet-name>
+    <servlet-class>org.lantern.ProcessPayment</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>processDonation</servlet-name>
-    <url-pattern>/process_donation</url-pattern>
+    <servlet-name>processPayment</servlet-name>
+    <url-pattern>/process_payment</url-pattern>
   </servlet-mapping>
   <servlet>
     <servlet-name>mockRally</servlet-name>
@@ -182,7 +182,7 @@
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
       <url-pattern>/query_donations</url-pattern>
-      <url-pattern>/process_donation</url-pattern>
+      <url-pattern>/process_payment</url-pattern>
       <url-pattern>/send_token</url-pattern>
     </web-resource-collection>
     <auth-constraint>

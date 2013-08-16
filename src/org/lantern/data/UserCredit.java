@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 import javax.persistence.Id;
 
 /**
- * Current balance and select bits about the donation/usage history of a user.
+ * Current balance and select bits about the payment/usage history of a user.
  *
  * We may continue providing access, as funds permit, to users that are behind
  * in funding their servers, but at some point we may need to shut down servers
@@ -18,12 +18,12 @@ import javax.persistence.Id;
  * that help inform a policy that generates desirable incentives.
  *
  * We don't keep this in the LanternUser because only a fraction of users will
- * donate, and we don't need to save and index these properties for everyone
- * else.
+ * fund proxies, and we don't need to save and index these properties for
+ * everyone else.
  *
  * Also, at this moment we give certain meaning to having an entry in the
  * LanternUser table, and we want to register the credit of users that have
- * donated but not enough to launch a server, without necessarily creating a
+ * paid but not enough to launch a server, without necessarily creating a
  * LanternUser entry for them.
  */
 public class UserCredit implements Serializable {
@@ -35,7 +35,7 @@ public class UserCredit implements Serializable {
     /**
      * This doesn't necessarily correspond to any user in LanternUsers.
      *
-     * We may collect donations from users until we have enough to launch a
+     * We may collect payments from users until we have enough to launch a
      * server for them, and we may want to wait until then to create a
      * LanternUser entry for them.
      */

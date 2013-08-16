@@ -58,8 +58,9 @@ public class MandrillEmailer {
             throw new IOException("Invited e-mail required!!");
         }
         final String json =
-            mandrillSendInviteEmailJson(inviterName, inviterEmail, invitedEmail,
-                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
+            mandrillSendInviteEmailJson(inviterName, inviterEmail,
+                invitedEmail, osxInstallerUrl, winInstallerUrl,
+                linuxInstallerUrl);
         sendEmail(json);
     }
 
@@ -76,6 +77,65 @@ public class MandrillEmailer {
                       email,
                       "credit-warning",
                       "Your Lantern server's credit is running out",
+                      mv));
+    }
+
+    public static void sendProxyCharged(
+            final String email, final int centsCharged, final int balance)
+            throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        addMergeVar(mv, "QUANTITY", formatCents(centsCharged));
+        addMergeVar(mv, "BALANCE", formatCents(balance));
+        sendEmail(mandrillSendEmailJson(
+                      email,
+                      "proxy-charged",
+                      "Server monthly payment processed",
+                      mv));
+    }
+
+    public static void sendPaymentReceived(
+            final String email, final int amountCents, final int balance)
+            throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        addMergeVar(mv, "QUANTITY", formatCents(amountCents));
+        addMergeVar(mv, "BALANCE", formatCents(balance));
+        sendEmail(mandrillSendEmailJson(
+                      email,
+                      "payment-received",
+                      "Payment received",
+                      mv));
+    }
+
+    public static void sendInsufficientBalance(
+            final String email, final int amountCents, final int balance)
+            throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        final int minimum = LanternControllerConstants.LAUNCH_UPFRONT_COST;
+        final int remaining = minimum - balance;
+        addMergeVar(mv, "QUANTITY", formatCents(amountCents));
+        addMergeVar(mv, "BALANCE", formatCents(balance));
+        addMergeVar(mv, "MINIMUM", formatCents(minimum));
+        addMergeVar(mv, "REMAINING", formatCents(remaining));
+        addMergeVar(mv, "RALLY_PAGE", LanternControllerConstants.RALLY_PAGE);
+        addMergeVar(mv, "EMAIL", email);
+        sendEmail(mandrillSendEmailJson(
+                      email,
+                      "insufficient-balance",
+                      "Payment received",
+                      mv));
+    }
+
+    public static void sendProxyLaunching(final String email)
+            throws IOException {
+        final List<Map<String, String>> mv =
+            new ArrayList<Map<String,String>>();
+        sendEmail(mandrillSendEmailJson(
+                      email,
+                      "proxy-launching",
+                      "Lantern server launching",
                       mv));
     }
 
@@ -225,7 +285,7 @@ public class MandrillEmailer {
         addMergeVar(mv, "WININSTALLERURL", winInstallerUrl);
         addMergeVar(mv, "LINUXINSTALLERURL", linuxInstallerUrl);
         return mandrillSendEmailJson(
-                inviterEmail,
+                invitedEmail,
                 "invite-notification",
                 "Lantern Invitation",
                 mv);

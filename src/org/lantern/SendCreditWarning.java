@@ -30,7 +30,7 @@ public class SendCreditWarning extends HttpServlet {
                 LanternControllerConstants.EMAIL_KEY);
         int balance = new Dao().getUserCredit(email).getBalance();
         // Might as well recheck that balance is too low.  We may have possibly
-        // received a new donation since this was queued.  While it's not
+        // received a new payment since this was queued.  While it's not
         // terrible if a warning e-mail is unduly sent due to such a race
         // condition, it would be embarassing if the balance reported in that
         // email is above the monthly cost.
@@ -43,7 +43,8 @@ public class SendCreditWarning extends HttpServlet {
                 throw new RuntimeException(e);
             }
         } else {
-            log.info("Nevermind, user must have donated since I got queued.");
+            log.info(
+                "Nevermind, user must have added funds since I got queued.");
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
     }

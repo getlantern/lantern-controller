@@ -54,7 +54,7 @@ public class ChargeForProxies extends HttpServlet {
             log.info("It's prune day.");
             pruneProxies();
         } else {
-            log.info("It's nothing day.");
+            log.info("It's nothing day: " + day);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
