@@ -122,7 +122,17 @@ public class UserCredit implements Serializable {
      * We reserve the right to change this anytime.
      */
     public void updateCreditScore() {
-        creditScore = getAverageStreak() * 10 + fundedMonths;
+        if (balance < 0) {
+            creditScore = getAverageStreak() * 10 + fundedMonths;
+        } else {
+            // Hack: we sort overdue users by credit score in descending
+            // order, so when we get the first entry with negative creditScore
+            // (or positive balance) we know to bail.
+            //
+            // We do this because the datastore won't let us filter by balance
+            // and order by creditScore.
+            creditScore = -1.0f;
+        }
     }
 
     /**

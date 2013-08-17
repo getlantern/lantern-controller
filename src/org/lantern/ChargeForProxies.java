@@ -90,8 +90,17 @@ public class ChargeForProxies extends HttpServlet {
         Iterable<UserCredit> overdue
                 = dao.getOverdueProxies(MAX_SUBSIDIZED_PROXIES);
         for (UserCredit c : overdue) {
+            // The datastore won't let us filter by balance and order by
+            // creditScore, so we assign negative creditScores to users with
+            // positive balances, and bail out as soon as we see the first
+            // such one.
+            if (c.getBalance() >= 0) {
+                return;
+            }
             // Do the actual shutdown in a task queue, to make sure we don't
             // time out.
+            log.info("Enqueuing task to shut down "
+                     + c.getUserId() + "'s proxy.");
             q.add(TaskOptions.Builder.withUrl("/shutdown_proxy")
                     .param(LanternControllerConstants.ID_KEY, c.getUserId()));
         }

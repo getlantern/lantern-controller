@@ -1317,9 +1317,8 @@ public class Dao extends DAOBase {
      */
     public Iterable<UserCredit> getOverdueProxies(int offset) {
         return ofy().query(UserCredit.class).filter("isProxyRunning =", true)
-                                          .filter("balance <", 0)
-                                          .order("-creditScore")
-                                          .offset(offset);
+                                            .order("-creditScore")
+                                            .offset(offset);
     }
 
     /**
@@ -1357,9 +1356,7 @@ public class Dao extends DAOBase {
                     return 0;
                 }
                 uc.pay(cost);
-                if (uc.getBalance() < 0) {
-                    uc.updateCreditScore();
-                }
+                uc.updateCreditScore();
                 ofy.put(uc);
                 ofy.getTxn().commit();
                 return cost;

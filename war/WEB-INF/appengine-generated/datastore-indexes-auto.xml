@@ -9,7 +9,7 @@
     </datastore-index>
     <datastore-index kind="UserCredit" ancestor="false" source="manual">
         <property name="isProxyRunning" direction="asc"/>
-        <property name="balance" direction="asc"/>
+        <property name="creditScore" direction="desc"/>
     </datastore-index>
 </datastore-indexes>
 
