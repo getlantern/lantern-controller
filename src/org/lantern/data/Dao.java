@@ -12,8 +12,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
-import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
+import org.lantern.LanternConstants;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
@@ -28,6 +28,8 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
@@ -93,6 +95,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(InstallerBucket.class);
         ObjectifyService.register(PermanentLogEntry.class);
+        ObjectifyService.register(UserCredit.class);
         ObjectifyService.register(TrustRelationship.class);
 
         // Precreate all counters, if necessary
@@ -477,40 +480,44 @@ public class Dao extends DAOBase {
             }
         }.run();
 
-        createInviteeUser(inviterEmail, inviteeEmail);
+        createUser(inviterEmail, inviteeEmail);
         return status;
     }
 
-    private boolean createInviteeUser(final String inviterEmail,
-            final String inviteeEmail) {
+    public boolean createUser(final String sponsorEmail,
+                              final String newUserEmail) {
 
         // get the inviter outside the loop because we don't care
         // about concurrent modifications
         final Objectify ofy = ofy();
-        final LanternUser inviter = ofy.find(LanternUser.class, inviterEmail);
+        final LanternUser sponsor = ofy.find(LanternUser.class, sponsorEmail);
+        if (sponsor == null) {
+            throw new RuntimeException("Bogus sponsor.");
+        }
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
 
-                LanternUser invitee = ofy.find(LanternUser.class, inviteeEmail);
-                if (invitee == null) {
-                    log.info("Adding invitee to database");
-                    invitee = new LanternUser(inviteeEmail);
+                LanternUser newUser =
+                    ofy.find(LanternUser.class, newUserEmail);
+                if (newUser == null) {
+                    log.info("Adding new user to database");
+                    newUser = new LanternUser(newUserEmail);
 
-                    invitee.setDegree(inviter.getDegree() + 1);
+                    newUser.setDegree(newUser.getDegree() + 1);
                     if (getUserCount() < LanternControllerConstants.MAX_USERS
-                            && invitee.getInvites() < 2) {
-                        invitee.setInvites(getDefaultInvites());
+                            && newUser.getInvites() < 2) {
+                        newUser.setInvites(getDefaultInvites());
                     }
-                    invitee.setSponsor(inviter.getId());
-                    ofy.put(invitee);
+                    newUser.setSponsor(sponsor.getId());
+                    ofy.put(newUser);
                 } else {
-                    log.info("Invitee exists, nothing to do here.");
+                    log.info("User exists, nothing to do here.");
                     return true;
                 }
                 ofy.getTxn().commit();
-                log.info("Successfully committed attempt to add invitee.");
+                log.info("Successfully committed attempt to add new user.");
                 return true;
             }
         }.run();
@@ -828,14 +835,20 @@ public class Dao extends DAOBase {
         return query;
     }
 
-    public String getAndSetInstallerLocation(final String email) {
+    /**
+     * If the installerLocation of this user is null, set it to the given one.
+     *
+     * @return the old installerLocation.
+     */
+    public String getAndSetInstallerLocation(final String userId,
+                                             final String installerLocation) {
         RetryingTransaction<String> txn = new RetryingTransaction<String>() {
             @Override
             public String run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, email);
+                LanternUser user = ofy.find(LanternUser.class, userId);
                 String old = user.getInstallerLocation();
                 if (old == null) {
-                    user.setInstallerLocation(InvitedServerLauncher.PENDING);
+                    user.setInstallerLocation(installerLocation);
                     ofy.put(user);
                 }
                 ofy.getTxn().commit();
@@ -845,8 +858,8 @@ public class Dao extends DAOBase {
 
         String old = txn.run();
         if (txn.failed()) {
-            // XXX: is really returning our best guess better than failing?
-            log.warning("Gave up because of too much contention!");
+            throw new RuntimeException(
+                    "Transaction failed trying to get+set location.");
         }
         return old;
     }
@@ -944,10 +957,6 @@ public class Dao extends DAOBase {
             log.warning("Too much contention for buckets; you may want to look into this.");
         }
         return leastUsed.getId();
-    }
-
-    private boolean emailsMatch(final String one, final String other) {
-        return one.trim().equalsIgnoreCase(other.trim());
     }
 
     public int getUserCount() {
@@ -1167,5 +1176,274 @@ public class Dao extends DAOBase {
             }
         }
         return user;
+    }
+
+    /**
+     * Add or withdraw `amount` from `email`'s account, if possible.
+     *
+     * We never allow the account to go into red numbers.
+     */
+    public int addCredit(final String email, final int amount) {
+        Integer result = new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, email);
+                if (uc == null) {
+                    uc = new UserCredit(email);
+                }
+                uc.setBalance(uc.getBalance() + amount);
+                if (uc.getBalance() < 0) {
+                    //XXX: see what's the most convenient way to deal with this
+                    // when we handle payments.
+                    throw new RuntimeException("Insufficient funds");
+                }
+                ofy.put(uc);
+                ofy.getTxn().commit();
+                return uc.getBalance();
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException("Too much contention adding credit");
+        }
+        return result;
+    }
+
+    public void setRefreshToken(final String userId, final String token) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                try {
+                    LanternUser user = ofy.get(LanternUser.class, userId);
+                    user.setRefreshToken(token);
+                    // If the proxy for this user is ready to accept the token,
+                    // send it and advance the state.
+                    String loc = user.getInstallerLocation();
+                    String cnst = LanternControllerConstants.FPS_PENDING_TOKEN;
+                    if (loc.startsWith(cnst)) {
+                        String locProper = loc.substring(cnst.length(),
+                                                         loc.length());
+                        sendTokenAndAdvanceState(user, locProper);
+                    }
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                    return true;
+                } catch (NotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention setting refresh token.");
+        }
+    }
+
+    public boolean setInstallerLocationAndCheckToken(
+            final String userId, final String installerLocation) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                try {
+                    LanternUser user = ofy.get(LanternUser.class, userId);
+                    boolean hadToken;
+                    if (user.getRefreshToken() == null) {
+                        hadToken = false;
+                        user.setInstallerLocation(
+                                LanternControllerConstants.FPS_PENDING_TOKEN
+                                + installerLocation);
+                    } else {
+                        hadToken = true;
+                        sendTokenAndAdvanceState(user, installerLocation);
+                    }
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                    return hadToken;
+                } catch (NotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }.run();
+        if (result == null) {
+            log.warning("Too much contention setting installer location.");
+        }
+        return result;
+    }
+
+    private void sendTokenAndAdvanceState(final LanternUser user,
+                                          final String installerLocation) {
+        user.setInstallerLocation(
+            LanternControllerConstants.FPS_PENDING_COMPLETION
+            + installerLocation);
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder.withUrl("/send_token")
+               .param(LanternControllerConstants.ID_KEY, user.getId())
+               .param(LanternConstants.REFRESH_TOKEN, user.getRefreshToken()));
+    }
+
+    public boolean needsRefreshToken(final String userId) {
+        try {
+            LanternUser user = ofy().get(LanternUser.class, userId);
+            return (user.getInstallerLocation() != null
+                    && user.getRefreshToken() == null);
+        } catch (NotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get UserCredit instances with a proxy running.
+     */
+    public Iterable<UserCredit> getRunningProxies() {
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true);
+    }
+
+    /**
+     * Get UserCredit instances with a proxy running and balance less than
+     * `minBalance`.
+     *
+     * We don't need to make a special case for the first month because we ask
+     * users to fund at least a month up front before we start a proxy for
+     * them.
+     */
+    public Iterable<UserCredit> getLowBalanceProxies(int minBalance) {
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true)
+                                            .filter("balance <", minBalance);
+    }
+
+    /**
+     * Get UserCredit instances with a proxy running and balance less than
+     * `minBalance`.
+     *
+     * Return only entries after `offset`, in decreasing `creditScore` order.
+     */
+    public Iterable<UserCredit> getOverdueProxies(int offset) {
+        return ofy().query(UserCredit.class).filter("isProxyRunning =", true)
+                                            .order("-creditScore")
+                                            .offset(offset);
+    }
+
+    /**
+     * Calculate amount and charge this user's proxy for this month.
+     *
+     * Quantity may be less than the monthly rate if the server started running
+     * during this month.
+     *
+     * @return the quantity charged.
+     */
+    public int chargeProxy(final String userId) {
+        final long millisPerDay = 1000L * 60L * 60L * 24L;
+        // assume 30 days a month.
+        final double costPerDay
+            = LanternControllerConstants.PROXY_MONTHLY_COST / 30;
+        Integer result = new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    return null;
+                }
+                long millisRun = new Date().getTime()
+                                 - uc.getProxyRunningSince();
+                double daysRun = ((double) millisRun) / (double) millisPerDay;
+                int cost;
+                if (daysRun >= 30.0) {
+                    cost = LanternControllerConstants.PROXY_MONTHLY_COST;
+                } else {
+                    cost = (int) Math.ceil(costPerDay * daysRun);
+                }
+                log.info("Charging " + userId + " " + cost + " cents.");
+                if (cost == 0) {
+                    // Avoid touching the datastore for nothing.
+                    return 0;
+                }
+                uc.pay(cost);
+                uc.updateCreditScore();
+                ofy.put(uc);
+                ofy.getTxn().commit();
+                return cost;
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to charge proxy.");
+        }
+        return result;
+    }
+
+    public UserCredit getUserCredit(final String userId) {
+        return ofy().find(UserCredit.class, userId);
+    }
+
+    public void recordProxyLaunch(final String userId) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    throw new RuntimeException("No UserCredit to update");
+                }
+                uc.setIsProxyRunning(true);
+                uc.setProxyRunningSince(new Date().getTime());
+                ofy.put(uc);
+                ofy.getTxn().commit();
+                return true;
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to update UserCredit.");
+        }
+    }
+
+    /**
+     * @return true iff we should abort shutdown because the user's balance has
+     * become positive.
+     */
+    public boolean recordProxyShutdown(final String userId) {
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                UserCredit uc = ofy.find(UserCredit.class, userId);
+                if (uc == null) {
+                    throw new RuntimeException("No UserCredit to update");
+                }
+                if (uc.getBalance() >= 0) {
+                    return true;
+                }
+                if (uc.getIsProxyRunning()) {
+                    log.info("Setting isProxyRunning to false.");
+                    // We have tentatively charged a user for a month.  If we
+                    // are shutting down their proxy we need to roll back that
+                    // payment.
+                    //
+                    // We know we charged a full month, since users can't
+                    // default on their first month.
+                    uc.addBalance(
+                            LanternControllerConstants.PROXY_MONTHLY_COST);
+                    uc.setIsProxyRunning(false);
+                    ofy.put(uc);
+                } else {
+                    log.warning("isProxyRunning was already false?");
+                }
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user == null) {
+                    throw new RuntimeException("No LanternUser to update");
+                }
+                if (user.getInstallerLocation() == null) {
+                    log.warning(userId + "'s installerLocation was null?");
+                } else {
+                    log.info("Clearing " + userId + "'s installerLocation.");
+                    user.setInstallerLocation(null);
+                    ofy.put(user);
+                }
+                ofy.getTxn().commit();
+                return false;
+            }
+        }.run();
+        if (result == null) {
+            throw new RuntimeException(
+                    "Too much contention trying to record proxy shutdown.");
+        }
+        //XXX: do something about orphaned invitees!
+        return result;
     }
 }

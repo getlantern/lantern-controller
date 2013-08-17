@@ -33,9 +33,9 @@ public class MandrillEmailerTest {
             // Ignore the test
             return;
         }
-        final String payload = MandrillEmailer.mandrillSendEmailJson(inviterName,
-            inviterEmail, invitedEmail, osxInstallerUrl, winInstallerUrl,
-            linuxInstallerUrl);
+        final String payload = MandrillEmailer.mandrillSendInviteEmailJson(
+                inviterName, inviterEmail, invitedEmail, osxInstallerUrl,
+                winInstallerUrl, linuxInstallerUrl);
         final HttpPost post = new HttpPost(
             LanternControllerConstants.MANDRILL_API_SEND_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));

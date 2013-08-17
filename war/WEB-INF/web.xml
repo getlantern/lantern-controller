@@ -32,6 +32,70 @@
     <url-pattern>/check_sqs</url-pattern>
   </servlet-mapping>
   <servlet>
+    <servlet-name>queryDonations</servlet-name>
+    <servlet-class>org.lantern.QueryDonations</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>queryDonations</servlet-name>
+    <url-pattern>/query_donations</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>processPayment</servlet-name>
+    <servlet-class>org.lantern.ProcessPayment</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>processPayment</servlet-name>
+    <url-pattern>/process_payment</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>mockRally</servlet-name>
+    <servlet-class>org.lantern.MockRally</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>mockRally</servlet-name>
+    <url-pattern>/mock_rally</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>sendToken</servlet-name>
+    <servlet-class>org.lantern.SendToken</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>sendToken</servlet-name>
+    <url-pattern>/send_token</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>chargeForProxies</servlet-name>
+    <servlet-class>org.lantern.ChargeForProxies</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>chargeForProxies</servlet-name>
+    <url-pattern>/charge_for_proxies</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>sendCreditWarning</servlet-name>
+    <servlet-class>org.lantern.SendCreditWarning</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>sendCreditWarning</servlet-name>
+    <url-pattern>/send_credit_warning</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>chargeProxy</servlet-name>
+    <servlet-class>org.lantern.ChargeProxy</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>chargeProxy</servlet-name>
+    <url-pattern>/charge_proxy</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>shutdownProxy</servlet-name>
+    <servlet-class>org.lantern.ShutdownProxy</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>shutdownProxy</servlet-name>
+    <url-pattern>/shutdown_proxy</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>xmppreceiver</servlet-name>
     <servlet-class>org.lantern.XmppReceiverServlet</servlet-class>
   </servlet>
@@ -117,6 +181,13 @@
       <url-pattern>/persist/*</url-pattern>
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
+      <url-pattern>/query_donations</url-pattern>
+      <url-pattern>/process_payment</url-pattern>
+      <url-pattern>/send_token</url-pattern>
+      <url-pattern>/charge_for_proxies</url-pattern>
+      <url-pattern>/send_credit_warning</url-pattern>
+      <url-pattern>/charge_proxy</url-pattern>
+      <url-pattern>/shutdown_proxy</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
