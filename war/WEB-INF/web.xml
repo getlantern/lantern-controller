@@ -184,6 +184,10 @@
       <url-pattern>/query_donations</url-pattern>
       <url-pattern>/process_payment</url-pattern>
       <url-pattern>/send_token</url-pattern>
+      <url-pattern>/charge_for_proxies</url-pattern>
+      <url-pattern>/send_credit_warning</url-pattern>
+      <url-pattern>/charge_proxy</url-pattern>
+      <url-pattern>/shutdown_proxy</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>

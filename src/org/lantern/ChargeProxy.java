@@ -18,11 +18,11 @@ public class ChargeProxy extends HttpServlet {
         = Logger.getLogger(ChargeProxy.class.getName());
 
     //XXX: For testing; disable when deploying to the real controller!
-    @Override
+    /*@Override
     public void doGet(final HttpServletRequest request,
                       final HttpServletResponse response) {
         doPost(request, response);
-    }
+    }*/
 
     @Override
     public void doPost(final HttpServletRequest request,

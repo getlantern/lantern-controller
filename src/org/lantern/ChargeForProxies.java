@@ -18,8 +18,8 @@ import org.lantern.data.UserCredit;
 @SuppressWarnings("serial")
 public class ChargeForProxies extends HttpServlet {
 
-    private static final transient Logger log =
-        Logger.getLogger(ChargeForProxies.class.getName());
+    private static final transient Logger log
+        = Logger.getLogger(ChargeForProxies.class.getName());
 
     /**
      * We send a warning three days before actually collecting payments, at

@@ -16,4 +16,9 @@
     <description>Check rally.org for donations.</description>
     <schedule>every 1 minutes</schedule>
   </cron>
+  <cron>
+    <url>/charge_for_proxies</url>
+    <description>Deduct credit for sponsored proxies. Possibly shut down underfunded ones.</description>
+    <schedule>every day 23:00</schedule>
+  </cron>
 </cronentries>
