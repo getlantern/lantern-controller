@@ -291,7 +291,6 @@ public class XmppAvailableServlet extends HttpServlet {
         sendResponse(presence, xmpp, responseJson);
     }
 
-
     private void processNotInvited(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
         responseJson.put(LanternConstants.INVITED, Boolean.FALSE);
@@ -321,7 +320,11 @@ public class XmppAvailableServlet extends HttpServlet {
             // updating all counters.
             log.info("Setting instance availability");
             final Dao dao = new Dao();
-            dao.setInstanceAvailable(idToUse, instanceId, data.getCountryCode(), mode, resource);
+            String countryCode = data.getCountryCode();
+            if (StringUtils.isBlank(countryCode)) {
+                countryCode = "XX";
+            }
+            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode, resource);
             try {
                 updateStats(data, idToUse, name, mode);
             } catch (final UnsupportedOperationException e) {
@@ -353,10 +356,14 @@ public class XmppAvailableServlet extends HttpServlet {
         final Dao dao = new Dao();
 
         log.info("Updating stats");
+        String countryCode = data.getCountryCode();
+        if (StringUtils.isBlank(countryCode)) {
+            countryCode = "XX";
+        }
         dao.updateUser(idToUse, data.getDirectRequests(),
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
-            data.getCountryCode(), name, mode);
+            countryCode, name, mode);
     }
 
     private void addServers(final String jid,
