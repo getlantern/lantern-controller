@@ -72,6 +72,12 @@ public class XmppAvailableServlet extends HttpServlet {
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
 
+        if (!presence.isAvailable()) {
+            log.info(userId + "/" + resource + " logging out.");
+            dao.setInstanceUnavailable(userId, resource);
+            return;
+        }
+
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
 
@@ -98,11 +104,6 @@ public class XmppAvailableServlet extends HttpServlet {
 
         handleFriendsSync(doc, presence.getFromJid(), xmpp);
 
-        if (!presence.isAvailable()) {
-            log.info(userId + "/" + resource + " logging out.");
-            dao.setInstanceUnavailable(userId, resource);
-            return;
-        }
         String modeStr = LanternControllerUtils.getProperty(doc, "mode");
         Mode mode;
         if ("give".equals(modeStr)) {
