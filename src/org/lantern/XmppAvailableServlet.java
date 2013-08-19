@@ -123,7 +123,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final String name =
                 LanternControllerUtils.getProperty(doc, "name");
 
-        processClientInfo(presence, stats, responseJson, userId, instanceId,
+        processClientInfo(presence, stats, userId, instanceId,
                 name, mode, resource);
 
         if (mode == Mode.give) {
@@ -300,9 +300,8 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void processClientInfo(final Presence presence,
-        final String stats, final Map<String, Object> responseJson,
-        final String idToUse, final String instanceId, final String name,
-        final Mode mode, final String resource) {
+        final String stats, final String idToUse, final String instanceId,
+        final String name, final Mode mode, final String resource) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
