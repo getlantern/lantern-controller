@@ -56,7 +56,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String,Object> responseJson =
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
-        final String from = LanternControllerUtils.userId(presence).toLowerCase();
+        final String from = LanternControllerUtils.userId(presence);
         if (!dao.isInvited(from)) {
             log.info(from+" not invited!!");
             processNotInvited(presence, xmpp, responseJson);
@@ -67,7 +67,7 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
-        final String userId = LanternXmppUtils.jidToUserId(from);
+        final String userId = LanternXmppUtils.jidToEmail(from);
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
@@ -145,7 +145,7 @@ public class XmppAvailableServlet extends HttpServlet {
         log.info("Handling friend sync");
         Dao dao = new Dao();
 
-        String userId = LanternXmppUtils.jidToUserId(fromJid.getId());
+        String userId = LanternXmppUtils.jidToEmail(fromJid.getId());
 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());
