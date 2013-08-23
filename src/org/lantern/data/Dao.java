@@ -795,7 +795,6 @@ public class Dao extends DAOBase {
         if (instance.isAvailable()) {
             log.info("Decrementing online count");
             instance.setAvailable(false);
-            LanternUser user = ofy.find(LanternUser.class, userId);
 
             String modeStr = instance.getMode().toString();
             String countryCode = instance.getCurrentCountry();
@@ -814,7 +813,6 @@ public class Dao extends DAOBase {
             }
 
             ofy.put(instance);
-            ofy.put(user);
         }
         return counters;
     }
