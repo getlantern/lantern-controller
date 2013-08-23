@@ -804,7 +804,9 @@ public class Dao extends DAOBase {
 
             Query<LanternInstance> query = signedInInstanceQuery(ofy, userId);
 
-            boolean anyInstancesSignedIn = query.count() > 0;
+            //we compare against 1 here because we have not yet
+            //saved the current instance
+            boolean anyInstancesSignedIn = query.count() > 1;
 
             if (!anyInstancesSignedIn) {
                 log.info("Decrementing online user count");
@@ -822,7 +824,7 @@ public class Dao extends DAOBase {
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                 userId);
         Query<LanternInstance> query = ofy.query(LanternInstance.class)
-                .ancestor(parentKey).filter("available=true", null);
+                .ancestor(parentKey).filter("available", true);
         return query;
     }
 
