@@ -56,18 +56,17 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String,Object> responseJson =
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
-        final String from = LanternControllerUtils.userId(presence);
-        if (!dao.isInvited(from)) {
-            log.info(from+" not invited!!");
+        final String userId = LanternControllerUtils.userId(presence);
+        if (!dao.isInvited(userId)) {
+            log.info(userId+" not invited!!");
             processNotInvited(presence, xmpp, responseJson);
             return;
         } else {
             log.info("User is invited: " + presence.getFromJid());
-            dao.updateLastAccessed(from);
+            dao.updateLastAccessed(userId);
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
-        final String userId = LanternXmppUtils.jidToEmail(from);
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
@@ -87,7 +86,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
             queueInvite(xmpp, presence, doc, invitedEmail);
 
-            if ((!dao.areInvitesPaused()) && (dao.isAdmin(from) || dao.hasMoreInvites(from))) {
+            if ((!dao.areInvitesPaused()) && (dao.isAdmin(userId) || dao.hasMoreInvites(userId))) {
 
                 String inviterName = LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITER_NAME);
@@ -135,7 +134,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
 
-        dao.signedIn(from, language);
+        dao.signedIn(userId, language);
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
