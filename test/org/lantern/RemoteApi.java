@@ -26,9 +26,10 @@ public class RemoteApi {
 
         try {
             final Dao dao = new Dao();
-            dao.forgetEveryoneSignedIn();
+            //dao.forgetEveryoneSignedIn();
             /* Trigger your hacks here.*/
             //dao.createInitialUser("insertmyaccount@gmail.com");
+            dao.fixUpTrustRelationships();
         } finally {
             installer.uninstall();
         }
