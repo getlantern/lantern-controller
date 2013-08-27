@@ -24,6 +24,12 @@ public class TrustRelationship implements Serializable {
     @Id
     private String id;
 
+    /**
+     * App Engine won't let me filter on id, so instead I have to
+     * create this otherwise pointless field.  Thanks, App Engine!
+     */
+    private String duplicateOfId;
+
     @Parent
     private Key<LanternUser> parent;
 
@@ -41,6 +47,7 @@ public class TrustRelationship implements Serializable {
     public TrustRelationship(Key<LanternUser> owner, Friend friend) {
         this.parent = owner;
         this.id = friend.getEmail();
+        this.duplicateOfId = id;
         this.status = friend.getStatus();
         this.lastUpdated = friend.getLastUpdated();
     }
@@ -96,5 +103,18 @@ public class TrustRelationship implements Serializable {
 
     public String getId() {
         return id;
+    }
+
+    public String getDuplicateOfId() {
+        return duplicateOfId;
+    }
+
+    public void setDuplicateOfId(
+            String duplicateOfId) {
+        this.duplicateOfId = duplicateOfId;
+    }
+
+    public Key<LanternUser> getParent() {
+        return parent;
     }
 }

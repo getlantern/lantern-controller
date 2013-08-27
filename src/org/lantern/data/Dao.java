@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.lantern.CensoredUtils;
 import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
@@ -415,6 +416,17 @@ public class Dao extends DAOBase {
          */
 
     }
+
+
+    public void fixUpTrustRelationships() {
+        final Objectify ofy = ofy();
+        List<TrustRelationship> relationships = ofy.query(TrustRelationship.class).list();
+        for (TrustRelationship relationship : relationships) {
+            relationship.setDuplicateOfId(relationship.getId());
+            ofy.put(relationship);
+        }
+    }
+
 
     public boolean sendingInvite(final String inviterEmail,
             final String inviteeEmail, final boolean noCost) {
@@ -1086,14 +1098,15 @@ public class Dao extends DAOBase {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
-                String id = clientFriend.getEmail();
+                String friendId = clientFriend.getEmail();
                 Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                         userId);
-                Key<TrustRelationship> key = new Key<TrustRelationship>(parentKey, TrustRelationship.class, id);
+                Key<TrustRelationship> key = new Key<TrustRelationship>(parentKey, TrustRelationship.class, friendId);
                 TrustRelationship trust = ofy.find(key);
                 if (trust == null) {
                     trust = new TrustRelationship(parentKey, clientFriend);
                     ofy.put(trust);
+
                     ofy.getTxn().commit();
                 } else if (trust.update(clientFriend)) {
                     ofy.getTxn().commit();
@@ -1168,4 +1181,27 @@ public class Dao extends DAOBase {
         }
         return user;
     }
+
+    public Pair<List<String>, List<String>> getNewFriendsOfSince(final String id,
+            final long lastUpdated) {
+        final Objectify ofy = ofy();
+        Query<TrustRelationship> query = ofy.query(TrustRelationship.class);
+        query = query.filter("duplicateOfId", id).filter("lastUpdated > ", lastUpdated);
+        final List<String> friends = new ArrayList<String>();
+        final List<String> unfriends = new ArrayList<String>();
+        for (TrustRelationship relationship : query.list()) {
+            switch (relationship.getStatus()) {
+            case friend:
+                friends.add(relationship.getParent().getName());
+                break;
+            case rejected:
+                unfriends.add(relationship.getParent().getName());
+                break;
+            default:
+                //nothing to do
+            }
+        }
+        return Pair.of(friends, unfriends);
+    }
+
 }

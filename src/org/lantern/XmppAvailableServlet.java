@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -102,6 +103,7 @@ public class XmppAvailableServlet extends HttpServlet {
         }
 
         handleFriendsSync(doc, presence.getFromJid(), xmpp);
+        handleFriendOfSync(doc, presence.getFromJid(), xmpp);
 
         String modeStr = LanternControllerUtils.getProperty(doc, "mode");
         Mode mode;
@@ -135,6 +137,36 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(userId, language);
+    }
+
+    private void handleFriendOfSync(Document doc, JID fromJid,
+            XMPPService xmpp) {
+        log.info("Handling friend of sync");
+        String email = LanternXmppUtils.jidToEmail(fromJid.getId());
+        final String lastUpdatedStr =
+                LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDED_BY_LAST_UPDATED);
+        if (StringUtils.isBlank(lastUpdatedStr)) {
+            return;
+        }
+        final long lastUpdated = Long.parseLong(lastUpdatedStr);
+
+        Dao dao = new Dao();
+
+        Pair<List<String>, List<String>> friendsAndUnfriends = dao.getNewFriendsOfSince(email, lastUpdated);
+        List<String> friends = friendsAndUnfriends.getLeft();
+        List<String> unfriends = friendsAndUnfriends.getRight();
+
+        Map<String, Object> response = new HashMap<String, Object>();
+        response.put(LanternConstants.FRIENDED_BY, friends);
+        response.put(LanternConstants.UNFRIENDED_BY, unfriends);
+        String json = JsonUtils.jsonify(response);
+
+        Message msg = new MessageBuilder()
+                .withRecipientJids(fromJid).withBody(json)
+                .withMessageType(MessageType.HEADLINE).build();
+        log.info("Sending response:\n" + json.toString());
+        xmpp.sendMessage(msg);
+        log.info("Synced " + friends.size() + " friends and " + unfriends.size() + " enemies");
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {

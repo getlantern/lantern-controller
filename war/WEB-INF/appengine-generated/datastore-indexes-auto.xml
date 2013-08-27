@@ -7,5 +7,9 @@
     <datastore-index kind="LanternInstance" ancestor="true" source="manual">
         <property name="resource" direction="asc"/>
     </datastore-index>
+    <datastore-index kind="TrustRelationship" ancestor="false" source="manual">
+        <property name="duplicateOfId" direction="asc"/>
+        <property name="lastUpdated" direction="asc"/>
+    </datastore-index>
 </datastore-indexes>
 
