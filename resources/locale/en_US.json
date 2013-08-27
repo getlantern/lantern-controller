@@ -1,0 +1,6 @@
+{
+  "INVITED_HEADER1": "Welcome to Lantern",
+  "INVITED_HEADER2": "<a href=\"mailto:*|INVITER_EMAIL|*\">*|INVITER_NAME|*</a> has invited you to join Lantern.",
+  "FRIENDED_HEADER1": "Lantern Friend Notification",
+  "FRIENDED_HEADER2": "<a href=\"mailto:*|FRIENDER_EMAIL|*\">*|FRIENDER_NAME|*</a> has added you as a friend on Lantern."
+}
