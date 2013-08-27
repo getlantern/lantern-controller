@@ -60,7 +60,7 @@ public class LanternControllerUtils {
 
     public static Document buildDoc(final Presence presence) {
         String stanza = presence.getStanza();
-        if (stanza.length() > 10000) {
+        if (stanza.length() > 15000) {
             //prevent xml generic entity expansion
             throw new RuntimeException("Unexpectedly long stanza");
         }
