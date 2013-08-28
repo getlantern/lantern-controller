@@ -10,6 +10,8 @@ output_directory = "src/org/lantern"
 language_json_files = os.listdir(locale_directory)
 languages = {}
 for filename in language_json_files:
+    if not filename.endswith(".json"):
+        continue
     language = filename.replace(".json","")
     path = os.path.join(locale_directory, filename)
     f = open(path, "r")
@@ -20,6 +22,8 @@ for filename in language_json_files:
 files = os.listdir(metatemplate_directory)
 
 for filename in files:
+    if not filename.endswith(".html.tmpl"):
+        continue
     output_filename = filename.replace(".html.tmpl", ".json")
     path = os.path.join(metatemplate_directory, filename)
     f = open(path, "r")
