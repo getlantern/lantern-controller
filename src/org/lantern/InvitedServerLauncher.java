@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
 import org.lantern.data.UnknownUserException;
 import org.littleshoot.util.ThreadUtils;
 
@@ -85,11 +86,15 @@ public class InvitedServerLauncher {
         final String baseUrl =
             "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
 
+        //check if the invitee is already a user
+        Dao dao = new Dao();
+        LanternUser user = dao.getUser(invitedEmail);
+
         try {
             MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
                 baseUrl + "macos_" + version + ".dmg",
                 baseUrl + "windows_" + version + ".exe",
-                baseUrl + "unix_" + version + ".sh");
+                baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }

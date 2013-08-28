@@ -11,13 +11,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.littleshoot.util.ThreadUtils;
 
 import com.google.appengine.api.urlfetch.FetchOptions;
@@ -44,13 +47,14 @@ public class MandrillEmailer {
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @param isAlreadyUser We send a different email if the user has ever logged in
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
     public static void sendInvite(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl)
+        final String linuxInstallerUrl, boolean isAlreadyUser)
         throws IOException {
         log.info("Sending invite to "+invitedEmail);
         if (StringUtils.isBlank(invitedEmail)) {
@@ -59,7 +63,8 @@ public class MandrillEmailer {
         }
         final String json =
             mandrillSendEmailJson(inviterName, inviterEmail, invitedEmail,
-                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
+                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl,
+                isAlreadyUser);
         sendEmail(json);
     }
 
@@ -73,13 +78,14 @@ public class MandrillEmailer {
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @param isAlreadyUser
      * @return The generated JSON to send to Mandrill.
      * @throws IOException If there's an error generating the JSON.
      */
     public static String mandrillSendEmailJson(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl)
+        final String linuxInstallerUrl, boolean isAlreadyUser)
         throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
@@ -106,7 +112,15 @@ public class MandrillEmailer {
         msg.put("preserve_recipients", false);
         msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS);
 
-        String body = getTemplate("invite-notification");
+        String templateName;
+        if (isAlreadyUser) {
+            templateName = "friend-notification";
+        } else {
+            templateName = "invite-notification";
+        }
+        //TODO: get language from client
+        String body = getTemplate(templateName, "en_US");
+
         if (body == null) {
             throw new RuntimeException("Could not find template invite-notification");
         }
@@ -143,12 +157,55 @@ public class MandrillEmailer {
     }
 
 
-    private static String getTemplate(String name) {
-        String filename = name + ".html";
+    private static String getTemplate(String name, String preferredLanguage) {
+        String filename = name + ".html.tmpl";
+        String template = readFile(filename);
+        String languageJson = readFile(name + "-body.json");
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new MrBeanModule());
+        String content;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, String> data = mapper.readValue(languageJson, Map.class);
+            //first, preferred language (if available)
+
+            String preferredData = data.get(preferredLanguage);
+            if (StringUtils.isBlank(preferredData)) {
+                preferredLanguage = "en_US";
+                content = data.get(preferredLanguage);
+                if (content == null) {
+                    throw new RuntimeException("Expected at least English");
+                }
+            } else {
+                content = preferredData;
+            }
+
+            //TODO: sort these in some sensible way
+            for (Entry<String, String> entry : data.entrySet()) {
+                String language = entry.getKey();
+                if (language.equals (preferredLanguage)) {
+                    continue;
+                }
+                content += entry.getValue();
+            }
+        } catch (final JsonParseException e) {
+            throw new RuntimeException(e);
+        } catch (final JsonMappingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        String result = template.replace("{content}", content);
+        return result;
+
+    }
+
+    private static String readFile(final String filename) {
         InputStream stream = MandrillEmailer.class
                 .getResourceAsStream(filename);
         if (stream == null) {
-            throw new RuntimeException("No such template " + name);
+            throw new RuntimeException("No such template " + filename);
         }
         String result = null;
         try {
@@ -157,7 +214,6 @@ public class MandrillEmailer {
             throw new RuntimeException(e);
         }
         return result;
-
     }
 
     public static void sendEmail(final String payload) {
