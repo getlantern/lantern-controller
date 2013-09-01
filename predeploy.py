@@ -16,7 +16,7 @@ shutil.copyfile(os.path.join(here,
                 os.path.join(here, 'src', 'org', 'lantern', 'secrets'))
 
 secret = base64.b64encode(os.urandom(64))
-file(os.path.join(here, 'war', 'WEB-INF', 'classes', 'csrf-secret.properties'),
+file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
 if raw_input("Shall I bump version? (y/N)") in 'yY':
