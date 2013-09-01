@@ -29,8 +29,15 @@ public class AdminServlet extends HttpServlet {
     private static final transient Logger log = Logger
             .getLogger(AdminServlet.class.getName());
     private static String secret;
-
+    
     static {
+        secret = loadSecret();
+    }
+
+    private static String loadSecret() {
+        if (StringUtils.isNotBlank(secret)) {
+            return secret;
+        }
         final Properties prop = new Properties();
 
         try {
@@ -41,6 +48,7 @@ public class AdminServlet extends HttpServlet {
                 throw new RuntimeException(
                         "Please create a csrf-secret.properties file with field secret");
             }
+            return secret;
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (NullPointerException e) {
@@ -197,5 +205,9 @@ public class AdminServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
         log.info("Done");
+    }
+
+    public static void setSecret(final String secret) {
+        AdminServlet.secret = secret;
     }
 }

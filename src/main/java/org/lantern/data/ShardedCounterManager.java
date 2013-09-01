@@ -67,9 +67,15 @@ public class ShardedCounterManager {
     private static final Key COUNTERGROUPKEY = KeyFactory.createKey(
             CounterGroup.class.getSimpleName(), CounterGroup.singletonKey);
 
+    private static boolean disabled = false;
+
     CounterGroup group;
 
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
+    
+    public static void disable() {
+        disabled = true;
+    }
     
     public ShardedCounterManager() {
         cache.setErrorHandler(ErrorHandlers.getConsistentLogAndContinue(Level.INFO));
@@ -96,7 +102,9 @@ public class ShardedCounterManager {
      * @param count
      */
     final void increment(final String name, long count) {
-        loadGroup();
+        if (!loadGroup()) {
+            return;
+        }
         DatastoreCounter counter = group.getCounter(name);
         if (counter == null) {
             log.log(Level.WARNING, "Trying to increment nonexistent counter " + name);
@@ -121,16 +129,20 @@ public class ShardedCounterManager {
         }
     }
 
-    private void loadGroup() {
+    private boolean loadGroup() {
+        if (disabled) {
+            log.warning("NOT CREATING COUNTERS -- SHOULD BE ONLY DURING TESTING!");
+            return false;
+        }
         if (group != null)
-            return;
+            return true;
 
         // try to get from cache
         group = (CounterGroup) cache.get("countergroup");
         if (group != null)
             // No need to restore() when reading from memcache.  It's only the
             // Datastore that won't persist the counters hashmap.
-            return;
+            return true;
 
         log.info("Forced to load counter group from database.  This will be slow.");
         CounterGroup g;
@@ -163,13 +175,13 @@ public class ShardedCounterManager {
                 // (And we know persistedCounters is in sync with counters at
                 //  this point, BTW).
                 cache.put("countergroup", g);
-                return;
+                return true;
             } catch (ConcurrentModificationException e) {
                 log.warning("Concurrent modification!");
                 // If some thread has concurrently succeeded in loading this
                 // group, we don't need to do it again.
                 if (group != null) {
-                    return;
+                    return true;
                 }
             } finally {
                 if (txn.isActive()) {
@@ -181,7 +193,9 @@ public class ShardedCounterManager {
     }
 
     public long getCount(final String counterName) {
-        loadGroup();
+        if (!loadGroup()) {
+            return 0L;
+        }
         DatastoreCounter counter = group.getCounter(counterName);
         if (counter == null) {
             counter = new DatastoreCounter(counterName);
@@ -194,7 +208,9 @@ public class ShardedCounterManager {
 
     public void initCounters(Collection<String> timed,
                              Collection<String> untimed) {
-        loadGroup();
+        if (!loadGroup()) {
+            return;
+        }
         // First pass to avoid touching the Datastore if the group has
         // all the names, which will be true most often.
         for (String name : timed) {
