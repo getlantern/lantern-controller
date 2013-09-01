@@ -9,8 +9,8 @@
   <artifactId>lantern-controller</artifactId>
 
   <properties>
-    <appengine.app.version>134</appengine.app.version>
-    <appengine.target.version>1.8.2</appengine.target.version>
+    <appengine.app.version>149</appengine.app.version>
+    <appengine.target.version>1.8.3</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>org.getlantern</groupId>
       <artifactId>lantern-common</artifactId>
-      <version>0.0.5</version>
+      <version>0.0.13</version>
     </dependency>
     <dependency>
       <groupId>org.littleshoot</groupId>

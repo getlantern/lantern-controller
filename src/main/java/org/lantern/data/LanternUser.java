@@ -27,7 +27,7 @@ public class LanternUser implements Serializable {
 
     private Date created = new Date();
 
-    private final Set<String> countryCodes = new HashSet<String>();
+    private String countryCodes = "";
 
     private int invites;
 
@@ -45,8 +45,6 @@ public class LanternUser implements Serializable {
     private boolean everSignedIn = false;
 
     private Date lastAccessed = new Date();
-
-    private int instancesSignedIn = 0;
 
     /**
      * The instances we have seen running in behalf of this user.
@@ -164,32 +162,33 @@ public class LanternUser implements Serializable {
         this.lastAccessed = lastAccessed;
     }
 
-    public boolean anyInstancesSignedIn() {
-        return instancesSignedIn > 0;
-    }
-
-    public void incrementInstancesSignedIn() {
-        instancesSignedIn ++;
-    }
-
-    public void decrementInstancesSignedIn() {
-        //if instancesSignedIn is zero, there is a bug
-        if (instancesSignedIn > 0)
-            instancesSignedIn --;
-        else
-            log.warning("Instances signed in for " + this + " is already zero");
-    }
-
     public boolean instanceIdSeen(String instanceId) {
         return !instanceIds.add(instanceId);
     }
 
     public boolean countrySeen(String countryCode) {
-        return !countryCodes.add(countryCode);
+        if (countryCodes == null) {
+            countryCodes = countryCode + ".";
+            return false;
+        }
+        if (countryCodes.contains(countryCode + ".")) {
+            return true;
+        } else {
+            countryCodes += countryCode + ".";
+            return false;
+        }
     }
 
     public Set<String> getCountryCodes() {
-        return countryCodes;
+        Set<String> out = new HashSet<String>();
+        if (countryCodes != null) {
+            for (String code : countryCodes.split("\\.")) {
+                if (code.length() == 2) {
+                    out.add(code);
+                }
+            }
+        }
+        return out;
     }
 
 /*  Uncomment for datastore reset scripts.
@@ -197,7 +196,7 @@ public class LanternUser implements Serializable {
         instancesSignedIn = 0;
     }
     public void resetCountryCodes() {
-        countryCodes = new HashSet<String>();
+        countryCodes = "";
     }
 */
 

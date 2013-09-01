@@ -62,7 +62,7 @@ public class DatastoreTest {
         final Dao dao = new Dao();
         final String id = "id-7777";
         final String name = "testuser";
-        dao.updateUser(id, 0L, 0L, 0L, 0L, "US", "7777", name, Mode.get);
+        dao.updateUser(id, 0L, 0L, 0L, 0L, "US", name, Mode.get);
         
         final Friend friend1 = new Friend("test1@test.com");
         friend1.setName("test1");
@@ -86,6 +86,21 @@ public class DatastoreTest {
 
         
         final List<Friend> changed2 = dao.syncFriends(name, friends2);
-        assertEquals(1, changed2.size());
+        
+        // This should still be 0 because the client doesn't need to know 
+        // about the change on the server since the client is the one that 
+        // initiated the update - it already knows about the change.
+        assertEquals(0, changed2.size());
+        
+        friend2.setStatus(Status.pending);
+        
+        final List<Friend> changed3 = dao.syncFriends(name, friends2);
+        
+        // There should actually be an update here because this client is 
+        // reporting pending for friend2 but the server has friend2 as already
+        // a friend. It's not possible to go from friend to pending, so the
+        // server must have newer info!
+        assertEquals(1, changed3.size());
+        
     }
 }

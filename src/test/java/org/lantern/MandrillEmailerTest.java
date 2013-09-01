@@ -17,15 +17,15 @@ public class MandrillEmailerTest {
     private final String inviterName = "";
 
     private final String inviterEmail = "";
-    
+
     private final String invitedEmail = "";
-    
+
     private final String osxInstallerUrl = "";
 
     private final String winInstallerUrl = "";
-    
+
     private final String linuxInstallerUrl = "";
-    
+
     @Test
     public void test() throws Exception {
         if (StringUtils.isBlank(inviterName) ||
@@ -33,11 +33,11 @@ public class MandrillEmailerTest {
             // Ignore the test
             return;
         }
-        final String payload = MandrillEmailer.mandrillSendEmailJson(inviterName, 
+        final String payload = MandrillEmailer.mandrillSendEmailJson(inviterName,
             inviterEmail, invitedEmail, osxInstallerUrl, winInstallerUrl,
-            linuxInstallerUrl);
+            linuxInstallerUrl, false);
         final HttpPost post = new HttpPost(
-            LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
+            LanternControllerConstants.MANDRILL_API_SEND_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));
         final DefaultHttpClient httpclient = new DefaultHttpClient();
         final HttpResponse response = httpclient.execute(post);

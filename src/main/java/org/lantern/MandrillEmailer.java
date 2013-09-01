@@ -1,20 +1,26 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.littleshoot.util.ThreadUtils;
 
 import com.google.appengine.api.urlfetch.FetchOptions;
@@ -29,25 +35,26 @@ import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
  */
 public class MandrillEmailer {
 
-    private static final transient Logger log = 
+    private static final transient Logger log =
         Logger.getLogger(MandrillEmailer.class.getName());
-    
+
     /**
      * Sends a Lantern invite e-mail using the Mandrill API.
-     * 
+     *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite. 
+     * @param invitedEmail The email of the person to invite.
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @param isAlreadyUser We send a different email if the user has ever logged in
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
-    public static void sendInvite(final String inviterName, 
+    public static void sendInvite(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl)
+        final String linuxInstallerUrl, boolean isAlreadyUser)
         throws IOException {
         log.info("Sending invite to "+invitedEmail);
         if (StringUtils.isBlank(invitedEmail)) {
@@ -56,36 +63,40 @@ public class MandrillEmailer {
         }
         final String json =
             mandrillSendEmailJson(inviterName, inviterEmail, invitedEmail,
-                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl);
+                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl,
+                isAlreadyUser);
         sendEmail(json);
     }
-    
+
     /**
      * Creates JSON compatible with the Mandrill API. Public for testing.
-     * See https://mandrillapp.com/api/docs/messages.html#method=send-template
-     * 
+     * See https://mandrillapp.com/api/docs/messages.html#method=send
+     *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite. 
+     * @param invitedEmail The email of the person to invite.
      * @param osxInstallerUrl The URL of the OS X installer.
      * @param winInstallerUrl The URL of the Windows installer.
      * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @param isAlreadyUser
      * @return The generated JSON to send to Mandrill.
      * @throws IOException If there's an error generating the JSON.
      */
     public static String mandrillSendEmailJson(final String inviterName,
         final String inviterEmail, final String invitedEmail,
         final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl)
+        final String linuxInstallerUrl, boolean isAlreadyUser)
         throws IOException {
         final ObjectMapper mapper = new ObjectMapper();
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("key", LanternControllerConstants.getMandrillApiKey());
-        data.put("template_name", LanternControllerConstants.INVITE_EMAIL_TEMPLATE_NAME);
-        data.put("template_content", new String[]{});
-     
+        String mandrillApiKey = LanternControllerConstants.getMandrillApiKey();
+        if (mandrillApiKey == null || mandrillApiKey.equals("secret")) {
+            throw new RuntimeException("Please correct your secrets file to include the Mandrill API key");
+        }
+        data.put("key", mandrillApiKey);
+
         final Map<String, Object> msg = new HashMap<String, Object>();
-        
+
         msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
         msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
         msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
@@ -100,7 +111,23 @@ public class MandrillEmailer {
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
         msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS);
-        final List<Map<String, String>> mergeVars = 
+
+        String templateName;
+        if (isAlreadyUser) {
+            templateName = "friend-notification";
+        } else {
+            templateName = "invite-notification";
+        }
+        //TODO: get language from client
+        String body = getTemplate(templateName, "en_US");
+
+        if (body == null) {
+            throw new RuntimeException("Could not find template invite-notification");
+        }
+
+        msg.put("html", body);
+
+        final List<Map<String, String>> mergeVars =
             new ArrayList<Map<String,String>>();
         if (StringUtils.isNotBlank(inviterEmail)) {
             mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
@@ -111,12 +138,12 @@ public class MandrillEmailer {
             mergeVars.add(mergeVar("INVITER_NAME", inviterName));
         }
 
-        mergeVars.add(mergeVar("OSXINSTALLERURL", osxInstallerUrl));
-        mergeVars.add(mergeVar("WININSTALLERURL", winInstallerUrl));
-        mergeVars.add(mergeVar("LINUXINSTALLERURL", linuxInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_DMG", osxInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_EXE", winInstallerUrl));
+        mergeVars.add(mergeVar("INSTALLER_URL_DEB", linuxInstallerUrl));
 
         msg.put("global_merge_vars", mergeVars);
-        
+
         data.put("message", msg);
         try {
             return mapper.writeValueAsString(data);
@@ -130,10 +157,69 @@ public class MandrillEmailer {
     }
 
 
+    private static String getTemplate(String name, String preferredLanguage) {
+        String filename = name + ".html.tmpl";
+        String template = readFile(filename);
+        String languageJson = readFile(name + "-body.json");
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new MrBeanModule());
+        String content;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, String> data = mapper.readValue(languageJson, Map.class);
+            //first, preferred language (if available)
+
+            String preferredData = data.get(preferredLanguage);
+            if (StringUtils.isBlank(preferredData)) {
+                preferredLanguage = "en_US";
+                content = data.get(preferredLanguage);
+                if (content == null) {
+                    throw new RuntimeException("Expected at least English");
+                }
+            } else {
+                content = preferredData;
+            }
+
+            //TODO: sort these in some sensible way
+            for (Entry<String, String> entry : data.entrySet()) {
+                String language = entry.getKey();
+                if (language.equals (preferredLanguage)) {
+                    continue;
+                }
+                content += entry.getValue();
+            }
+        } catch (final JsonParseException e) {
+            throw new RuntimeException(e);
+        } catch (final JsonMappingException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        String result = template.replace("{content}", content);
+        return result;
+
+    }
+
+    private static String readFile(final String filename) {
+        InputStream stream = MandrillEmailer.class
+                .getResourceAsStream(filename);
+        if (stream == null) {
+            throw new RuntimeException("No such template " + filename);
+        }
+        String result = null;
+        try {
+            result = IOUtils.toString(stream, Charset.forName("UTF-8"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
     public static void sendEmail(final String payload) {
         final URL url;
         try {
-            url = new URL(LanternControllerConstants.MANDRILL_API_SEND_TEMPLATE_URL);
+            url = new URL(LanternControllerConstants.MANDRILL_API_SEND_URL);
         } catch (final MalformedURLException e) {
             log.warning("Malformed: " + ThreadUtils.dumpStack());
             return;
@@ -142,7 +228,7 @@ public class MandrillEmailer {
         final FetchOptions fetchOptions = FetchOptions.Builder.withDefaults().
             followRedirects().validateCertificate().setDeadline(60d);
         log.info("Sending payload:\n"+payload);
-        final HTTPRequest request = 
+        final HTTPRequest request =
             new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
             //new HTTPRequest(url, HTTPMethod.POST, fetchOptions);
         try {
@@ -151,10 +237,10 @@ public class MandrillEmailer {
             log.warning("Encoding? "+ThreadUtils.dumpStack());
             return;
         }
-        
-        final URLFetchService fetcher = 
+
+        final URLFetchService fetcher =
                 URLFetchServiceFactory.getURLFetchService();
-        
+
         try {
             final HTTPResponse response = fetcher.fetch(request);
             final int responseCode = response.getResponseCode();

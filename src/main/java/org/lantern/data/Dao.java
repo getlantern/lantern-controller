@@ -15,7 +15,6 @@ import org.lantern.CensoredUtils;
 import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
-import org.lantern.LanternControllerUtils;
 import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
@@ -24,6 +23,7 @@ import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
@@ -137,13 +137,14 @@ public class Dao extends DAOBase {
     }
 
     public void setInstanceAvailable(final String userId,
-            final String instanceId, final String countryCode, final Mode mode) {
+            final String instanceId, final String countryCode, final Mode mode,
+            final String resource) {
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
-                final ArrayList<String> countersToUpdate = setInstanceAvailable(
-                        ofy, userId, instanceId, countryCode, mode);
+                final List<String> countersToUpdate = setInstanceAvailable(
+                        ofy, userId, instanceId, countryCode, mode, resource);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -173,23 +174,30 @@ public class Dao extends DAOBase {
      * @return a list of the counters that should be incremented as a
      * result of this instance having become available.
      */
-    public ArrayList<String> setInstanceAvailable(Objectify ofy,
+    public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final Mode mode) {
-        // As of this writing, we use instanceId to refer to the XMPP
-        // resource, that being the instance-specific part of the jabberId.
-        // Note that this does *not* identify an instance globally.  You need
-        // the userId too.  That is why, somewhat confusingly, instances are
-        // keyed by full jabberId in the LanternInstances table.
-        final String
-            fullId = LanternControllerUtils.jabberIdFromUserAndResource(
-                        userId, instanceId);
-        LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+            final Mode mode, final String resource) {
+
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
+
+        Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                userId);
+
+        Key<LanternInstance> key = new Key<LanternInstance>(parentKey,
+                LanternInstance.class, instanceId);
+
+        LanternInstance instance = ofy.find(key);
+
+        if (instance != null && StringUtils.equals(instance.getResource(), resource)) {
+            //this is an available message for the same resource as
+            //is currently in use, so it must be bogus.
+            return Collections.emptyList();
+        }
+
         ArrayList<String> counters = new ArrayList<String>();
         if (instance != null) {
-            log.info("Setting availability to true for " + fullId);
+            log.info("Setting availability to true for " + userId + "/" + instanceId);
             if (instance.isAvailable()) {
                 //handle mode changes
                 if (instance.getMode() != mode) {
@@ -204,20 +212,22 @@ public class Dao extends DAOBase {
                     counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE,
                                  oldModeStr));
                     instance.setMode(mode);
-                    ofy.put(instance);
                     log.info("Finished updating datastore...");
                 }
 
             } else {
-                // XXX will we ever see this anyway?
                 log.info("Instance exists but was unavailable.");
                 updateStatsForNewlyAvailableInstance(ofy, user, instance,
                         countryCode, mode, counters);
             }
-
+            instance.setLastUpdated(new Date());
+            instance.setResource(resource);
+            ofy.put(instance);
         } else {
             log.info("Could not find instance!!");
-            instance = new LanternInstance(fullId);
+
+            instance = new LanternInstance(instanceId, parentKey);
+            instance.setResource(resource);
             instance.setUser(userId);
             // The only counter that we need handling differently for new
             // instances is the global peers ever.
@@ -250,11 +260,17 @@ public class Dao extends DAOBase {
         }
         //notice that we check for any signed in before we set this instance
         //available
-        if (!user.anyInstancesSignedIn()) {
+
+        //we can do an ancestor query to figure out how many remaining
+        //instances there are
+
+        Query<LanternInstance> query = signedInInstanceQuery(ofy, user.getId());
+        boolean anyInstancesSignedIn = query.count() > 0;
+
+        if (!anyInstancesSignedIn) {
             counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
             counters.add(dottedPath(countryCode, NUSERS, ONLINE));
         }
-        user.incrementInstancesSignedIn();
         instance.setCurrentCountry(countryCode);
         instance.setMode(mode);
         instance.setAvailable(true);
@@ -287,7 +303,58 @@ public class Dao extends DAOBase {
         return alreadyInvitedBy(ofy, sponsor, guest);
     }
 
+    /**
+     * Deletes the friend of the specified user.
+     * 
+     * @param user The email address of the user.
+     * @param friend The email address of the friend of that user.
+     */
+    public void deleteFriend(final String user, final String friend) {
+        final LanternUser lu = getUser(user);
+        final QueryResultIterable<TrustRelationship> children = 
+                getChildren(lu, TrustRelationship.class);
+        
+        for (final TrustRelationship tr : children) {
+            if (tr.getId().equals(friend)) {
+                System.out.println("Found friend: "+tr.getId());
+                final Objectify ofy = ofy();
+                ofy.delete(tr);
+                break;
+            }
+        }
+    }
 
+    /**
+     * Lists the friends of the specified user.
+     * 
+     * @param user The email address of the user to list friends for.
+     * @return The email addresses of those friends.
+     */
+    public Collection<String> listFriends(final String user) {
+        final LanternUser lu = getUser(user);
+        final QueryResultIterable<TrustRelationship> children = 
+            getChildren(lu, TrustRelationship.class);
+        
+        final Collection<String> friends = new ArrayList<String>();
+        for (final TrustRelationship tr : children) {
+            friends.add(tr.getId());
+        }
+        return friends;
+    }
+    
+    /**
+     * Utility method to get the children of a given ancestor.
+     * 
+     * @param parent The parent object.
+     * @param clazz The class of the children.
+     * @return The iterable query results.
+     */
+    private <T, V> QueryResultIterable<T> getChildren(final V parent, 
+        final Class<T> clazz) {
+        final Objectify ofy = ofy();
+        return ofy.query(clazz).ancestor(ofy.getFactory().getKey(parent)).fetch();
+    }
+    
     /**
      * Returns true if the invite was added, false if it wasn't (because it
      * already existed, for instance)
@@ -498,7 +565,7 @@ public class Dao extends DAOBase {
     public boolean updateUser(final String userId, final long directRequests,
             final long directBytes, final long requestsProxied,
             final long bytesProxied, final String countryCode,
-            final String instanceId, final String name, final Mode mode) {
+            final String name, final Mode mode) {
         log.info("Updating user with stats: dr: " + directRequests + " db: "
                 + directBytes + " bytesProxied: " + bytesProxied);
         Boolean result = new RetryingTransaction<Boolean>() {
@@ -681,12 +748,12 @@ public class Dao extends DAOBase {
     }
 
     public void setInstanceUnavailable(final String userId,
-            final String instanceId) {
+            final String resource) {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
                 final ArrayList<String> countersToUpdate = setInstanceUnavailable(
-                        ofy, userId, instanceId);
+                        ofy, userId, resource);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded. Since these affect the memcache
@@ -708,26 +775,26 @@ public class Dao extends DAOBase {
             log.warning("Too much contention; giving up!");
         }
     }
-    public ArrayList<String> setInstanceUnavailable(Objectify ofy, String userId, String instanceId) {
-        // As of this writing, we use instanceId to refer to the XMPP
-        // resource, that being the instance-specific part of the jabberId.
-        // Note that this does *not* identify an instance globally.  You need
-        // the userId too.  That is why, somewhat confusingly, instances are
-        // keyed by full jabberId in the LanternInstances table.
+
+    public ArrayList<String> setInstanceUnavailable(final Objectify ofy,
+            final String userId, final String resource) {
         ArrayList<String> counters = new ArrayList<String>();
-        final String
-            fullId = LanternControllerUtils.jabberIdFromUserAndResource(
-                        userId, instanceId);
-        final LanternInstance instance = ofy.find(LanternInstance.class, fullId);
+
+        final Key<LanternUser> parent = new Key<LanternUser>(LanternUser.class, userId);
+
+        // for unavailable, we search by resource, because we do not have the
+        // instance id
+        final Query<LanternInstance> searchByResource = ofy
+                .query(LanternInstance.class).ancestor(parent)
+                .filter("resource", resource);
+        final LanternInstance instance = searchByResource.get();
         if (instance == null) {
-            log.warning("Instance " + fullId + " not found.");
+            log.warning("Instance " + userId + "/" + resource + " not found.");
             return counters;
         }
         if (instance.isAvailable()) {
             log.info("Decrementing online count");
             instance.setAvailable(false);
-            LanternUser user = ofy.find(LanternUser.class, userId);
-            user.decrementInstancesSignedIn();
 
             String modeStr = instance.getMode().toString();
             String countryCode = instance.getCurrentCountry();
@@ -735,16 +802,30 @@ public class Dao extends DAOBase {
             counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
             counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE, modeStr));
 
-            if (!user.anyInstancesSignedIn()) {
+            Query<LanternInstance> query = signedInInstanceQuery(ofy, userId);
+
+            //we compare against 1 here because we have not yet
+            //saved the current instance
+            boolean anyInstancesSignedIn = query.count() > 1;
+
+            if (!anyInstancesSignedIn) {
                 log.info("Decrementing online user count");
                 counters.add("-" + dottedPath(GLOBAL, NUSERS, ONLINE));
                 counters.add("-" + dottedPath(countryCode, NUSERS, ONLINE));
             }
 
             ofy.put(instance);
-            ofy.put(user);
         }
         return counters;
+    }
+
+    private Query<LanternInstance> signedInInstanceQuery(Objectify ofy,
+            String userId) {
+        Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                userId);
+        Query<LanternInstance> query = ofy.query(LanternInstance.class)
+                .ancestor(parentKey).filter("available", true);
+        return query;
     }
 
     public String getAndSetInstallerLocation(final String email) {
@@ -947,7 +1028,6 @@ public class Dao extends DAOBase {
                 Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                         userId);
                 Collection<Friend> clientFriendList = clientFriends.getFriends();
-                @SuppressWarnings("unchecked")
 
                 Query<TrustRelationship> relationships = ofy.query(TrustRelationship.class).ancestor(
                         parentKey);
@@ -1028,16 +1108,20 @@ public class Dao extends DAOBase {
     }
 
     public void sentInvite(final String inviterEmail, final String invitedEmail) {
-        boolean inviteFinalized = new RetryingTransaction<Boolean>() {
+        Boolean inviteFinalized = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 Invite invite = getInvite(ofy, inviterEmail, invitedEmail);
                 invite.setStatus(Status.sent);
+                ofy.put(invite);
                 ofy.getTxn().commit();
                 return true;
             }
 
         }.run();
+
+        if (inviteFinalized == null)
+            inviteFinalized = false;
         String status = inviteFinalized ? "" : "not ";
         log.info("Invite " + status + "finalized: " + inviterEmail + " to "
                 + invitedEmail);
