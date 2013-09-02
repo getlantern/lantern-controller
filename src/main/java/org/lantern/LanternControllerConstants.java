@@ -13,7 +13,7 @@ public class LanternControllerConstants {
     static final String INVITE_EMAIL_SUBJECT = "Lantern Invitation";
     static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
     static final String INVITE_EMAIL_FROM_NAME = "Lantern Beta";
-    static final String INVITE_EMAIL_BCC_ADDRESS = "invite@getlantern.org";
+    static final String INVITE_EMAIL_BCC_ADDRESS = "lantern-invites@googlegroups.com";
 
     private static String mandrillApiKey;
     private static String awsAccessKeyId;
