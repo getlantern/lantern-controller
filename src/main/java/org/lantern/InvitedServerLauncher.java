@@ -57,6 +57,8 @@ public class InvitedServerLauncher {
             new SQSUtil().send(map);
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
+        } else {
+            log.warning("Installer location is pending -- not sending invite");
         }
 
         dao.sentInvite(inviterEmail, invitedEmail);
