@@ -9,7 +9,7 @@
   <artifactId>lantern-controller</artifactId>
 
   <properties>
-    <appengine.app.version>149</appengine.app.version>
+    <appengine.app.version>163</appengine.app.version>
     <appengine.target.version>1.8.3</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -28,8 +28,34 @@
     </dependency>
     <dependency>
       <groupId>com.google.appengine</groupId>
+      <artifactId>appengine-endpoints</artifactId>
+      <version>${appengine.target.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.appengine</groupId>
       <artifactId>appengine-remote-api</artifactId>
       <version>${appengine.target.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.appengine.orm</groupId>
+      <artifactId>datanucleus-appengine</artifactId>
+      <version>2.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.jdo</groupId>
+      <artifactId>jdo-api</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>datanucleus-core</artifactId>
+      <version>3.1.5</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.datanucleus</groupId>
+      <artifactId>datanucleus-api-jdo</artifactId>
+      <version>3.1.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -51,11 +77,14 @@
       <artifactId>commons-configuration</artifactId>
       <version>1.9</version>
     </dependency>
+<!--
     <dependency>
       <groupId>javax.jdo</groupId>
       <artifactId>jdo2-api</artifactId>
       <version>2.3-eb</version>
     </dependency>
+-->
+
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
@@ -77,6 +106,7 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>4.2.2</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -122,13 +152,6 @@
   </dependencies>
 
   <build>
-    <extensions>
-      <extension>
-        <groupId>org.springframework.build</groupId>
-        <artifactId>aws-maven</artifactId>
-        <version>4.8.0.RELEASE</version>
-      </extension>
-    </extensions>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -161,9 +184,11 @@
         <groupId>com.google.appengine</groupId>
         <artifactId>appengine-maven-plugin</artifactId>
         <version>${appengine.target.version}</version>
+<!--
         <configuration>                                     
           <port>8000</port>
         </configuration>
+-->
       </plugin>
     </plugins>
   </build>
@@ -172,7 +197,7 @@
     <repository>
       <id>aws-release</id>
       <name>AWS Release Repository</name>
-      <url>s3://lantern-mvn-repo/release</url>
+      <url>https://s3.amazonaws.com/lantern-mvn-repo/release</url>
       <releases>
         <enabled>true</enabled>
       </releases>
