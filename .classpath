@@ -4,8 +4,8 @@
   <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
   <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
-  <classpathentry kind="var" path="M2_REPO/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar"/>
-  <classpathentry kind="var" path="M2_REPO/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar"/>
+  <classpathentry kind="var" path="M2_REPO/javax/jdo/jdo-api/3.0.1/jdo-api-3.0.1.jar"/>
+  <classpathentry kind="var" path="M2_REPO/javax/transaction/jta/1.1/jta-1.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar"/>
   <classpathentry kind="var" path="M2_REPO/javax/inject/javax.inject/1/javax.inject-1.jar" sourcepath="M2_REPO/javax/inject/javax.inject/1/javax.inject-1-sources.jar">
     <attributes>
@@ -15,12 +15,14 @@
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
   <classpathentry kind="var" path="M2_REPO/aws-on-gae/aws-on-gae/1.1.9/aws-on-gae-1.1.9.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-api-1.0-sdk/1.8.3/appengine-api-1.0-sdk-1.8.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-endpoints/1.8.3/appengine-endpoints-1.8.3.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-remote-api/1.8.3/appengine-remote-api-1.8.3.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/guava/guava/14.0.1/guava-14.0.1.jar" sourcepath="M2_REPO/com/google/guava/guava/14.0.1/guava-14.0.1-sources.jar">
-    <attributes>
-      <attribute value="jar:file:/Users/afisk/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1-javadoc.jar!/" name="javadoc_location"/>
-    </attributes>
-  </classpathentry>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/orm/datanucleus-appengine/2.1.2/datanucleus-appengine-2.1.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/datanucleus/datanucleus-core/3.1.5/datanucleus-core-3.1.5.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/datanucleus/datanucleus-enhancer/3.1.1/datanucleus-enhancer-3.1.1.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/ow2/asm/asm/4.0/asm-4.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/datanucleus/datanucleus-api-jdo/3.1.4/datanucleus-api-jdo-3.1.4.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/guava/guava/14.0.1/guava-14.0.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/googlecode/objectify/objectify/3.1/objectify-3.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/commons-codec/commons-codec/1.7/commons-codec-1.7.jar" sourcepath="M2_REPO/commons-codec/commons-codec/1.7/commons-codec-1.7-sources.jar">
     <attributes>
@@ -51,11 +53,7 @@
   <classpathentry kind="var" path="M2_REPO/org/codehaus/jackson/jackson-mapper-asl/1.9.11/jackson-mapper-asl-1.9.11.jar" sourcepath="M2_REPO/org/codehaus/jackson/jackson-mapper-asl/1.9.11/jackson-mapper-asl-1.9.11-sources.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/codehaus/jackson/jackson-mrbean/1.9.11/jackson-mrbean-1.9.11.jar" sourcepath="M2_REPO/org/codehaus/jackson/jackson-mrbean/1.9.11/jackson-mrbean-1.9.11-sources.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/getlantern/lantern-common/0.0.13/lantern-common-0.0.13.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/inject/guice/3.0/guice-3.0.jar" sourcepath="M2_REPO/com/google/inject/guice/3.0/guice-3.0-sources.jar">
-    <attributes>
-      <attribute value="jar:file:/Users/afisk/.m2/repository/com/google/inject/guice/3.0/guice-3.0-javadoc.jar!/" name="javadoc_location"/>
-    </attributes>
-  </classpathentry>
+  <classpathentry kind="var" path="M2_REPO/com/google/inject/guice/3.0/guice-3.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/aopalliance/aopalliance/1.0/aopalliance-1.0.jar" sourcepath="M2_REPO/aopalliance/aopalliance/1.0/aopalliance-1.0-sources.jar"/>
   <classpathentry kind="var" path="M2_REPO/commons-beanutils/commons-beanutils-core/1.8.3/commons-beanutils-core-1.8.3.jar"/>
   <classpathentry kind="var" path="M2_REPO/commons-io/commons-io/2.4/commons-io-2.4.jar" sourcepath="M2_REPO/commons-io/commons-io/2.4/commons-io-2.4-sources.jar">
