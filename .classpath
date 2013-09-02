@@ -2,6 +2,7 @@
 <classpath>
   <classpathentry kind="src" path="src/test/java" output="target/test-classes" including="**/*.java"/>
   <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
+  <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
   <classpathentry kind="var" path="M2_REPO/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar"/>
   <classpathentry kind="var" path="M2_REPO/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar"/>
@@ -13,8 +14,8 @@
   </classpathentry>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
   <classpathentry kind="var" path="M2_REPO/aws-on-gae/aws-on-gae/1.1.9/aws-on-gae-1.1.9.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-api-1.0-sdk/1.8.2/appengine-api-1.0-sdk-1.8.2.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-remote-api/1.8.2/appengine-remote-api-1.8.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-api-1.0-sdk/1.8.3/appengine-api-1.0-sdk-1.8.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-remote-api/1.8.3/appengine-remote-api-1.8.3.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/google/guava/guava/14.0.1/guava-14.0.1.jar" sourcepath="M2_REPO/com/google/guava/guava/14.0.1/guava-14.0.1-sources.jar">
     <attributes>
       <attribute value="jar:file:/Users/afisk/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1-javadoc.jar!/" name="javadoc_location"/>
@@ -95,6 +96,6 @@
     </attributes>
   </classpathentry>
   <classpathentry kind="var" path="M2_REPO/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1.jar" sourcepath="M2_REPO/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1-sources.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-testing/1.8.2/appengine-testing-1.8.2.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-api-stubs/1.8.2/appengine-api-stubs-1.8.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-testing/1.8.3/appengine-testing-1.8.3.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/appengine/appengine-api-stubs/1.8.3/appengine-api-stubs-1.8.3.jar"/>
 </classpath>
