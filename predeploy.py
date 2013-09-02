@@ -13,7 +13,7 @@ shutil.copyfile(os.path.join(here,
                              'too-many-secrets',
                              'lantern-controller',
                              'org.lantern.secrets.properties'),
-                os.path.join(here, 'src', 'org', 'lantern', 'secrets'))
+                os.path.join(here, 'src', 'main', 'resources', 'org', 'lantern', 'secrets'))
 
 secret = base64.b64encode(os.urandom(64))
 file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
