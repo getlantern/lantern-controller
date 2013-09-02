@@ -20,9 +20,9 @@ file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
 if raw_input("Shall I bump version? (y/N)") in 'yY':
-    filename = os.path.join(here, 'war', 'WEB-INF', 'appengine-web.xml')
+    filename = os.path.join(here, 'pom.xml')
     contents = file(filename).read()
-    bumped = re.sub(r'(?<=<version>)\d+(?=</version>)',
+    bumped = re.sub(r'(?<=<appengine.app.version>)\d+(?=</appengine.app.version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
