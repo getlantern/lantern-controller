@@ -12,3 +12,4 @@ src/main/resources/csrf-secret.properties
 src/main/resources/org/lantern/secrets
 target
 log.txt
+datanucleus.log
