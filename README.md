@@ -3,19 +3,15 @@ This is the master controller project for globally controlling the Lantern netwo
 To bring this project into Eclipse, just do the following:
 
 1. git clone git@github.com:getlantern/lantern-controller.git
-2. cd lantern-controller
-4. File->Import...->Existing Projects into Workspace
-5. Choose the lantern-controller directory 
+1. Open Eclipse
+1. File->Import...->Existing Projects into Workspace
+1. Choose the lantern-controller directory 
 
-To deploy a new version, just run:
+Lantern-controller requires some secrets to be put in place before it can run.
+See (or just run) `./predeploy.py` (which requires the too-many-secrets repo to
+be cloned alongside lantern-controller) to get secrets in place.
 
-1. ./deploy.bash
-
-You'll be prompted for whether or not you want to increment the version, and
-if you do then you'll also want to set the default on the server.
-
-You'll also need to fill in src/org.lantern.secrets.properties with
-the correct data; accessKey must match the one used on getlantern.org
-
-Also create a file from war/WEB-INF/classes/csrf-secret.properties with
-secret=[some random string]
+To deploy a new version, just run `./deploy.bash`. You'll be
+prompted for whether you want to increment the version, and if you do
+then you may also want to update the default serving version in the app engine
+console.
