@@ -9,7 +9,7 @@
   <artifactId>lantern-controller</artifactId>
 
   <properties>
-    <appengine.app.version>153</appengine.app.version>
+    <appengine.app.version>156</appengine.app.version>
     <appengine.target.version>1.8.3</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
