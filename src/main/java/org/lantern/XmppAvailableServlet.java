@@ -126,11 +126,7 @@ public class XmppAvailableServlet extends HttpServlet {
         processClientInfo(presence, stats, userId, instanceId,
                 name, mode, resource);
 
-        if (mode == Mode.give) {
-            processGiveMode(presence, xmpp, responseJson);
-        } else {
-            processGetMode(presence, xmpp, responseJson);
-        }
+        sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
@@ -272,22 +268,11 @@ public class XmppAvailableServlet extends HttpServlet {
         return isInvite;
     }
 
-    private void processGetMode(final Presence presence,
+    private void sendUpdateTime(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
-        // We don't tell get mode users to check back in -- we just give them
-        // servers to connect to.
-        log.info("Sending servers to available get mode");
-        addServers(presence.getFromJid().getId(), responseJson);
-        sendResponse(presence, xmpp, responseJson);
-    }
-
-    private void processGiveMode(final Presence presence,
-        final XMPPService xmpp, final Map<String, Object> responseJson) {
-        // We always need to tell the client to check back in because we use
-        // it as a fallback for which users are online.
+        log.info("Sending client the next update time.");
         responseJson.put(LanternConstants.UPDATE_TIME,
-            LanternControllerConstants.UPDATE_TIME_MILLIS);
-        log.info("Not sending servers to give mode");
+                LanternControllerConstants.UPDATE_TIME_MILLIS);
         sendResponse(presence, xmpp, responseJson);
     }
 
@@ -364,14 +349,5 @@ public class XmppAvailableServlet extends HttpServlet {
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
             countryCode, name, mode);
-    }
-
-    private void addServers(final String jid,
-        final Map<String, Object> responseJson) {
-
-        log.info("Adding server...");
-
-        responseJson.put(LanternConstants.SERVERS,
-                         Arrays.asList("75.101.134.244:7777"));
     }
 }
