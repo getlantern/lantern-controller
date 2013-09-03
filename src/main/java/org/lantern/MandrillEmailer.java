@@ -96,15 +96,20 @@ public class MandrillEmailer {
         data.put("key", mandrillApiKey);
 
         final Map<String, Object> msg = new HashMap<String, Object>();
+        final String inviterNameOrEmail = StringUtils.isBlank(inviterName) ? inviterEmail : inviterName;
 
         msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
         msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
-        msg.put("from_name", LanternControllerConstants.INVITE_EMAIL_FROM_NAME);
+        msg.put("from_name", inviterNameOrEmail+LanternControllerConstants.INVITE_EMAIL_FROM_SUFFIX);
         final Map<String, String> to = new HashMap<String, String>();
         //XXX: Temporary hack to tightly control what installers testers get.
-        //to.put("email", invitedEmail);
         to.put("email", invitedEmail);
         msg.put("to", Arrays.asList(to));
+
+        final Map<String, String> headers = new HashMap<String, String>();
+        headers.put("Reply-To", inviterEmail);
+        msg.put("headers", headers);
+
         msg.put("track_opens", false);
         msg.put("track_clicks", false);
         msg.put("auto_text", true);
@@ -131,15 +136,8 @@ public class MandrillEmailer {
 
         final List<Map<String, String>> mergeVars =
             new ArrayList<Map<String,String>>();
-        if (StringUtils.isNotBlank(inviterEmail)) {
-            mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
-        }
-        if (StringUtils.isBlank(inviterName)) {
-            mergeVars.add(mergeVar("INVITER_NAME", inviterEmail));
-        } else {
-            mergeVars.add(mergeVar("INVITER_NAME", inviterName));
-        }
-
+        mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
+        mergeVars.add(mergeVar("INVITER_NAME", inviterNameOrEmail));
         mergeVars.add(mergeVar("INSTALLER_URL_DMG", osxInstallerUrl));
         mergeVars.add(mergeVar("INSTALLER_URL_EXE", winInstallerUrl));
         mergeVars.add(mergeVar("INSTALLER_URL_DEB", linuxInstallerUrl));
