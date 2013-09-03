@@ -19,7 +19,7 @@ secret = base64.b64encode(os.urandom(64))
 file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
-if raw_input("Shall I bump version? (y/N)") in 'yY':
+if raw_input("Shall I bump version? (y/N)").lower().startswith('y'):
     filename = os.path.join(here, 'pom.xml')
     contents = file(filename).read()
     bumped = re.sub(r'(?<=<appengine.app.version>)\d+(?=</appengine.app.version>)',
