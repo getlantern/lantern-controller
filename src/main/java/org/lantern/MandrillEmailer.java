@@ -119,7 +119,9 @@ public class MandrillEmailer {
             templateName = "invite-notification";
         }
         //TODO: get language from client
-        String body = getTemplate(templateName, "en_US");
+        //String body = getTemplate(templateName, "en_US");
+        
+        final String body = readFile("invite-notification.html");
 
         if (body == null) {
             throw new RuntimeException("Could not find template invite-notification");
@@ -157,7 +159,8 @@ public class MandrillEmailer {
     }
 
 
-    private static String getTemplate(String name, String preferredLanguage) {
+    private static String getTemplate(final String name, 
+            String preferredLanguage) {
         String filename = name + ".html.tmpl";
         String template = readFile(filename);
         String languageJson = readFile(name + "-body.json");
@@ -166,7 +169,8 @@ public class MandrillEmailer {
         String content;
         try {
             @SuppressWarnings("unchecked")
-            Map<String, String> data = mapper.readValue(languageJson, Map.class);
+            final Map<String, String> data = 
+                mapper.readValue(languageJson, Map.class);
             //first, preferred language (if available)
 
             String preferredData = data.get(preferredLanguage);
