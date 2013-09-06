@@ -2,7 +2,6 @@ package org.lantern.endpoints;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,38 +15,47 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.JsonUtils;
 import org.lantern.LanternConstants;
-import org.lantern.LanternXmppUtils;
 import org.lantern.data.Dao;
 import org.lantern.state.Friend;
 import org.lantern.state.Friends;
 
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
+import com.google.api.server.spi.response.ForbiddenException;
+import com.google.appengine.api.oauth.OAuthRequestException;
 import com.google.appengine.api.users.User;
-import com.google.appengine.api.xmpp.JID;
 
 /**
  * Defines v1 of the friends synchronization API.
  */
 @Api(
-        name = "friends",
-        version = "v1",
-        clientIds = {"323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com"
-        }
-    )
+    name = "friends",
+    version = "v1",
+    clientIds = {
+        "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com"
+    }
+)
 public class FriendsEndpoint {
     
     private final transient Logger log = Logger.getLogger(getClass().getName());
     
     @ApiMethod(name = "friends.authed", httpMethod = "post", path = "friends",
             scopes = {"https://www.googleapis.com/auth/userinfo.email"})
-    public List<Friend> authedFriends(final User user, @Named("friendsJson") final String json) {
+    public JsonStringContainer authedFriends(final User user, @Named("friendsJson") 
+        final String json) throws OAuthRequestException, ForbiddenException {
         if (user == null) {
-            // throw unauthorized.
+            log.warning("User not authorized - null user object!");
+            throw new OAuthRequestException("User not authorized");
         } 
         
-        final String updated = handleFriendsSync(json, user.getEmail());
-        return new ArrayList<Friend>();
+        final Dao dao = new Dao();
+        final String email = user.getEmail();
+        if (!dao.isInvited(email)) {
+            log.info("User not invited: "+email);
+            throw new ForbiddenException("User not invited");
+        }
+        final String updated = handleFriendsSync(json, email);
+        return new JsonStringContainer(updated);
     }
     
 
@@ -74,6 +82,22 @@ public class FriendsEndpoint {
         }
 
         return "";
+    }
+    
+    private static final class JsonStringContainer {
+        private String json;
+
+        public JsonStringContainer(final String json) {
+            this.json = json;
+        }
+
+        public String getJson() {
+            return json;
+        }
+
+        public void setJson(String json) {
+            this.json = json;
+        }
     }
 
     private <T> T safeMap(final String json, final ObjectMapper mapper, 
