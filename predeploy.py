@@ -20,20 +20,14 @@ file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
 if raw_input("Shall I bump version? (y/N)").lower().startswith('y'):
-    filename = os.path.join(here, 'pom.xml')
+    filename = os.path.join(here, 'src', 'main', 'webapp', 'WEB-INF', 'appengine-web.xml')
     contents = file(filename).read()
-    bumped = re.sub(r'(?<=<appengine.app.version>)\d+(?=</appengine.app.version>)',
+    bumped = re.sub(r'(?<=<version>)\d+(?=</version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
                     re.MULTILINE)
     file(filename, 'w').write(bumped)
-    print "OK, version bumped."
-    print
-    print "Note that this may cause the csrf-secret.properties file to be deleted"
-    print "on deploy.  You can check this in the logs of the new version, before"
-    print "you make it current.  If you see errors there, rerun this script"
-    print "without bumping and all should be fine."
 else:
     print "OK, version left alone."
 
