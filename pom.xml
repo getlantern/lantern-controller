@@ -133,7 +133,7 @@
     <dependency>
       <groupId>org.getlantern</groupId>
       <artifactId>lantern-common</artifactId>
-      <version>0.0.14-SNAPSHOT</version>
+      <version>0.0.14</version>
     </dependency>
     <dependency>
       <groupId>org.littleshoot</groupId>
