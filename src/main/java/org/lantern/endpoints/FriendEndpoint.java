@@ -95,7 +95,7 @@ public class FriendEndpoint {
             httpMethod = "POST",
             name = "friend.insert",
             path = "friend/insert")
-    public Friend insertFriend(final Friend friend,
+    public Friend insertFriend(final ServerFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
@@ -120,7 +120,7 @@ public class FriendEndpoint {
             httpMethod = "POST",
             name = "friend.update",
             path = "friend/update")
-    public Friend updateFriend(final Friend friend, 
+    public Friend updateFriend(final ServerFriend friend, 
         final com.google.appengine.api.users.User user) 
                 throws UnauthorizedException {
         checkAuthorization(user);
