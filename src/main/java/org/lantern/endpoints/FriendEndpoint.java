@@ -110,7 +110,7 @@ public class FriendEndpoint {
     }
 
     /**
-     * This method is used for updating a entity. It uses HTTP PUT method.
+     * This method is used for updating an entity. It uses the HTTP PUT method.
      * 
      * @param friend The entity to be updated.
      * @return The updated entity.
