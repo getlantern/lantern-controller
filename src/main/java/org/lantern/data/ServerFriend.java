@@ -38,11 +38,6 @@ public class ServerFriend implements org.lantern.state.Friend {
      */
     private long nextQuery;
 
-    /**
-     * Whether or not an XMPP subscription request from this user is pending.
-     */
-    private boolean pendingSubscriptionRequest;
-
     public ServerFriend() {
     }
 
@@ -102,25 +97,6 @@ public class ServerFriend implements org.lantern.state.Friend {
     @Override
     public void setNextQuery(long nextQuery) {
         this.nextQuery = nextQuery;
-    }
-
-    @Override
-    public void setPendingSubscriptionRequest(boolean pending) {
-        pendingSubscriptionRequest = pending;
-    }
-
-    @Override
-    public boolean isPendingSubscriptionRequest() {
-        return pendingSubscriptionRequest;
-    }
-
-    @JsonIgnore
-    public boolean shouldNotifyAgain() {
-        if (status == Status.pending) {
-            long now = System.currentTimeMillis();
-            return nextQuery < now;
-        }
-        return false;
     }
 
     @Override
