@@ -18,30 +18,35 @@ public class MetricTest {
 
         // Add a sample, which shouldn't show up in the moving average
         metric.sample(now, 1);
+        assertDoubleEquals(1, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(1, metric.getMax());
         assertDoubleEquals(0, metric.getMovingAverage());
 
         // Add a sample which also shouldn't show up in the moving average
         metric.sample(now + 59 * ONE_MINUTE, 5);
+        assertDoubleEquals(5, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(5, metric.getMax());
         assertDoubleEquals(0, metric.getMovingAverage());
 
         // Add a sample which causes us to roll over the first bucket
         metric.sample(now + 60 * ONE_MINUTE, 2);
+        assertDoubleEquals(2, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(5, metric.getMax());
         assertDoubleEquals(3, metric.getMovingAverage());
 
         // Add another sample in the current bucket
         metric.sample(now + 61 * ONE_MINUTE, 6);
+        assertDoubleEquals(6, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(6, metric.getMax());
         assertDoubleEquals(3, metric.getMovingAverage());
 
         // Add a sample which causes us to roll over the second bucket
         metric.sample(now + 120 * ONE_MINUTE, 10);
+        assertDoubleEquals(10, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(10, metric.getMax());
         assertDoubleEquals(3.5, metric.getMovingAverage());
@@ -49,12 +54,14 @@ public class MetricTest {
         // Add a sample which causes us to roll over the third bucket and roll
         // off the first bucket
         metric.sample(now + 180 * ONE_MINUTE, 3);
+        assertDoubleEquals(3, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(10, metric.getMax());
         assertDoubleEquals(7, metric.getMovingAverage());
         
         // Add a sample which causes us to roll over two buckets
         metric.sample(now + 300 * ONE_MINUTE, 5);
+        assertDoubleEquals(5, metric.getMostRecent());
         assertDoubleEquals(1.5, metric.getMovingAverage());
     }
     

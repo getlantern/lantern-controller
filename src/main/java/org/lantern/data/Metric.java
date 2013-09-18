@@ -24,6 +24,7 @@ public class Metric {
     // Main stats
     private Double min;
     private Double max;
+    private Double mostRecent;
     private double movingAverage = 0;
 
     // Stuff that we track to calculate buckets
@@ -49,6 +50,8 @@ public class Metric {
     }
 
     public void sample(long timestamp, double value) {
+        mostRecent = value;
+
         // Update min and max values
         min = min == null || value < min ? value : min;
         max = max == null || value > max ? value : max;
@@ -59,10 +62,11 @@ public class Metric {
         if (lastSampledBucket > 0 && bucketSinceEpoch > lastSampledBucket) {
             // roll over bucket
             buckets.add(totalInCurrentBucket / numberOfSamplesInCurrentBucket);
-            
+
             // If we skipped over some buckets, fill those in with zeros
-            long numberOfBucketsSkipped = bucketSinceEpoch - lastSampledBucket - 1;
-            for (int i=0; i<numberOfBucketsSkipped; i++) {
+            long numberOfBucketsSkipped = bucketSinceEpoch - lastSampledBucket
+                    - 1;
+            for (int i = 0; i < numberOfBucketsSkipped; i++) {
                 buckets.add(0.0);
             }
 
@@ -87,6 +91,19 @@ public class Metric {
 
         // Remember our most recent sample
         lastSampledBucket = bucketSinceEpoch;
+    }
+
+    /**
+     * The most recent sample.
+     * 
+     * @return
+     */
+    public Double getMostRecent() {
+        return mostRecent;
+    }
+
+    public void setMostRecent(Double mostRecent) {
+        this.mostRecent = mostRecent;
     }
 
     /**
