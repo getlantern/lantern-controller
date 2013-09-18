@@ -2,6 +2,7 @@ package org.lantern.data;
 
 import java.util.Date;
 
+import javax.persistence.Embedded;
 import javax.persistence.Id;
 
 import org.lantern.state.Mode;
@@ -10,6 +11,9 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 public class LanternInstance {
+    private static long METRIC_BUCKET_DURATION_IN_MILLIS = 60 * 60 * 1000;
+    private static long NUMBER_OF_BUCKETS_TO_KEEP = 24;
+    
     @Id
     private String id;
 
@@ -25,6 +29,28 @@ public class LanternInstance {
     private String countries = "";
 
     private String currentCountry;
+    
+    //@formatter:off
+    @Embedded
+    private Metric processCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
+                                                NUMBER_OF_BUCKETS_TO_KEEP);
+    
+    @Embedded
+    private Metric systemCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
+                                               NUMBER_OF_BUCKETS_TO_KEEP);
+    
+    @Embedded
+    private Metric systemLoadAverage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
+                                                  NUMBER_OF_BUCKETS_TO_KEEP);
+    
+    @Embedded
+    private Metric memoryUsageInBytes = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
+                                                   NUMBER_OF_BUCKETS_TO_KEEP);
+    
+    @Embedded
+    private Metric numberOfOpenFileDescriptors = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
+                                                            NUMBER_OF_BUCKETS_TO_KEEP);
+    //@formatter:on
 
     /* The most recent resource id we have seen for this instance. */
     private String resource;
@@ -106,6 +132,46 @@ public class LanternInstance {
 
     public void setResource(String resource) {
         this.resource = resource;
+    }
+    
+    public Metric getProcessCpuUsage() {
+        return processCpuUsage;
+    }
+
+    public void setProcessCpuUsage(Metric processCpuUsage) {
+        this.processCpuUsage = processCpuUsage;
+    }
+
+    public Metric getSystemCpuUsage() {
+        return systemCpuUsage;
+    }
+
+    public void setSystemCpuUsage(Metric systemCpuUsage) {
+        this.systemCpuUsage = systemCpuUsage;
+    }
+
+    public Metric getSystemLoadAverage() {
+        return systemLoadAverage;
+    }
+
+    public void setSystemLoadAverage(Metric systemLoadAverage) {
+        this.systemLoadAverage = systemLoadAverage;
+    }
+
+    public Metric getMemoryUsageInBytes() {
+        return memoryUsageInBytes;
+    }
+
+    public void setMemoryUsageInBytes(Metric memoryUsageInBytes) {
+        this.memoryUsageInBytes = memoryUsageInBytes;
+    }
+
+    public Metric getNumberOfOpenFileDescriptors() {
+        return numberOfOpenFileDescriptors;
+    }
+
+    public void setNumberOfOpenFileDescriptors(Metric numberOfOpenFileDescriptors) {
+        this.numberOfOpenFileDescriptors = numberOfOpenFileDescriptors;
     }
 
     public boolean isCurrent() {

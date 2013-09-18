@@ -16,6 +16,7 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
+import org.lantern.Stats;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.state.Friend;
@@ -237,6 +238,44 @@ public class Dao extends DAOBase {
         }
         return counters;
     }
+    
+    /**
+     * Update the 
+     * @param userId
+     * @param instanceId
+     * @param stats
+     */
+    public void updateInstanceStats(final String userId,
+            final String instanceId, final Stats stats) {
+        final long now = System.currentTimeMillis();
+        RetryingTransaction<Void> tx = new RetryingTransaction<Void>() {
+            @Override
+            public Void run(Objectify ofy) {
+                LanternInstance instance = findLanternInstance(ofy, userId, instanceId);
+                instance.getProcessCpuUsage().sample(now,
+                        stats.getProcessCpuUsage());
+                instance.getSystemCpuUsage().sample(now,
+                        stats.getSystemCpuUsage());
+                instance.getSystemLoadAverage().sample(now,
+                        stats.getSystemLoadAverage());
+                instance.getMemoryUsageInBytes().sample(now,
+                        stats.getMemoryUsageInBytes());
+                instance.getNumberOfOpenFileDescriptors().sample(now,
+                        stats.getNumberOfOpenFileDescriptors());
+                ofy.put(instance);
+                ofy.getTxn().commit();
+                log.info("Successfully updated stats for LanternInstance");
+                return null;
+            }
+        };
+        tx.run();
+        
+        if (tx.failed()) {
+            log.warning(String.format(
+                    "Unable to record stats for user: %1$s instance: %2$s",
+                    userId, instanceId));
+        }
+    }
 
     /**
      * Possibly modifies the user, instance and the counters (via the
@@ -407,12 +446,10 @@ public class Dao extends DAOBase {
      * initializing lantern-controller
      */
     public void createInitialUser(final String email) {
-        /*
-         * final Objectify ofy = ofy(); final LanternUser user = new
-         * LanternUser(email); user.setDegree(1); user.setEverSignedIn(true);
-         * user.setInvites(5); user.setSponsor("adamfisk@gmail.com");
-         * ofy.put(user); log.info("Finished adding invite...");
-         */
+//        final Objectify ofy = ofy(); final LanternUser user = new
+//        LanternUser(email); user.setDegree(1); user.setEverSignedIn(true);
+//        user.setInvites(5); user.setSponsor("adamfisk@gmail.com");
+//        ofy.put(user); log.info("Finished adding invite...");
 
     }
 
@@ -1167,5 +1204,18 @@ public class Dao extends DAOBase {
             }
         }
         return user;
+    }
+    
+    private LanternInstance findLanternInstance(
+            Objectify ofy,
+            String userId,
+            String instanceId) {
+        Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
+                userId);
+
+        Key<LanternInstance> key = new Key<LanternInstance>(parentKey,
+                LanternInstance.class, instanceId);
+        
+        return ofy.find(key);
     }
 }
