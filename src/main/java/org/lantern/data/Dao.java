@@ -139,13 +139,14 @@ public class Dao extends DAOBase {
 
     public void setInstanceAvailable(final String userId,
             final String instanceId, final String countryCode, final Mode mode,
-            final String resource) {
+            final boolean isFallback, final String resource) {
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 final List<String> countersToUpdate = setInstanceAvailable(
-                        ofy, userId, instanceId, countryCode, mode, resource);
+                        ofy, userId, instanceId, countryCode, mode, isFallback,
+                        resource);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -177,7 +178,7 @@ public class Dao extends DAOBase {
      */
     public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final Mode mode, final String resource) {
+            final Mode mode, final boolean isFallback, final String resource) {
 
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
@@ -189,7 +190,7 @@ public class Dao extends DAOBase {
                 LanternInstance.class, instanceId);
 
         LanternInstance instance = ofy.find(key);
-
+        
         if (instance != null && StringUtils.equals(instance.getResource(), resource)) {
             //this is an available message for the same resource as
             //is currently in use, so it must be bogus.
@@ -198,6 +199,8 @@ public class Dao extends DAOBase {
 
         ArrayList<String> counters = new ArrayList<String>();
         if (instance != null) {
+            instance.setFallback(isFallback);
+
             log.info("Setting availability to true for " + userId + "/" + instanceId);
             if (instance.isAvailable()) {
                 //handle mode changes
@@ -981,10 +984,6 @@ public class Dao extends DAOBase {
             log.warning("Too much contention for buckets; you may want to look into this.");
         }
         return leastUsed.getId();
-    }
-
-    private boolean emailsMatch(final String one, final String other) {
-        return one.trim().equalsIgnoreCase(other.trim());
     }
 
     public int getUserCount() {

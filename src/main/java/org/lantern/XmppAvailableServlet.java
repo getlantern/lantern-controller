@@ -71,6 +71,8 @@ public class XmppAvailableServlet extends HttpServlet {
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
+        final boolean isFallback = "true".equalsIgnoreCase(LanternControllerUtils.getProperty(doc,
+                "instanceId"));
 
         if (!presence.isAvailable()) {
             log.info(userId + "/" + resource + " logging out.");
@@ -123,8 +125,8 @@ public class XmppAvailableServlet extends HttpServlet {
         final String name =
                 LanternControllerUtils.getProperty(doc, "name");
 
-        processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource);
+        processClientInfo(presence, stats, userId, instanceId, name, mode,
+                isFallback, resource);
 
         sendUpdateTime(presence, xmpp, responseJson);
 
@@ -285,7 +287,8 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final String idToUse, final String instanceId,
-        final String name, final Mode mode, final String resource) {
+        final String name, final Mode mode, final boolean isFallback,
+        final String resource) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
@@ -309,7 +312,8 @@ public class XmppAvailableServlet extends HttpServlet {
             if (StringUtils.isBlank(countryCode)) {
                 countryCode = "XX";
             }
-            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode, resource);
+            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
+                    isFallback, resource);
             try {
                 updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {

@@ -56,6 +56,8 @@ public class LanternInstance {
     private String resource;
 
     private Mode mode;
+    
+    private boolean isFallback;
 
     public LanternInstance() {
         super();
@@ -124,6 +126,14 @@ public class LanternInstance {
 
     public void setMode(Mode mode) {
         this.mode = mode;
+    }
+    
+    public boolean isFallback() {
+        return isFallback;
+    }
+    
+    public void setFallback(boolean isFallback) {
+        this.isFallback = isFallback;
     }
 
     public String getResource() {
