@@ -3,6 +3,8 @@ package org.lantern.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.googlecode.objectify.annotation.Unindexed;
+
 /**
  * <p>
  * Keeps statistics on a metric that changes over time.
@@ -10,10 +12,11 @@ import java.util.List;
  * 
  * <p>
  * This calculates a moving average over time by bucketing samples into buckets
- * whose duration is determined by {@link bucketDurationInMilliseconds} and
- * limited in # of buckets by {@link numberOfBucketsToKeep}.
+ * whose duration is determined by {@link #bucketDurationInMilliseconds} and
+ * limited in # of buckets by {@link #numberOfBucketsToKeep}.
  * </p>
  */
+@Unindexed
 public class Metric {
     private long bucketDurationInMilliseconds;
     private long numberOfBucketsToKeep = 0;
@@ -28,6 +31,9 @@ public class Metric {
     private long numberOfSamplesInCurrentBucket = 0;
     private long lastSampledBucket = 0;
     private List<Double> buckets = new ArrayList<Double>();
+
+    public Metric() {
+    }
 
     /**
      * @param bucketDurationInMilliseconds
@@ -86,6 +92,10 @@ public class Metric {
         return min;
     }
 
+    public void setMin(Double min) {
+        this.min = min;
+    }
+
     /**
      * The largest individual sample ever recorded.
      * 
@@ -93,6 +103,10 @@ public class Metric {
      */
     public Double getMax() {
         return max;
+    }
+
+    public void setMax(Double max) {
+        this.max = max;
     }
 
     /**
@@ -104,4 +118,59 @@ public class Metric {
     public double getMovingAverage() {
         return movingAverage;
     }
+
+    public void setMovingAverage(double movingAverage) {
+        this.movingAverage = movingAverage;
+    }
+
+    public long getBucketDurationInMilliseconds() {
+        return bucketDurationInMilliseconds;
+    }
+
+    public void setBucketDurationInMilliseconds(
+            long bucketDurationInMilliseconds) {
+        this.bucketDurationInMilliseconds = bucketDurationInMilliseconds;
+    }
+
+    public long getNumberOfBucketsToKeep() {
+        return numberOfBucketsToKeep;
+    }
+
+    public void setNumberOfBucketsToKeep(long numberOfBucketsToKeep) {
+        this.numberOfBucketsToKeep = numberOfBucketsToKeep;
+    }
+
+    public double getTotalInCurrentBucket() {
+        return totalInCurrentBucket;
+    }
+
+    public void setTotalInCurrentBucket(double totalInCurrentBucket) {
+        this.totalInCurrentBucket = totalInCurrentBucket;
+    }
+
+    public long getNumberOfSamplesInCurrentBucket() {
+        return numberOfSamplesInCurrentBucket;
+    }
+
+    public void setNumberOfSamplesInCurrentBucket(
+            long numberOfSamplesInCurrentBucket) {
+        this.numberOfSamplesInCurrentBucket = numberOfSamplesInCurrentBucket;
+    }
+
+    public long getLastSampledBucket() {
+        return lastSampledBucket;
+    }
+
+    public void setLastSampledBucket(long lastSampledBucket) {
+        this.lastSampledBucket = lastSampledBucket;
+    }
+
+    public List<Double> getBuckets() {
+        return buckets;
+    }
+
+    public void setBuckets(List<Double> buckets) {
+        this.buckets = buckets;
+    }
+
 }

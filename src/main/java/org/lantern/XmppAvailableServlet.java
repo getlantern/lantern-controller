@@ -311,7 +311,7 @@ public class XmppAvailableServlet extends HttpServlet {
             }
             dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode, resource);
             try {
-                updateStats(data, idToUse, name, mode);
+                updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -336,7 +336,7 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final Stats data, final String idToUse,
-            final String name, final Mode mode) {
+            final String instanceId, final String name, final Mode mode) {
 
         final Dao dao = new Dao();
 
@@ -349,5 +349,6 @@ public class XmppAvailableServlet extends HttpServlet {
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
             countryCode, name, mode);
+        dao.updateInstanceStats(idToUse, instanceId, data);
     }
 }

@@ -53,6 +53,26 @@ public class MetricTest {
         assertDoubleEquals(10, metric.getMax());
         assertDoubleEquals(7, metric.getMovingAverage());
     }
+    
+    @Test
+    public void testNegativeValue() throws Exception {
+        Metric metric = new Metric(ONE_HOUR, 2);
+        // Start on the hour boundary
+        long now = (long) Math.floor(System.currentTimeMillis() / ONE_HOUR)
+                * ONE_HOUR;
+
+        // Add a sample, which shouldn't show up in the moving average
+        metric.sample(now, -1);
+        assertDoubleEquals(-1, metric.getMin());
+        assertDoubleEquals(-1, metric.getMax());
+        assertDoubleEquals(0, metric.getMovingAverage());
+        
+     // Add a sample, which shouldn't show up in the moving average
+        metric.sample(now + 60 * ONE_MINUTE, -1);
+        assertDoubleEquals(-1, metric.getMin());
+        assertDoubleEquals(-1, metric.getMax());
+        assertDoubleEquals(-1, metric.getMovingAverage());
+    }
 
     /**
      * Compare equality to 3 significant digits.
