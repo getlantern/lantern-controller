@@ -52,6 +52,10 @@ public class MetricTest {
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(10, metric.getMax());
         assertDoubleEquals(7, metric.getMovingAverage());
+        
+        // Add a sample which causes us to roll over two buckets
+        metric.sample(now + 300 * ONE_MINUTE, 5);
+        assertDoubleEquals(1.5, metric.getMovingAverage());
     }
     
     @Test

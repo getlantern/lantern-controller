@@ -59,11 +59,17 @@ public class Metric {
         if (lastSampledBucket > 0 && bucketSinceEpoch > lastSampledBucket) {
             // roll over bucket
             buckets.add(totalInCurrentBucket / numberOfSamplesInCurrentBucket);
-            // keep # of buckets limited
-            if (buckets.size() > numberOfBucketsToKeep) {
-                buckets.remove(0);
+            
+            // If we skipped over some buckets, fill those in with zeros
+            long numberOfBucketsSkipped = bucketSinceEpoch - lastSampledBucket - 1;
+            for (int i=0; i<numberOfBucketsSkipped; i++) {
+                buckets.add(0.0);
             }
 
+            // keep # of buckets limited
+            while (buckets.size() > numberOfBucketsToKeep) {
+                buckets.remove(0);
+            }
             double totalOverAllBuckets = 0;
             for (double bucket : buckets) {
                 totalOverAllBuckets += bucket;
