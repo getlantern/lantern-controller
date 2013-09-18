@@ -64,9 +64,9 @@ public class DatastoreTest {
         final String name = "testuser";
         dao.updateUser(id, 0L, 0L, 0L, 0L, "US", name, Mode.get);
         
-        final Friend friend1 = new Friend("test1@test.com");
+        final Friend friend1 = new org.lantern.data.ServerFriend("test1@test.com");
         friend1.setName("test1");
-        final Friend friend2 = new Friend("test2@test.com");
+        final Friend friend2 = new org.lantern.data.ServerFriend("test2@test.com");
         friend2.setName("test2");
         friend2.setStatus(Status.pending);
         friend2.setLastUpdated(System.currentTimeMillis());
@@ -101,6 +101,5 @@ public class DatastoreTest {
         // a friend. It's not possible to go from friend to pending, so the
         // server must have newer info!
         assertEquals(1, changed3.size());
-        
     }
 }

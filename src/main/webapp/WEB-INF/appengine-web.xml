@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
+<<<<<<< HEAD
     <application>oxlanternctrl</application>
     <version>${appengine.app.version}</version>
+=======
+    <application>lanternctrl</application>
+    <version>158</version>
+>>>>>>> 9308ee3dd61ac9a98081a01632953cf10e29cafd
     <threadsafe>true</threadsafe>
     
     <!-- Configure java.util.logging -->
