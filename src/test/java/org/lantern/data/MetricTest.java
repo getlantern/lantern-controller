@@ -15,6 +15,11 @@ public class MetricTest {
         // Start on the hour boundary
         long now = (long) Math.floor(System.currentTimeMillis() / ONE_HOUR)
                 * ONE_HOUR;
+        
+        // Make sure that initial values are as expected
+        assertDoubleEquals(0, metric.getMostRecent());
+        assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
+        assertDoubleEquals(0, metric.getMovingAverageForAllPeriods());
 
         // Add a sample, which shouldn't show up in the moving average
         metric.addSample(now, 1);

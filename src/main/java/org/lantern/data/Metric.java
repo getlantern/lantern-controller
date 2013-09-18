@@ -26,7 +26,7 @@ public class Metric {
     // Main stats
     private Double min;
     private Double max;
-    private Double mostRecent;
+    private double mostRecent = 0;
     private double movingAverageForAllPeriods = 0;
     private double movingAverageForCompletePeriods = 0;
 
@@ -126,11 +126,11 @@ public class Metric {
      * 
      * @return
      */
-    public Double getMostRecent() {
+    public double getMostRecent() {
         return mostRecent;
     }
 
-    public void setMostRecent(Double mostRecent) {
+    public void setMostRecent(double mostRecent) {
         this.mostRecent = mostRecent;
     }
 

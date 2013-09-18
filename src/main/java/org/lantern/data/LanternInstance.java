@@ -11,8 +11,8 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 public class LanternInstance {
-    private static long METRIC_BUCKET_DURATION_IN_MILLIS = 60 * 60 * 1000;
-    private static long NUMBER_OF_BUCKETS_TO_KEEP = 24;
+    private static long METRIC_PERIOD_DURATION_IN_MILLIS = 60 * 60 * 1000;
+    private static long NUMBER_OF_PERIODS_TO_KEEP = 25; // 24 + 1 for current
     
     @Id
     private String id;
@@ -32,24 +32,24 @@ public class LanternInstance {
     
     //@formatter:off
     @Embedded
-    private Metric processCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                NUMBER_OF_BUCKETS_TO_KEEP);
+    private Metric processCpuUsage = new Metric(METRIC_PERIOD_DURATION_IN_MILLIS,
+                                                NUMBER_OF_PERIODS_TO_KEEP);
     
     @Embedded
-    private Metric systemCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                               NUMBER_OF_BUCKETS_TO_KEEP);
+    private Metric systemCpuUsage = new Metric(METRIC_PERIOD_DURATION_IN_MILLIS,
+                                               NUMBER_OF_PERIODS_TO_KEEP);
     
     @Embedded
-    private Metric systemLoadAverage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                  NUMBER_OF_BUCKETS_TO_KEEP);
+    private Metric systemLoadAverage = new Metric(METRIC_PERIOD_DURATION_IN_MILLIS,
+                                                  NUMBER_OF_PERIODS_TO_KEEP);
     
     @Embedded
-    private Metric memoryUsageInBytes = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                   NUMBER_OF_BUCKETS_TO_KEEP);
+    private Metric memoryUsageInBytes = new Metric(METRIC_PERIOD_DURATION_IN_MILLIS,
+                                                   NUMBER_OF_PERIODS_TO_KEEP);
     
     @Embedded
-    private Metric numberOfOpenFileDescriptors = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                            NUMBER_OF_BUCKETS_TO_KEEP);
+    private Metric numberOfOpenFileDescriptors = new Metric(METRIC_PERIOD_DURATION_IN_MILLIS,
+                                                            NUMBER_OF_PERIODS_TO_KEEP);
     //@formatter:on
 
     /* The most recent resource id we have seen for this instance. */
