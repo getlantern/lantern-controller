@@ -3,6 +3,8 @@ package org.lantern.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.Embedded;
+
 import com.googlecode.objectify.annotation.Unindexed;
 
 /**
@@ -11,86 +13,112 @@ import com.googlecode.objectify.annotation.Unindexed;
  * </p>
  * 
  * <p>
- * This calculates a moving average over time by bucketing samples into buckets
- * whose duration is determined by {@link #bucketDurationInMilliseconds} and
- * limited in # of buckets by {@link #numberOfBucketsToKeep}.
+ * This calculates a moving average over time by bucketing samples into periods
+ * whose duration is determined by {@link #periodDurationInMilliseconds} and
+ * limited in # of periods by {@link #numberOfPeriodsToKeep}.
  * </p>
  */
 @Unindexed
 public class Metric {
-    private long bucketDurationInMilliseconds;
-    private long numberOfBucketsToKeep = 0;
+    private long periodDurationInMilliseconds;
+    private long numberOfPeriodsToKeep = 0;
 
     // Main stats
     private Double min;
     private Double max;
     private Double mostRecent;
-    private double movingAverage = 0;
+    private double movingAverageForAllPeriods = 0;
+    private double movingAverageForCompletePeriods = 0;
 
-    // Stuff that we track to calculate buckets
-    private double totalInCurrentBucket = 0;
-    private long numberOfSamplesInCurrentBucket = 0;
-    private long lastSampledBucket = 0;
-    private List<Double> buckets = new ArrayList<Double>();
+    // Periods of stats
+    @Embedded
+    private Period currentPeriod;
+
+    @Embedded
+    private List<Period> periods = new ArrayList<Period>();
 
     public Metric() {
     }
 
     /**
-     * @param bucketDurationInMilliseconds
-     *            how big to make each bucket for calculating moving averages
-     * @param numberOfBucketsToKeep
-     *            the number of buckets to keep
+     * @param periodDurationInMilliseconds
+     *            how big to make each period for calculating moving averages
+     * @param numberOfPeriodsToKeep
+     *            the number of periods to keep
      */
-    public Metric(long bucketDurationInMilliseconds,
-            long numberOfBucketsToKeep) {
+    public Metric(long periodDurationInMilliseconds,
+            long numberOfPeriodsToKeep) {
         super();
-        this.bucketDurationInMilliseconds = bucketDurationInMilliseconds;
-        this.numberOfBucketsToKeep = numberOfBucketsToKeep;
+        this.periodDurationInMilliseconds = periodDurationInMilliseconds;
+        this.numberOfPeriodsToKeep = numberOfPeriodsToKeep;
     }
 
-    public void sample(long timestamp, double value) {
+    /**
+     * Add a sample to this metric.
+     * 
+     * @param timestamp
+     * @param value
+     */
+    public void addSample(long timestamp, double value) {
+        // Update global values
         mostRecent = value;
-
-        // Update min and max values
         min = min == null || value < min ? value : min;
         max = max == null || value > max ? value : max;
 
-        // Maintain moving average
-        long bucketSinceEpoch = (long) Math.floor(timestamp
-                / bucketDurationInMilliseconds);
-        if (lastSampledBucket > 0 && bucketSinceEpoch > lastSampledBucket) {
-            // roll over bucket
-            buckets.add(totalInCurrentBucket / numberOfSamplesInCurrentBucket);
+        boolean periodAdvanced = advanceCurrentPeriodIfNecessary(timestamp);
 
-            // If we skipped over some buckets, fill those in with zeros
-            long numberOfBucketsSkipped = bucketSinceEpoch - lastSampledBucket
-                    - 1;
-            for (int i = 0; i < numberOfBucketsSkipped; i++) {
-                buckets.add(0.0);
-            }
+        // Update the current period
+        currentPeriod.addSample(value);
 
-            // keep # of buckets limited
-            while (buckets.size() > numberOfBucketsToKeep) {
-                buckets.remove(0);
-            }
-            double totalOverAllBuckets = 0;
-            for (double bucket : buckets) {
-                totalOverAllBuckets += bucket;
-            }
-            this.movingAverage = totalOverAllBuckets / buckets.size();
+        // Update our moving averages if necessary
+        if (periodAdvanced) {
+            calculateMovingAverages();
+        }
+    }
 
-            // Reinitialize current bucket
-            this.totalInCurrentBucket = 0;
-            this.numberOfSamplesInCurrentBucket = 0;
+    /**
+     * Advances the {@link #currentPeriod} to the given timestamp. If the period
+     * already covers that timestamp, this doesn't do anything.
+     * 
+     * @param timestamp
+     * @return true if the current period was advanced
+     */
+    private boolean advanceCurrentPeriodIfNecessary(long timestamp) {
+        long periodsSinceEpoch = (long) Math.floor(timestamp
+                / periodDurationInMilliseconds);
+        boolean advancedCurrentPeriod = false;
+        while (currentPeriod == null
+                || currentPeriod.offsetFromEpoch < periodsSinceEpoch) {
+            currentPeriod = new Period(
+                    currentPeriod == null ? periodsSinceEpoch
+                            : currentPeriod.offsetFromEpoch + 1);
+            periods.add(currentPeriod);
+            // Keep # of periods limited
+            if (periods.size() > numberOfPeriodsToKeep) {
+                periods.remove(0);
+            }
+            advancedCurrentPeriod = true;
+        }
+        return advancedCurrentPeriod;
+    }
+
+    private void calculateMovingAverages() {
+        int numberOfPeriods = periods.size();
+        double totalOverAllPeriods = 0;
+        double totalOverCompletePeriods = 0;
+        for (int i = 0; i < numberOfPeriods; i++) {
+            Period period = periods.get(i);
+            boolean isLast = i == numberOfPeriods - 1;
+            totalOverAllPeriods += period.movingAverage;
+            if (!isLast) {
+                totalOverCompletePeriods += period.movingAverage;
+            }
         }
 
-        // update current bucket
-        totalInCurrentBucket += value;
-        numberOfSamplesInCurrentBucket += 1;
-
-        // Remember our most recent sample
-        lastSampledBucket = bucketSinceEpoch;
+        movingAverageForAllPeriods = totalOverAllPeriods
+                / ((double) numberOfPeriods);
+        movingAverageForCompletePeriods = totalOverCompletePeriods
+                / ((double) numberOfPeriods - 1);
     }
 
     /**
@@ -133,67 +161,146 @@ public class Metric {
     }
 
     /**
-     * The moving average over the buckets limited to
-     * {@link #numberOfBucketsToKeep}.
+     * The moving average over all {@link #periods} including the
+     * {@link #currentPeriod}.
      * 
      * @return
      */
-    public double getMovingAverage() {
-        return movingAverage;
+    public double getMovingAverageForAllPeriods() {
+        return movingAverageForAllPeriods;
     }
 
-    public void setMovingAverage(double movingAverage) {
-        this.movingAverage = movingAverage;
+    public void setMovingAverageForAllPeriods(double movingAverageForAllPeriods) {
+        this.movingAverageForAllPeriods = movingAverageForAllPeriods;
     }
 
-    public long getBucketDurationInMilliseconds() {
-        return bucketDurationInMilliseconds;
+    /**
+     * The moving average over complete {@link #periods} excluding the
+     * {@link #currentPeriod}.
+     * 
+     * @return
+     */
+    public double getMovingAverageForCompletePeriods() {
+        return movingAverageForCompletePeriods;
     }
 
-    public void setBucketDurationInMilliseconds(
-            long bucketDurationInMilliseconds) {
-        this.bucketDurationInMilliseconds = bucketDurationInMilliseconds;
+    public void setMovingAverageForCompletePeriods(
+            double movingAverageForCompletePeriods) {
+        this.movingAverageForCompletePeriods = movingAverageForCompletePeriods;
     }
 
-    public long getNumberOfBucketsToKeep() {
-        return numberOfBucketsToKeep;
+    public long getPeriodDurationInMilliseconds() {
+        return periodDurationInMilliseconds;
     }
 
-    public void setNumberOfBucketsToKeep(long numberOfBucketsToKeep) {
-        this.numberOfBucketsToKeep = numberOfBucketsToKeep;
+    public void setPeriodDurationInMilliseconds(
+            long periodDurationInMilliseconds) {
+        this.periodDurationInMilliseconds = periodDurationInMilliseconds;
     }
 
-    public double getTotalInCurrentBucket() {
-        return totalInCurrentBucket;
+    public long getNumberOfPeriodsToKeep() {
+        return numberOfPeriodsToKeep;
     }
 
-    public void setTotalInCurrentBucket(double totalInCurrentBucket) {
-        this.totalInCurrentBucket = totalInCurrentBucket;
+    public void setNumberOfPeriodsToKeep(long numberOfPeriodsToKeep) {
+        this.numberOfPeriodsToKeep = numberOfPeriodsToKeep;
     }
 
-    public long getNumberOfSamplesInCurrentBucket() {
-        return numberOfSamplesInCurrentBucket;
+    public Period getCurrentPeriod() {
+        return currentPeriod;
     }
 
-    public void setNumberOfSamplesInCurrentBucket(
-            long numberOfSamplesInCurrentBucket) {
-        this.numberOfSamplesInCurrentBucket = numberOfSamplesInCurrentBucket;
+    public void setCurrentPeriod(Period currentPeriod) {
+        this.currentPeriod = currentPeriod;
     }
 
-    public long getLastSampledBucket() {
-        return lastSampledBucket;
+    public List<Period> getPeriods() {
+        return periods;
     }
 
-    public void setLastSampledBucket(long lastSampledBucket) {
-        this.lastSampledBucket = lastSampledBucket;
+    public void setPeriods(List<Period> periods) {
+        this.periods = periods;
     }
 
-    public List<Double> getBuckets() {
-        return buckets;
-    }
+    /**
+     * Represents a period within this metric. Periods hold a running total and
+     * associated information for a period defined by
+     * {@link Metric#periodDurationInMilliseconds}.
+     */
+    public static class Period {
+        private long offsetFromEpoch;
+        private long numberOfSamples;
+        private double runningTotal;
+        private Double min;
+        private Double max;
+        private double movingAverage;
 
-    public void setBuckets(List<Double> buckets) {
-        this.buckets = buckets;
+        public Period() {
+        }
+
+        public Period(long offsetFromEpoch) {
+            this.offsetFromEpoch = offsetFromEpoch;
+        }
+
+        public void addSample(double value) {
+            // Update running total
+            this.numberOfSamples += 1;
+            this.runningTotal += value;
+
+            // Update min and max values
+            min = min == null || value < min ? value : min;
+            max = max == null || value > max ? value : max;
+            this.movingAverage = this.runningTotal / this.numberOfSamples;
+        }
+
+        public long getOffsetFromEpoch() {
+            return offsetFromEpoch;
+        }
+
+        public void setOffsetFromEpoch(long offsetFromEpoch) {
+            this.offsetFromEpoch = offsetFromEpoch;
+        }
+
+        public long getNumberOfSamples() {
+            return numberOfSamples;
+        }
+
+        public void setNumberOfSamples(long numberOfSamples) {
+            this.numberOfSamples = numberOfSamples;
+        }
+
+        public double getRunningTotal() {
+            return runningTotal;
+        }
+
+        public void setRunningTotal(double runningTotal) {
+            this.runningTotal = runningTotal;
+        }
+
+        public Double getMin() {
+            return min;
+        }
+
+        public void setMin(Double min) {
+            this.min = min;
+        }
+
+        public Double getMax() {
+            return max;
+        }
+
+        public void setMax(Double max) {
+            this.max = max;
+        }
+
+        public double getMovingAverage() {
+            return movingAverage;
+        }
+
+        public void setMovingAverage(double movingAverage) {
+            this.movingAverage = movingAverage;
+        }
+
     }
 
 }

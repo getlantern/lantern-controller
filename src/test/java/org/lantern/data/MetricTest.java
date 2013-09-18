@@ -11,60 +11,60 @@ public class MetricTest {
 
     @Test
     public void testAddAndSet() throws Exception {
-        Metric metric = new Metric(ONE_HOUR, 2);
+        Metric metric = new Metric(ONE_HOUR, 3);
         // Start on the hour boundary
         long now = (long) Math.floor(System.currentTimeMillis() / ONE_HOUR)
                 * ONE_HOUR;
 
         // Add a sample, which shouldn't show up in the moving average
-        metric.sample(now, 1);
+        metric.addSample(now, 1);
         assertDoubleEquals(1, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(1, metric.getMax());
-        assertDoubleEquals(0, metric.getMovingAverage());
+        assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
 
         // Add a sample which also shouldn't show up in the moving average
-        metric.sample(now + 59 * ONE_MINUTE, 5);
+        metric.addSample(now + 59 * ONE_MINUTE, 5);
         assertDoubleEquals(5, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(5, metric.getMax());
-        assertDoubleEquals(0, metric.getMovingAverage());
+        assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
 
-        // Add a sample which causes us to roll over the first bucket
-        metric.sample(now + 60 * ONE_MINUTE, 2);
+        // Add a sample which causes us to roll over the first period
+        metric.addSample(now + 60 * ONE_MINUTE, 2);
         assertDoubleEquals(2, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(5, metric.getMax());
-        assertDoubleEquals(3, metric.getMovingAverage());
+        assertDoubleEquals(3, metric.getMovingAverageForCompletePeriods());
 
-        // Add another sample in the current bucket
-        metric.sample(now + 61 * ONE_MINUTE, 6);
+        // Add another sample in the current period
+        metric.addSample(now + 61 * ONE_MINUTE, 6);
         assertDoubleEquals(6, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(6, metric.getMax());
-        assertDoubleEquals(3, metric.getMovingAverage());
+        assertDoubleEquals(3, metric.getMovingAverageForCompletePeriods());
 
-        // Add a sample which causes us to roll over the second bucket
-        metric.sample(now + 120 * ONE_MINUTE, 10);
+        // Add a sample which causes us to roll over the second period
+        metric.addSample(now + 120 * ONE_MINUTE, 10);
         assertDoubleEquals(10, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(10, metric.getMax());
-        assertDoubleEquals(3.5, metric.getMovingAverage());
+        assertDoubleEquals(3.5, metric.getMovingAverageForCompletePeriods());
 
-        // Add a sample which causes us to roll over the third bucket and roll
-        // off the first bucket
-        metric.sample(now + 180 * ONE_MINUTE, 3);
+        // Add a sample which causes us to roll over the third period and roll
+        // off the first period
+        metric.addSample(now + 180 * ONE_MINUTE, 3);
         assertDoubleEquals(3, metric.getMostRecent());
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(10, metric.getMax());
-        assertDoubleEquals(7, metric.getMovingAverage());
-        
-        // Add a sample which causes us to roll over two buckets
-        metric.sample(now + 300 * ONE_MINUTE, 5);
+        assertDoubleEquals(7, metric.getMovingAverageForCompletePeriods());
+
+        // Add a sample which causes us to roll over two periods
+        metric.addSample(now + 300 * ONE_MINUTE, 5);
         assertDoubleEquals(5, metric.getMostRecent());
-        assertDoubleEquals(1.5, metric.getMovingAverage());
+        assertDoubleEquals(1.5, metric.getMovingAverageForCompletePeriods());
     }
-    
+
     @Test
     public void testNegativeValue() throws Exception {
         Metric metric = new Metric(ONE_HOUR, 2);
@@ -73,16 +73,16 @@ public class MetricTest {
                 * ONE_HOUR;
 
         // Add a sample, which shouldn't show up in the moving average
-        metric.sample(now, -1);
+        metric.addSample(now, -1);
         assertDoubleEquals(-1, metric.getMin());
         assertDoubleEquals(-1, metric.getMax());
-        assertDoubleEquals(0, metric.getMovingAverage());
-        
-     // Add a sample, which shouldn't show up in the moving average
-        metric.sample(now + 60 * ONE_MINUTE, -1);
+        assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
+
+        // Add a sample, which shouldn't show up in the moving average
+        metric.addSample(now + 60 * ONE_MINUTE, -1);
         assertDoubleEquals(-1, metric.getMin());
         assertDoubleEquals(-1, metric.getMax());
-        assertDoubleEquals(-1, metric.getMovingAverage());
+        assertDoubleEquals(-1, metric.getMovingAverageForCompletePeriods());
     }
 
     /**

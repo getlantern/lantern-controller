@@ -255,15 +255,15 @@ public class Dao extends DAOBase {
             @Override
             public Void run(Objectify ofy) {
                 LanternInstance instance = findLanternInstance(ofy, userId, instanceId);
-                instance.getProcessCpuUsage().sample(now,
+                instance.getProcessCpuUsage().addSample(now,
                         stats.getProcessCpuUsage());
-                instance.getSystemCpuUsage().sample(now,
+                instance.getSystemCpuUsage().addSample(now,
                         stats.getSystemCpuUsage());
-                instance.getSystemLoadAverage().sample(now,
+                instance.getSystemLoadAverage().addSample(now,
                         stats.getSystemLoadAverage());
-                instance.getMemoryUsageInBytes().sample(now,
+                instance.getMemoryUsageInBytes().addSample(now,
                         stats.getMemoryUsageInBytes());
-                instance.getNumberOfOpenFileDescriptors().sample(now,
+                instance.getNumberOfOpenFileDescriptors().addSample(now,
                         stats.getNumberOfOpenFileDescriptors());
                 ofy.put(instance);
                 ofy.getTxn().commit();
