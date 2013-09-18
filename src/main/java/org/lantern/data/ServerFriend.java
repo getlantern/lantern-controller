@@ -21,9 +21,6 @@ public class ServerFriend implements org.lantern.state.Friend {
     private String email;
 
     @Persistent
-    private String name = "";
-    
-    @Persistent
     private String userEmail;
 
     @Persistent
@@ -69,16 +66,6 @@ public class ServerFriend implements org.lantern.state.Friend {
         this.email = email;
     }
 
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public void setName(String name) {
-        this.name = name;
-    }
-    
     @Override
     public Status getStatus() {
         return status;
