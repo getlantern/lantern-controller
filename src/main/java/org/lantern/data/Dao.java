@@ -1096,7 +1096,7 @@ public class Dao extends DAOBase {
                 //now handle the relationships that the controller is aware of
                 //but the client is not
                 for (TrustRelationship relationship: relationshipSet.values()) {
-                    Friend friend = new Friend(relationship.getId());
+                    Friend friend = new org.lantern.data.ServerFriend(relationship.getId());
                     friend.setLastUpdated(relationship.getLastUpdated());
                     friend.setStatus(relationship.getStatus());
                     updated.add(friend);
