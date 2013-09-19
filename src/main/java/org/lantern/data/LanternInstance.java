@@ -72,6 +72,10 @@ public class LanternInstance {
     public String getId() {
         return id;
     }
+    
+    public Key<LanternUser> getParent() {
+        return parent;
+    }
 
     public boolean isAvailable() {
         return available;

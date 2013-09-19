@@ -1217,4 +1217,19 @@ public class Dao extends DAOBase {
         
         return ofy.find(key);
     }
+    
+    /**
+     * Finds all fallback proxies.
+     * 
+     * @return
+     */
+    public Iterable<LanternInstance> findFallbackProxies() {
+       Objectify ofy = ofy(); 
+       Query<LanternInstance> query = ofy.query(LanternInstance.class);
+       // TODO: uncomment this in production to report stats only on fallback
+       // proxies
+       //query.filter("isFallback", true);
+       return query;
+    }
+           
 }

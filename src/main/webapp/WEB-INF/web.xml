@@ -11,9 +11,17 @@
     <servlet-name>statsController</servlet-name>
     <servlet-class>org.lantern.StatsController</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>proxyStatusController</servlet-name>
+    <servlet-class>org.lantern.ProxyStatusController</servlet-class>
+  </servlet>
   <servlet-mapping>
     <servlet-name>statsController</servlet-name>
     <url-pattern>/stats</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>proxyStatusController</servlet-name>
+    <url-pattern>/proxyStatus</url-pattern>
   </servlet-mapping>
   <servlet>
     <servlet-name>persistController</servlet-name>

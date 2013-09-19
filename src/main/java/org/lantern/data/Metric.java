@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.Embedded;
@@ -89,7 +90,7 @@ public class Metric {
         boolean advancedCurrentPeriod = false;
         while (currentPeriod == null
                 || currentPeriod.offsetFromEpoch < periodsSinceEpoch) {
-            currentPeriod = new Period(
+            currentPeriod = new Period(timestamp,
                     currentPeriod == null ? periodsSinceEpoch
                             : currentPeriod.offsetFromEpoch + 1);
             periods.add(currentPeriod);
@@ -228,6 +229,7 @@ public class Metric {
      * {@link Metric#periodDurationInMilliseconds}.
      */
     public static class Period {
+        private long startTime;
         private long offsetFromEpoch;
         private long numberOfSamples;
         private double runningTotal;
@@ -238,7 +240,8 @@ public class Metric {
         public Period() {
         }
 
-        public Period(long offsetFromEpoch) {
+        public Period(long startTime, long offsetFromEpoch) {
+            this.startTime = startTime;
             this.offsetFromEpoch = offsetFromEpoch;
         }
 
@@ -251,6 +254,14 @@ public class Metric {
             min = min == null || value < min ? value : min;
             max = max == null || value > max ? value : max;
             this.movingAverage = this.runningTotal / this.numberOfSamples;
+        }
+
+        public boolean hasStartTime() {
+            return startTime > 0;
+        }
+        
+        public Date getStartTime() {
+            return new Date(startTime);
         }
 
         public long getOffsetFromEpoch() {
