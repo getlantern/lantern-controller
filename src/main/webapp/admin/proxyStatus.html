@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Proxy Status</title>
+<script src="/js/angular.js"></script>
+<script src="/js/ng-google-chart.js"></script>
+<script src="js/proxyStatus.js"></script>
+
+<style type="text/css">
+.summary-chart {
+	width: 400px;
+	height: 100px;
+}
+
+.summary {
+	float: left;
+	margin-right: 30px;
+}
+</style>
+</head>
+<body ng-app="ProxyStatus" ng-cloak ng-controller="ProxyStatusCtrl">
+  <div class="summary" ng-repeat="proxy in proxies">
+    <h3>{{ proxy.userId }}-{{ proxy.instanceId }}</h3>
+    <div class="summary-chart" google-chart
+      chart="proxy.loadAverageSummaryChart"></div>
+  </div>
+</body>
+</html>

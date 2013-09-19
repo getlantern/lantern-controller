@@ -100,6 +100,11 @@ public class Metric {
             }
             advancedCurrentPeriod = true;
         }
+        if (!advancedCurrentPeriod) {
+            // Set the currentPeriod as the last period in the list to make
+            // sure they're the same instance
+            periods.set(periods.size() - 1, currentPeriod);
+        }
         return advancedCurrentPeriod;
     }
 

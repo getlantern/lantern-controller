@@ -27,6 +27,7 @@ public class MetricTest {
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(1, metric.getMax());
         assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
+        assertDoubleEquals(1, metric.getCurrentPeriod().getMovingAverage());
 
         // Add a sample which also shouldn't show up in the moving average
         metric.addSample(now + 59 * ONE_MINUTE, 5);
@@ -34,6 +35,7 @@ public class MetricTest {
         assertDoubleEquals(1, metric.getMin());
         assertDoubleEquals(5, metric.getMax());
         assertDoubleEquals(0, metric.getMovingAverageForCompletePeriods());
+        assertDoubleEquals(3, metric.getCurrentPeriod().getMovingAverage());
 
         // Add a sample which causes us to roll over the first period
         metric.addSample(now + 60 * ONE_MINUTE, 2);
