@@ -196,7 +196,7 @@ public class AdminServlet extends HttpServlet {
         String refreshToken = inviter.getRefreshToken();
 
         InvitedServerLauncher.sendInvite(
-                inviterName, inviterEmail, refreshToken, invitedEmail, true);
+                inviterName, inviterEmail, refreshToken, invitedEmail);
 
         log.info("Redirecting");
         try {

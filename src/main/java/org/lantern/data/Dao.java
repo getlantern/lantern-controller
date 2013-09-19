@@ -333,10 +333,6 @@ public class Dao extends DAOBase {
     }
 
 
-    public boolean hasMoreInvites(final String userId) {
-        return getInvites(userId) > 0;
-    }
-
     public boolean alreadyInvitedBy(String sponsor, String guest) {
         Objectify ofy = ofy();
         return alreadyInvitedBy(ofy, sponsor, guest);
@@ -453,9 +449,8 @@ public class Dao extends DAOBase {
 
     }
 
-    public boolean sendingInvite(final String inviterEmail,
-            final String inviteeEmail, final boolean noCost) {
-
+    public boolean shouldSendInvite(final String inviterEmail,
+                                    final String inviteeEmail) {
         boolean status = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
@@ -465,11 +460,6 @@ public class Dao extends DAOBase {
                 if (invite.getStatus() == Status.sent) {
                     return false;
                 } else if (invite.getStatus() == Status.sending) {
-                    // we have already decremented the invite count, so we
-                    // don't need to do that. But we might need to send the
-                    // email again if the previous attempt crashed during
-                    // email sending.
-
                     // we will only attempt to send an email once every minute,
                     // so that concurrent attempts don't send multiple emails.
                     if (now - invite.getLastAttempt() > 60 * 1000) {
@@ -493,20 +483,6 @@ public class Dao extends DAOBase {
                 if (inviter == null) {
                     log.severe("Finalizing invites of nonexistent user?");
                     return false;
-                }
-                if (!noCost) {
-                    final int curInvites = inviter.getInvites();
-                    if (curInvites < 1) {
-                        if (inviter.getDegree() != 0) {
-                            log.info("Decrementing invites on non-admin user with no invites");
-                            return false;
-                        }
-                        // inviter is admin with no invites
-                    } else {
-                        log.info("Decrementing invites for " + inviterEmail);
-                        inviter.setInvites(curInvites - 1);
-                        ofy.put(inviter);
-                    }
                 }
                 ofy.getTxn().commit();
                 log.info("Transaction successful.");
