@@ -5,7 +5,6 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 
@@ -29,11 +28,7 @@ public class ServerFriend implements org.lantern.state.Friend {
     @Persistent
     public Long lastUpdated = System.currentTimeMillis();
 
-    /**
-     * The next time, in milliseconds since epoch, that we will ask the user
-     * about this friend, assuming status=requested.
-     */
-    private long nextQuery;
+    private String name;
 
     public ServerFriend() {
     }
@@ -65,6 +60,17 @@ public class ServerFriend implements org.lantern.state.Friend {
     public void setEmail(String email) {
         this.email = email;
     }
+    
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    @Override
+    public void setName(final String name) {
+        this.name = name;
+    }
 
     @Override
     public Status getStatus() {
@@ -77,28 +83,13 @@ public class ServerFriend implements org.lantern.state.Friend {
     }
     
     @Override
-    public long getNextQuery() {
-        return nextQuery;
-    }
-
-    @Override
-    public void setNextQuery(long nextQuery) {
-        this.nextQuery = nextQuery;
-    }
-
-    @Override
-    public String toString() {
-        return "Friend(" + email + ")";
-    }
-
-    @Override
     public String getUserEmail() {
         return userEmail;
     }
 
     @Override
     public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
+        this.userEmail = userEmail.toLowerCase();
     }
 
     @Override
@@ -109,5 +100,10 @@ public class ServerFriend implements org.lantern.state.Friend {
     @Override
     public long getLastUpdated() {
         return this.lastUpdated;
+    }
+
+    @Override
+    public String toString() {
+        return "Friend(" + email + ")";
     }
 }
