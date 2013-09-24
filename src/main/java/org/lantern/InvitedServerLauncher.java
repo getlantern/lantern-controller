@@ -25,17 +25,11 @@ public class InvitedServerLauncher {
         DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
 
     public static void sendInvite(final String inviterName,
-                                final String inviterEmail,
-                                final String refreshToken,
-                                final String invitedEmail,
-                                boolean noCost) {
+                                  final String inviterEmail,
+                                  final String refreshToken,
+                                  final String invitedEmail) {
 
         final Dao dao = new Dao();
-
-        if (!dao.sendingInvite(inviterEmail, invitedEmail, noCost)) {
-            log.info("Not re-sending an invite");
-            return;
-        }
 
         String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
         if (installerLocation == null && refreshToken == null) {
@@ -58,10 +52,8 @@ public class InvitedServerLauncher {
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         } else {
-            log.warning("Installer location is pending -- not sending invite");
+            log.info("Installer location is pending -- not sending invite");
         }
-
-        dao.sentInvite(inviterEmail, invitedEmail);
     }
 
     public static void onInvitedServerUp(final String inviterEmail, 
@@ -81,6 +73,11 @@ public class InvitedServerLauncher {
                                         final String inviterEmail,
                                         final String invitedEmail,
                                         final String installerLocation) {
+        final Dao dao = new Dao();
+        if (!dao.shouldSendInvite(inviterEmail, invitedEmail)) {
+            log.info("Not re-sending an invite");
+            return;
+        }
         final String[] parts = installerLocation.split(",");
         assert parts.length == 2;
         final String folder = parts[0];
@@ -89,7 +86,6 @@ public class InvitedServerLauncher {
             "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
 
         //check if the invitee is already a user
-        Dao dao = new Dao();
         LanternUser user = dao.getUser(invitedEmail);
 
         try {
@@ -97,6 +93,7 @@ public class InvitedServerLauncher {
                 baseUrl + "macos_" + version + ".dmg",
                 baseUrl + "windows_" + version + ".exe",
                 baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());
+            dao.sentInvite(inviterEmail, invitedEmail);
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
         }

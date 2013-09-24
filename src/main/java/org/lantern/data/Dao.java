@@ -19,8 +19,6 @@ import org.lantern.MandrillEmailer;
 import org.lantern.Stats;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
-import org.lantern.state.Friend;
-import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
@@ -295,10 +293,6 @@ public class Dao extends DAOBase {
     }
 
 
-    public boolean hasMoreInvites(final String userId) {
-        return getInvites(userId) > 0;
-    }
-
     public boolean alreadyInvitedBy(String sponsor, String guest) {
         Objectify ofy = ofy();
         return alreadyInvitedBy(ofy, sponsor, guest);
@@ -415,9 +409,8 @@ public class Dao extends DAOBase {
 
     }
 
-    public boolean sendingInvite(final String inviterEmail,
-            final String inviteeEmail, final boolean noCost) {
-
+    public boolean shouldSendInvite(final String inviterEmail,
+                                    final String inviteeEmail) {
         boolean status = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
@@ -427,11 +420,6 @@ public class Dao extends DAOBase {
                 if (invite.getStatus() == Status.sent) {
                     return false;
                 } else if (invite.getStatus() == Status.sending) {
-                    // we have already decremented the invite count, so we
-                    // don't need to do that. But we might need to send the
-                    // email again if the previous attempt crashed during
-                    // email sending.
-
                     // we will only attempt to send an email once every minute,
                     // so that concurrent attempts don't send multiple emails.
                     if (now - invite.getLastAttempt() > 60 * 1000) {
@@ -455,20 +443,6 @@ public class Dao extends DAOBase {
                 if (inviter == null) {
                     log.severe("Finalizing invites of nonexistent user?");
                     return false;
-                }
-                if (!noCost) {
-                    final int curInvites = inviter.getInvites();
-                    if (curInvites < 1) {
-                        if (inviter.getDegree() != 0) {
-                            log.info("Decrementing invites on non-admin user with no invites");
-                            return false;
-                        }
-                        // inviter is admin with no invites
-                    } else {
-                        log.info("Decrementing invites for " + inviterEmail);
-                        inviter.setInvites(curInvites - 1);
-                        ofy.put(inviter);
-                    }
                 }
                 ofy.getTxn().commit();
                 log.info("Transaction successful.");
@@ -1018,15 +992,15 @@ public class Dao extends DAOBase {
         return user.getDegree() == 0;
     }
 
-    public List<Friend> syncFriends(final String userId,
-            final Friends clientFriends) {
-        List<Friend> result = new RetryingTransaction<List<Friend>>() {
+    public List<LegacyFriend> syncFriends(final String userId,
+            final LegacyFriends clientFriends) {
+        List<LegacyFriend> result = new RetryingTransaction<List<LegacyFriend>>() {
             @Override
-            public List<Friend> run(Objectify ofy) {
-                List<Friend> updated = new ArrayList<Friend>();
+            public List<LegacyFriend> run(Objectify ofy) {
+                List<LegacyFriend> updated = new ArrayList<LegacyFriend>();
                 Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                         userId);
-                Collection<Friend> clientFriendList = clientFriends.getFriends();
+                Collection<LegacyFriend> clientFriendList = clientFriends.getFriends();
 
                 Query<TrustRelationship> relationships = ofy.query(TrustRelationship.class).ancestor(
                         parentKey);
@@ -1035,7 +1009,7 @@ public class Dao extends DAOBase {
                     relationshipSet.put(relationship.getId(), relationship);
                 }
                 boolean save = false;
-                for (Friend friend : clientFriendList) {
+                for (LegacyFriend friend : clientFriendList) {
                     String id = friend.getEmail();
                     TrustRelationship trust = relationshipSet.get(id);
                     if (trust == null) {
@@ -1058,7 +1032,7 @@ public class Dao extends DAOBase {
                 //now handle the relationships that the controller is aware of
                 //but the client is not
                 for (TrustRelationship relationship: relationshipSet.values()) {
-                    Friend friend = new Friend(relationship.getId());
+                    LegacyFriend friend = new LegacyFriend(relationship.getId());
                     friend.setLastUpdated(relationship.getLastUpdated());
                     friend.setStatus(relationship.getStatus());
                     updated.add(friend);
@@ -1078,7 +1052,7 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void syncFriend(final String userId, final Friend clientFriend) {
+    public void syncFriend(final String userId, final LegacyFriend clientFriend) {
         //just sync a single friend up from the client
         //if the client's version is the less up-to-date version,
         //we'll handle that elsewhere

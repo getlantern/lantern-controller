@@ -10,7 +10,7 @@
 
   <properties>
     <appengine.app.version>159</appengine.app.version>
-    <appengine.target.version>1.8.3</appengine.target.version>
+    <appengine.target.version>1.8.4</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -40,6 +40,11 @@
       <groupId>com.google.appengine.orm</groupId>
       <artifactId>datanucleus-appengine</artifactId>
       <version>2.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
     </dependency>
     <dependency>
       <groupId>javax.jdo</groupId>
@@ -128,7 +133,7 @@
     <dependency>
       <groupId>org.getlantern</groupId>
       <artifactId>lantern-common</artifactId>
-      <version>0.0.13</version>
+      <version>0.0.18</version>
     </dependency>
     <dependency>
       <groupId>org.littleshoot</groupId>
@@ -164,13 +169,30 @@
       </plugin>
 
       <plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-war-plugin</artifactId>
+    <version>2.3</version>
+    <configuration>
+        <webXml>${project.build.directory}/generated-sources/appengine-endpoints/WEB-INF/web.xml</webXml>
+        <webResources>
+            <resource>
+                <!-- this is relative to the pom.xml directory -->
+                <directory>${project.build.directory}/generated-sources/appengine-endpoints</directory>
+                <!-- the list has a default value of ** -->
+                <includes>
+                    <include>WEB-INF/*.discovery</include>
+                    <include>WEB-INF/*.api</include>
+                </includes>
+            </resource>
+        </webResources>
+    </configuration>
+<!--
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <version>2.3</version>
         <configuration>
           <archiveClasses>true</archiveClasses>
           <webResources>
-            <!-- in order to interpolate version from pom into appengine-web.xml -->
             <resource>
               <directory>${basedir}/src/main/webapp/WEB-INF</directory>
               <filtering>true</filtering>
@@ -178,17 +200,31 @@
             </resource>
           </webResources>
         </configuration>
+-->
       </plugin>
 
       <plugin>
+<!--
         <groupId>com.google.appengine</groupId>
         <artifactId>appengine-maven-plugin</artifactId>
         <version>${appengine.target.version}</version>
-<!--
         <configuration>                                     
           <port>8000</port>
         </configuration>
 -->
+    <groupId>com.google.appengine</groupId>
+    <artifactId>appengine-maven-plugin</artifactId>
+    <version>${appengine.target.version}</version>
+    <configuration>
+        <enableJarClasses>false</enableJarClasses>
+    </configuration>
+    <executions>
+        <execution>
+            <goals>
+                <goal>endpoints_get_discovery_doc</goal>
+            </goals>
+        </execution>
+    </executions>
       </plugin>
     </plugins>
   </build>

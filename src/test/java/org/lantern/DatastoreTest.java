@@ -8,10 +8,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.lantern.data.Dao;
+import org.lantern.data.LegacyFriend;
+import org.lantern.data.LegacyFriend.Status;
+import org.lantern.data.LegacyFriends;
 import org.lantern.data.ShardedCounterManager;
-import org.lantern.state.Friend;
-import org.lantern.state.Friend.Status;
-import org.lantern.state.Friends;
 import org.lantern.state.Mode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,28 +64,26 @@ public class DatastoreTest {
         final String name = "testuser";
         dao.updateUser(id, 0L, 0L, 0L, 0L, "US", name, Mode.get);
         
-        final Friend friend1 = new Friend("test1@test.com");
-        friend1.setName("test1");
-        final Friend friend2 = new Friend("test2@test.com");
-        friend2.setName("test2");
+        final LegacyFriend friend1 = new LegacyFriend("test1@test.com");
+        final LegacyFriend friend2 = new LegacyFriend("test2@test.com");
         friend2.setStatus(Status.pending);
         friend2.setLastUpdated(System.currentTimeMillis());
-        final Friends friends = new Friends();
+        final LegacyFriends friends = new LegacyFriends();
         friends.add(friend1);
         friends.add(friend2);
-        final List<Friend> changed = dao.syncFriends(name, friends);
+        final List<LegacyFriend> changed = dao.syncFriends(name, friends);
         
         
         assertEquals(0, changed.size());
         
-        final Friends friends2 = new Friends();
+        final LegacyFriends friends2 = new LegacyFriends();
         friend2.setStatus(Status.friend);
         friend2.setLastUpdated(0L);
         friends2.add(friend1);
         friends2.add(friend2);
 
         
-        final List<Friend> changed2 = dao.syncFriends(name, friends2);
+        final List<LegacyFriend> changed2 = dao.syncFriends(name, friends2);
         
         // This should still be 0 because the client doesn't need to know 
         // about the change on the server since the client is the one that 
@@ -94,13 +92,12 @@ public class DatastoreTest {
         
         friend2.setStatus(Status.pending);
         
-        final List<Friend> changed3 = dao.syncFriends(name, friends2);
+        final List<LegacyFriend> changed3 = dao.syncFriends(name, friends2);
         
         // There should actually be an update here because this client is 
         // reporting pending for friend2 but the server has friend2 as already
         // a friend. It's not possible to go from friend to pending, so the
         // server must have newer info!
         assertEquals(1, changed3.size());
-        
     }
 }
