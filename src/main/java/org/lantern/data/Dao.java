@@ -238,44 +238,6 @@ public class Dao extends DAOBase {
     }
     
     /**
-     * Update the 
-     * @param userId
-     * @param instanceId
-     * @param stats
-     */
-    public void updateInstanceStats(final String userId,
-            final String instanceId, final Stats stats) {
-        final long now = System.currentTimeMillis();
-        RetryingTransaction<Void> tx = new RetryingTransaction<Void>() {
-            @Override
-            public Void run(Objectify ofy) {
-                LanternInstance instance = findLanternInstance(ofy, userId, instanceId);
-                instance.getProcessCpuUsage().sample(now,
-                        stats.getProcessCpuUsage());
-                instance.getSystemCpuUsage().sample(now,
-                        stats.getSystemCpuUsage());
-                instance.getSystemLoadAverage().sample(now,
-                        stats.getSystemLoadAverage());
-                instance.getMemoryUsageInBytes().sample(now,
-                        stats.getMemoryUsageInBytes());
-                instance.getNumberOfOpenFileDescriptors().sample(now,
-                        stats.getNumberOfOpenFileDescriptors());
-                ofy.put(instance);
-                ofy.getTxn().commit();
-                log.info("Successfully updated stats for LanternInstance");
-                return null;
-            }
-        };
-        tx.run();
-        
-        if (tx.failed()) {
-            log.warning(String.format(
-                    "Unable to record stats for user: %1$s instance: %2$s",
-                    userId, instanceId));
-        }
-    }
-
-    /**
      * Possibly modifies the user, instance and the counters (via the
      * `counters` list).
      */
