@@ -40,9 +40,11 @@ if raw_input("Shall I bump version? (y/N) ").lower().startswith('y'):
                     contents,
                     1,
                     re.MULTILINE)
-    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
-    assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
-    assert call("git push origin master", shell=True) == 0, "Could not push new version"
+                    
+    if name == "lanternctrl":
+        assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
+        assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
+        assert call("git push origin master", shell=True) == 0, "Could not push new version"
 
     print "Version bumped!"
 else:
