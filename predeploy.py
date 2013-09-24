@@ -20,16 +20,26 @@ secret = base64.b64encode(os.urandom(64))
 file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
-if raw_input("Shall I bump version? (y/N)").lower().startswith('y'):
-    filename = os.path.join(here, 'src', 'main', 'webapp', 'WEB-INF', 'appengine-web.xml')
-    contents = file(filename).read()
-    bumped = re.sub(r'(?<=<version>)\d+(?=</version>)',
+filename = os.path.join(here, 'src', 'main', 'webapp', 'WEB-INF', 'appengine-web.xml')
+contents = file(filename).read()
+
+name = raw_input("Name of appengine app? (leave blank for 'lanternctrl') ").strip()
+if len(name) == 0:
+    name = "lanternctrl"
+    print "Defaulting name to '%s'" % (name)
+    
+contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
+                name,
+                contents,
+                1,
+                re.MULTILINE)
+    
+if raw_input("Shall I bump version? (y/N) ").lower().startswith('y'):
+    contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
                     re.MULTILINE)
-    file(filename, 'w').write(bumped)
-
     assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
     assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
     assert call("git push origin master", shell=True) == 0, "Could not push new version"
@@ -37,5 +47,7 @@ if raw_input("Shall I bump version? (y/N)").lower().startswith('y'):
     print "Version bumped!"
 else:
     print "OK, version left alone."
+    
+file(filename, 'w').write(contents)
 
 print "Ready to deploy!"

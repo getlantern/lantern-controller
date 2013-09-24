@@ -348,6 +348,5 @@ public class XmppAvailableServlet extends HttpServlet {
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
             countryCode, name, mode);
-        dao.updateInstanceStats(idToUse, instanceId, data);
     }
 }
