@@ -11,7 +11,6 @@ import org.lantern.data.LanternUser;
 import org.lantern.data.UnknownUserException;
 import org.littleshoot.util.ThreadUtils;
 
-
 public class InvitedServerLauncher {
 
     private static final transient Logger log = 
@@ -23,7 +22,7 @@ public class InvitedServerLauncher {
     // compatibility.
     private static final String
         DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
-
+    
     public static void sendInvite(final String inviterName,
                                   final String inviterEmail,
                                   final String refreshToken,
@@ -31,6 +30,8 @@ public class InvitedServerLauncher {
 
         final Dao dao = new Dao();
 
+        // TODO: instead of fetching using a hardcoded instanceid, pass the real one here
+        log.info("Maximum client count from Librato: " + Librato.getMaximumClientCountForProxyInLastMonth("429e523560d0f39949843833f05c808e"));
         String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
         if (installerLocation == null && refreshToken == null) {
             // Inviter is running an old client.
@@ -40,6 +41,8 @@ public class InvitedServerLauncher {
             // Ask invsrvlauncher to create an instance for this user.
             log.info("Ordering launch of new invited server for "
                      + inviterEmail);
+            
+            
             Map<String, Object> map = new LinkedHashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
              * by the client, but by a Python bot.
@@ -48,7 +51,7 @@ public class InvitedServerLauncher {
              */
             map.put("launch-invsrv-as", inviterEmail);
             map.put("launch-refrtok", refreshToken);
-            new SQSUtil().send(map);
+            //new SQSUtil().send(map);
         } else if (!installerLocation.equals(PENDING)) {
             sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         } else {
@@ -95,7 +98,9 @@ public class InvitedServerLauncher {
                 baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());
             dao.sentInvite(inviterEmail, invitedEmail);
         } catch (final IOException e) {
-            log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack());
+            log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
         }
     }
+    
+    
 }
