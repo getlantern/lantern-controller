@@ -17,11 +17,6 @@
   <dependencies>
     <!-- Compile/runtime dependencies -->
     <dependency>
-      <groupId>org.getlantern</groupId>
-      <artifactId>lantern-common</artifactId>
-      <version>0.0.18</version>
-    </dependency>
-    <dependency>
       <groupId>aws-on-gae</groupId>
       <artifactId>aws-on-gae</artifactId>
       <version>1.1.9</version>
@@ -157,6 +152,18 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -246,12 +253,10 @@
       <url>http://maven.objectify-appengine.googlecode.com/git/</url>
     </repository>
   </repositories>
-<!--
   <parent>
     <groupId>org.getlantern</groupId>
     <artifactId>lantern-common</artifactId>
     <version>0.0.19</version>
     <relativePath>lantern-common</relativePath>
   </parent>
--->
 </project>
