@@ -1,8 +1,11 @@
-#Sun Sep 01 12:33:33 PDT 2013
+#Wed Sep 25 10:10:08 CDT 2013
+encoding/src/test/java=UTF-8
 org.eclipse.jdt.core.compiler.debug.localVariable=generate
 org.eclipse.jdt.core.compiler.compliance=1.6
 org.eclipse.jdt.core.compiler.codegen.unusedLocal=preserve
 org.eclipse.jdt.core.compiler.debug.sourceFile=generate
+encoding/src/main/java=UTF-8
+encoding/lantern-common/src/main/resources=UTF-8
 org.eclipse.jdt.core.compiler.codegen.targetPlatform=1.6
 org.eclipse.jdt.core.compiler.problem.enumIdentifier=error
 org.eclipse.jdt.core.compiler.debug.lineNumber=generate

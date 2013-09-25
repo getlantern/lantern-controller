@@ -3,9 +3,14 @@ This is the master controller project for globally controlling the Lantern netwo
 To run the development server from the command-line, you will need Maven 3.1.0
 or great.  Then, just run `mvn appengine:devserver`.
 
-To bring this project into Eclipse, just do the following:
+To bring this project and its submodules into Eclipse, just do the following:
 
-1. git clone git@github.com:getlantern/lantern-controller.git
+1. git clone --recursive git@github.com:getlantern/lantern-controller.git
+   
+   If you have already checked out lantern-controller but did not pass
+   '--recursive', you can clone its submodules with
+   `git submodule update --init`.
+   
 1. Open Eclipse
 1. File->Import...->Existing Projects into Workspace
 1. Choose the lantern-controller directory 

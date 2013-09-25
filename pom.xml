@@ -131,11 +131,6 @@
       <version>1.9.11</version>
     </dependency>
     <dependency>
-      <groupId>org.getlantern</groupId>
-      <artifactId>lantern-common</artifactId>
-      <version>0.0.18</version>
-    </dependency>
-    <dependency>
       <groupId>org.littleshoot</groupId>
       <artifactId>util</artifactId>
       <version>1.0.3</version>
@@ -247,4 +242,10 @@
     </repository>
   </repositories>
 
+  <parent>
+    <groupId>org.getlantern</groupId>
+    <artifactId>lantern-common</artifactId>
+    <version>0.0.19</version>
+    <relativePath>lantern-common</relativePath>
+  </parent>
 </project>
