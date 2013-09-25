@@ -30,6 +30,15 @@ public class Librato {
     private static final String LIBRATO_PASSWORD = "501977a876d254750019eb9bf546ac476e0e34c8579d44de3a24df68f84e18dc";
     private static final long SECONDS_IN_ONE_MONTH = 31l * 24l * 60l * 60l;
 
+    /**
+     * For the given instanceId, this returns the maximum number of distinct
+     * clients (based on IP) that connected to the given instance during a run
+     * of that instance. This provides one way of undertanding how heavily
+     * utilized the given proxy is.
+     * 
+     * @param instanceId
+     * @return
+     */
     public static double getMaximumClientCountForProxyInLastMonth(
             String instanceId) {
         String sourceName = String.format("proxy-%1$s", instanceId);
@@ -38,11 +47,18 @@ public class Librato {
             // If we couldn't fetch the json, return 0
             return 0;
         }
-        return getMaximumClientCountForProxyInLastMonth(json, sourceName);
+        return getMaxFromSummarizedMetric(json, sourceName);
     }
 
-    public static double getMaximumClientCountForProxyInLastMonth(String json,
-            String sourceName) {
+    /**
+     * This method extracts the "max" value for the summarized metric
+     * corresponding to the given sourceName.
+     * 
+     * @param json
+     * @param sourceName
+     * @return
+     */
+    static double getMaxFromSummarizedMetric(String json, String sourceName) {
         String pathExpression = String.format("$.measurements.%1$s[0].max",
                 sourceName);
         LOGGER.info(String.format("Getting value at path '%1$s' from\n%2$s",
