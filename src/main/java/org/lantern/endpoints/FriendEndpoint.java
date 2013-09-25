@@ -40,7 +40,7 @@ public class FriendEndpoint {
             throws UnauthorizedException {
         checkAuthorization(user);
         
-        final String email = user.getEmail();
+        final String email = email(user);
         final PersistenceManager mgr = getPersistenceManager();
         final List<Friend> result = new ArrayList<Friend>();
         try {
@@ -75,7 +75,7 @@ public class FriendEndpoint {
         ServerFriend friend = null;
         try {
             friend = mgr.getObjectById(ServerFriend.class, id);
-            if (!friend.getUserEmail().equals(user.getEmail())) {
+            if (!friend.getUserEmail().toLowerCase().equals(email(user))) {
                 throw new UnauthorizedException("Unauthorized");
             }
         } finally {
@@ -99,7 +99,7 @@ public class FriendEndpoint {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
-        friend.setUserEmail(user.getEmail());
+        friend.setUserEmail(email(user));
         PersistenceManager mgr = getPersistenceManager();
         try {
             mgr.makePersistent(friend);
@@ -124,7 +124,7 @@ public class FriendEndpoint {
         final com.google.appengine.api.users.User user) 
                 throws UnauthorizedException {
         checkAuthorization(user);
-        friend.setUserEmail(user.getEmail());
+        friend.setUserEmail(email(user));
         PersistenceManager mgr = getPersistenceManager();
         try {
             mgr.makePersistent(friend);
@@ -158,6 +158,16 @@ public class FriendEndpoint {
     }
     
 
+    /**
+     * Normalizes email addresses.
+     * 
+     * @param user The user whose email address we want to normalize.
+     * @return The normalized address.
+     */
+    private String email(final User user) {
+        return user.getEmail().toLowerCase();
+    }
+
     private void checkAuthorization(final User user) 
             throws UnauthorizedException {
         if (user == null) {
@@ -165,7 +175,7 @@ public class FriendEndpoint {
         }
         /*
         final Dao dao = new Dao();
-        final String email = user.getEmail();
+        final String email = email(user);
         if (!dao.isInvited(email)) {
             throw new UnauthorizedException("Unauthorized");
         }
