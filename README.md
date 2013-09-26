@@ -83,7 +83,7 @@ The recommended way of doing this is to create a
 its activate script, and then run `pip install` commands for the required
 packages.
 
-Also make sure you have [compass](http://compass-style.org/) 0.2.12 installed,
+Also make sure you have [compass](http://compass-style.org/) 0.12.2 installed,
 which is required to compile the sass. You can run
 `gem install compass --version '= 0.12.2'` to install it (sudo as necessary).
 
