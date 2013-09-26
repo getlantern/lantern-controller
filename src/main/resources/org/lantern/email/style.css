@@ -1,0 +1,182 @@
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+body {
+  font-size: 14px;
+  line-height: 18px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #eeeeee;
+  text-align: center;
+}
+
+a {
+  color: #0373c1;
+}
+
+a.big-header {
+  color: #014f86;
+}
+
+.banner, .langbar, .lang-container {
+  width: 560px;
+  margin: 0 auto;
+  padding: 5px 40px;
+}
+
+.banner {
+  color: white;
+  background: #002437;
+}
+.banner .logo {
+  display: block;
+  margin: 0 auto;
+}
+
+.langbar {
+  font-size: 11px;
+  background-color: white;
+  border-bottom: 1px dotted #cccccc;
+}
+.langbar ul {
+  list-style-type: none;
+  word-spacing: 8px;
+}
+.langbar ul, .langbar ul li {
+  margin: 0px;
+  padding: 0px;
+  display: inline;
+}
+
+.lang-container {
+  background-color: white;
+}
+
+.header {
+  margin: auto;
+  background: white;
+  padding: 20px;
+}
+.header h1 {
+  font-size: 28px;
+  line-height: 30px;
+}
+.header h2 {
+  font-size: 16px;
+  line-height: 30px;
+  margin-bottom: 10px;
+}
+
+.lang-container {
+  border-bottom: 1px dotted #cccccc;
+}
+
+.blurb {
+  text-align: left;
+}
+
+.download-header {
+  font-size: 22px;
+  margin: 40px 0 0;
+}
+
+.download-subheader {
+  font-size: 10px;
+  margin-top: 5px;
+  font-weight: normal;
+}
+
+.download-links {
+  list-style: none;
+  padding: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+.download-links li {
+  list-style-image: none;
+  list-style-type: none;
+  margin-left: 0;
+}
+
+.details {
+  font-size: 13px;
+  margin: 50px 0;
+  text-align: left;
+}
+
+.need, .have, .sponsor {
+  margin-bottom: 14px;
+}
+
+.need b {
+  color: #cc8800;
+}
+
+.have b {
+  color: #528e2f;
+}
+
+.notes-header {
+  margin: 10px;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+}
+
+.note {
+  margin-bottom: 14px;
+}
+.note strong {
+  color: #014f86;
+}
+
+.more-info {
+  text-align: center;
+}
+.more-info h4 {
+  font-size: 11px;
+  margin: 2px 0;
+}
+.more-info ul {
+  list-style-type: none;
+  word-spacing: 8px;
+}
+.more-info ul, .more-info ul li {
+  margin: 0px;
+  padding: 0px;
+  display: inline;
+}
+
+.from-us-header {
+  font-size: 11px;
+  text-align: left;
+  padding-top: 20px;
+  font-size: 12px;
+}
+
+.from-us-body {
+  text-align: left;
+  margin: 5px 30px;
+  color: #888888;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.footer {
+  font-size: 11px;
+  padding-top: 10px;
+  border-top: 1px dotted #eeeeee;
+  text-align: center;
+}
+.footer ul {
+  list-style-type: none;
+  word-spacing: 8px;
+}
+.footer ul, .footer ul li {
+  margin: 0px;
+  padding: 0px;
+  display: inline;
+}

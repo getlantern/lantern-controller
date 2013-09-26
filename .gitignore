@@ -13,3 +13,4 @@ src/main/resources/org/lantern/secrets
 target
 log.txt
 datanucleus.log
+.sass-cache
