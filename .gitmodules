@@ -1,3 +1,6 @@
 [submodule "lantern-common"]
 	path = lantern-common
 	url = https://github.com/getlantern/lantern-common.git
+[submodule "doc"]
+	path = doc
+	url = git@github.com:getlantern/lantern-docs.git
