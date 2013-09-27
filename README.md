@@ -53,9 +53,9 @@ needed.
 ### Transifex
 
 All translatable content for Lantern has been uploaded to [the Lantern
-Transifex project](https://www.transifex.com/projects/p/lantern/] to help
+Transifex project](https://www.transifex.com/projects/p/lantern/) to help
 manage translations. Translatable strings from this code have been uploaded to
-the [controller](https://www.transifex.com/projects/p/lantern/resource/email/) resource
+the [controller resource](https://www.transifex.com/projects/p/lantern/resource/email/)
 therein. Transifex has been set up to automatically pull updates to that
 resource from [its GitHub
 url](https://raw.github.com/getlantern/lantern-controller/master/locale/en_US.json)
