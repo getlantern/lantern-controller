@@ -10,7 +10,7 @@
 
   <properties>
     <appengine.app.version>159</appengine.app.version>
-    <appengine.target.version>1.8.3</appengine.target.version>
+    <appengine.target.version>1.8.4</appengine.target.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -131,11 +131,6 @@
       <version>1.9.11</version>
     </dependency>
     <dependency>
-      <groupId>org.getlantern</groupId>
-      <artifactId>lantern-common</artifactId>
-      <version>0.0.17</version>
-    </dependency>
-    <dependency>
       <groupId>org.littleshoot</groupId>
       <artifactId>util</artifactId>
       <version>1.0.3</version>
@@ -157,6 +152,18 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -246,5 +253,10 @@
       <url>http://maven.objectify-appengine.googlecode.com/git/</url>
     </repository>
   </repositories>
-
+  <parent>
+    <groupId>org.getlantern</groupId>
+    <artifactId>lantern-common</artifactId>
+    <version>0.0.19</version>
+    <relativePath>lantern-common</relativePath>
+  </parent>
 </project>

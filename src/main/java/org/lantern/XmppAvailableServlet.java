@@ -20,8 +20,8 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
-import org.lantern.state.Friend;
-import org.lantern.state.Friends;
+import org.lantern.data.LegacyFriend;
+import org.lantern.data.LegacyFriends;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -155,17 +155,17 @@ public class XmppAvailableServlet extends HttpServlet {
             }
 
             log.info("Syncing single friend");
-            Friend clientFriend = safeMap(friendJson, mapper, Friend.class);
+            LegacyFriend clientFriend = safeMap(friendJson, mapper, LegacyFriend.class);
             dao.syncFriend(userId, clientFriend);
             return true;
         }
 
 
-        Friends clientFriends = safeMap(friendsJson, mapper, Friends.class);
+        LegacyFriends clientFriends = safeMap(friendsJson, mapper, LegacyFriends.class);
 
         log.info("Synced friends count = " + clientFriends.getFriends().size());
 
-        List<Friend> changed = dao.syncFriends(userId, clientFriends);
+        List<LegacyFriend> changed = dao.syncFriends(userId, clientFriends);
         log.info("Changed friends count = " + changed.size());
         if (changed.size() > 0) {
             Map<String, Object> response = new HashMap<String, Object>();
@@ -348,6 +348,5 @@ public class XmppAvailableServlet extends HttpServlet {
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
             countryCode, name, mode);
-        dao.updateInstanceStats(idToUse, instanceId, data);
     }
 }

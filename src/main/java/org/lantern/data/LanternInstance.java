@@ -2,7 +2,6 @@ package org.lantern.data;
 
 import java.util.Date;
 
-import javax.persistence.Embedded;
 import javax.persistence.Id;
 
 import org.lantern.state.Mode;
@@ -30,28 +29,6 @@ public class LanternInstance {
 
     private String currentCountry;
     
-    //@formatter:off
-    @Embedded
-    private Metric processCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                NUMBER_OF_BUCKETS_TO_KEEP);
-    
-    @Embedded
-    private Metric systemCpuUsage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                               NUMBER_OF_BUCKETS_TO_KEEP);
-    
-    @Embedded
-    private Metric systemLoadAverage = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                  NUMBER_OF_BUCKETS_TO_KEEP);
-    
-    @Embedded
-    private Metric memoryUsageInBytes = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                   NUMBER_OF_BUCKETS_TO_KEEP);
-    
-    @Embedded
-    private Metric numberOfOpenFileDescriptors = new Metric(METRIC_BUCKET_DURATION_IN_MILLIS,
-                                                            NUMBER_OF_BUCKETS_TO_KEEP);
-    //@formatter:on
-
     /* The most recent resource id we have seen for this instance. */
     private String resource;
 
@@ -134,46 +111,6 @@ public class LanternInstance {
         this.resource = resource;
     }
     
-    public Metric getProcessCpuUsage() {
-        return processCpuUsage;
-    }
-
-    public void setProcessCpuUsage(Metric processCpuUsage) {
-        this.processCpuUsage = processCpuUsage;
-    }
-
-    public Metric getSystemCpuUsage() {
-        return systemCpuUsage;
-    }
-
-    public void setSystemCpuUsage(Metric systemCpuUsage) {
-        this.systemCpuUsage = systemCpuUsage;
-    }
-
-    public Metric getSystemLoadAverage() {
-        return systemLoadAverage;
-    }
-
-    public void setSystemLoadAverage(Metric systemLoadAverage) {
-        this.systemLoadAverage = systemLoadAverage;
-    }
-
-    public Metric getMemoryUsageInBytes() {
-        return memoryUsageInBytes;
-    }
-
-    public void setMemoryUsageInBytes(Metric memoryUsageInBytes) {
-        this.memoryUsageInBytes = memoryUsageInBytes;
-    }
-
-    public Metric getNumberOfOpenFileDescriptors() {
-        return numberOfOpenFileDescriptors;
-    }
-
-    public void setNumberOfOpenFileDescriptors(Metric numberOfOpenFileDescriptors) {
-        this.numberOfOpenFileDescriptors = numberOfOpenFileDescriptors;
-    }
-
     public boolean isCurrent() {
         long now = new Date().getTime();
         long age = now - lastUpdated.getTime();

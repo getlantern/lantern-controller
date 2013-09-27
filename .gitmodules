@@ -1,0 +1,3 @@
+[submodule "lantern-common"]
+	path = lantern-common
+	url = https://github.com/getlantern/lantern-common.git

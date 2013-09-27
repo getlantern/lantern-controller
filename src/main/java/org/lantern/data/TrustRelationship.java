@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 import javax.persistence.Id;
 
+import org.lantern.data.LegacyFriend.Status;
 import org.lantern.state.Friend;
-import org.lantern.state.Friend.Status;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
@@ -38,14 +38,14 @@ public class TrustRelationship implements Serializable {
         // for ofy
     }
 
-    public TrustRelationship(Key<LanternUser> owner, Friend friend) {
+    public TrustRelationship(Key<LanternUser> owner, LegacyFriend friend) {
         this.parent = owner;
         this.id = friend.getEmail();
         this.status = friend.getStatus();
         this.lastUpdated = friend.getLastUpdated();
     }
 
-    public Status getStatus() {
+    public org.lantern.data.LegacyFriend.Status getStatus() {
         return status;
     }
 
@@ -68,7 +68,7 @@ public class TrustRelationship implements Serializable {
      * @param friend
      * @return whether this needs to be persisted
      */
-    public boolean update(Friend friend) {
+    public boolean update(LegacyFriend friend) {
         if (isNewerThan(friend)) {
             return false;
         }
@@ -81,7 +81,7 @@ public class TrustRelationship implements Serializable {
         return false;
     }
 
-    public boolean isNewerThan(Friend friend) {
+    public boolean isNewerThan(LegacyFriend friend) {
         // this is actually a bit complicated. We want "friend" or "rejected"
         // to override "pending", because "pending" friends are only
         // automatically generated, while "friend" or "rejected" requires
