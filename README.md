@@ -35,6 +35,7 @@ console.
 Lantern Controller makes the following admin pages available for various
 management tasks:
 
+- `https://<appid>.appspot.com/admin/index.jsp` - misc. global state
 - `https://<appid>.appspot.com/admin/pendingInvites.jsp` - approve
   pending invites
 
