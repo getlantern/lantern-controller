@@ -1,7 +1,12 @@
-This is the master controller project for globally controlling the Lantern network.
+# Lantern Controller
+
+This is the software for globally controlling the Lantern network.
+
+
+## Development
 
 To run the development server from the command-line, you will need Maven 3.1.0
-or great.  Then, just run `mvn appengine:devserver`.
+or higher.  Then, just run `mvn appengine:devserver`.
 
 To bring this project and its submodules into Eclipse, just do the following:
 
@@ -23,6 +28,15 @@ To deploy a new version, just run `./deploy.bash`. You'll be
 prompted for whether you want to increment the version, and if you do
 then you may also want to update the default serving version in the app engine
 console.
+
+
+## Admin Pages
+
+Lantern Controller makes the following admin pages available for various
+management tasks:
+
+- `https://<appid>.appspot.com/admin/pendingInvites.jsp` - approve
+  pending invites
 
 
 ## i18n
@@ -86,10 +100,14 @@ packages.
 Also make sure you have [compass](http://compass-style.org/) 0.12.2 installed,
 which is required to compile the sass. You can run
 `gem install compass --version '= 0.12.2'` to install it (sudo as necessary).
+If the sass hasn't changed since the last time it was compiled, you can also
+just comment out the code in the beginning of generate_emails.py which makes
+the "compass compile" call.
 
-Any time a **new** translation file is pulled from Transifex, a corresponding
-`Lang` instance should be added to the `LANGS` list inside the script. For
-instance, if `tx pull` results in a new file "locale/es_ES.json", add an entry
-to `LANGS` like `Lang('es_ES', 'Español', 'ltr')`. The next time you run
-`generate_emails.py`, a new section will be added to the emails with the
-Spanish translations.
+Any time a **new** translation file is pulled from Transifex (see the
+[Transifex](#transifex) section above), a corresponding `Lang` instance should
+be added to the `LANGS` list in generate_emails.py. For instance, if "tx pull"
+pulls a new file "locale/es_ES.json", add an entry to `LANGS` like
+`Lang('es_ES', 'Español', 'ltr')`. The next time you run
+`./generate_emails.py`, a new section will be added to the generated emails for
+the Spanish translation.
