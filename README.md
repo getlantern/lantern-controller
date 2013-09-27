@@ -20,6 +20,9 @@ To bring this project and its submodules into Eclipse, just do the following:
 1. File->Import...->Existing Projects into Workspace
 1. Choose the lantern-controller directory 
 
+
+## Deployment
+
 Lantern-controller requires some secrets to be put in place before it can run.
 See (or just run) `./predeploy.py` (which requires the too-many-secrets repo to
 be cloned alongside lantern-controller) to get secrets in place.
