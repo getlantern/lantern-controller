@@ -62,3 +62,5 @@ for (filename, content) in zip(TMPL_FILENAMES, transformed):
     with open(opath, mode='w', encoding='utf-8') as fp:
         print('* Writing "%s"...' % opath)
         fp.write(content)
+
+print('Done.')
