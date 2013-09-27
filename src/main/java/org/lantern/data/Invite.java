@@ -6,11 +6,18 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 /**
- * An invite's id is inviter-email-address\1invitee-email-address
+ * Datastore model for an invite request.
+ *
+ * We store all invite requests ever, for the following purposes:
+ *  - to keep track of the requests that are pending admin approval,
+ *  - to prevent an invite from the same inviter to the same invitee from ever
+ *    being processed more than once, and in particular
+ *  - to avoid sending the corresponding invite e-mail more than once.
  */
 public class Invite {
 
     @Id
+    // Determined by both inviter and invitee; see makeId.
     private String id;
 
     @Parent
@@ -21,8 +28,12 @@ public class Invite {
     private String invitee;
 
     public enum Status {
+        // We have never tried to send the e-mail for this invite.
         queued,
+        // We are trying to send the e-mail for this invite, but we don't think
+        // it's done yet.
         sending,
+        // We believe we have succeeded in sending the e-mail for this invite.
         sent
     }
 
