@@ -27,9 +27,14 @@ public class Invite {
 
     private String invitee;
 
+    // Status transitions only ever advance monotonically in the order in which
+    // they are listed below.
     public enum Status {
-        // We have never tried to send the e-mail for this invite.
+        // This invite hasn't been authorized yet.
         queued,
+        // Invite has been authorized; we have never tried to send the e-mail
+        // for this invite.
+        authorized,
         // We are trying to send the e-mail for this invite, but we don't think
         // it's done yet.
         sending,
