@@ -16,7 +16,6 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
-import org.lantern.Stats;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.state.Mode;
@@ -137,14 +136,16 @@ public class Dao extends DAOBase {
 
     public void setInstanceAvailable(final String userId,
             final String instanceId, final String countryCode, final Mode mode,
-            final String resource, final boolean isFallbackProxy) {
+            final String resource, final String listenHostAndPort,
+            final String fallbackProxyHostAndPort,
+            final boolean isFallbackProxy) {
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 final List<String> countersToUpdate = setInstanceAvailable(
                         ofy, userId, instanceId, countryCode, mode, resource,
-                        isFallbackProxy);
+                        listenHostAndPort, fallbackProxyHostAndPort, isFallbackProxy);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -176,8 +177,8 @@ public class Dao extends DAOBase {
      */
     public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final Mode mode, final String resource,
-            boolean isFallbackProxy) {
+            final Mode mode, final String resource, String listenHostAndPort,
+            String fallbackProxyHostAndPort, boolean isFallbackProxy) {
 
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
@@ -232,6 +233,9 @@ public class Dao extends DAOBase {
             }
             instance.setLastUpdated(new Date());
             instance.setResource(resource);
+            instance.setListenHostAndPort(listenHostAndPort);
+            instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
+            instance.setFallbackProxy(isFallbackProxy);
             ofy.put(instance);
         } else {
             log.info("Could not find instance!!");
@@ -239,6 +243,9 @@ public class Dao extends DAOBase {
             instance = new LanternInstance(instanceId, parentKey);
             instance.setResource(resource);
             instance.setUser(userId);
+            instance.setListenHostAndPort(listenHostAndPort);
+            instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
+            instance.setFallbackProxy(isFallbackProxy);
             // The only counter that we need handling differently for new
             // instances is the global peers ever.
             counters.add(dottedPath(GLOBAL, NPEERS, EVER, modeStr));

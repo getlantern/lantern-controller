@@ -10,9 +10,6 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 public class LanternInstance {
-    private static long METRIC_BUCKET_DURATION_IN_MILLIS = 60 * 60 * 1000;
-    private static long NUMBER_OF_BUCKETS_TO_KEEP = 24;
-    
     @Id
     private String id;
 
@@ -33,6 +30,18 @@ public class LanternInstance {
     private String resource;
 
     private Mode mode;
+    
+    private boolean isFallbackProxy;
+    
+    /**
+     * The host and port on which this proxy (Give mode) is listening.
+     */
+    private String listenHostAndPort;
+    
+    /**
+     * The host and port for the fallback proxy used by this instance (Get mode).
+     */
+    private String fallbackProxyHostAndPort;
 
     public LanternInstance() {
         super();
@@ -109,6 +118,30 @@ public class LanternInstance {
 
     public void setResource(String resource) {
         this.resource = resource;
+    }
+    
+    public void setFallbackProxy(boolean isFallbackProxy) {
+        this.isFallbackProxy = isFallbackProxy;
+    }
+    
+    public boolean isFallbackProxy() {
+        return isFallbackProxy;
+    }
+    
+    public void setListenHostAndPort(String listenHostAndPort) {
+        this.listenHostAndPort = listenHostAndPort;
+    }
+    
+    public String getListenHostAndPort() {
+        return listenHostAndPort;
+    }
+    
+    public void setFallbackProxyHostAndPort(String fallbackProxyHostAndPort) {
+        this.fallbackProxyHostAndPort = fallbackProxyHostAndPort;
+    }
+    
+    public String getFallbackProxyHostAndPort() {
+        return fallbackProxyHostAndPort;
     }
     
     public boolean isCurrent() {

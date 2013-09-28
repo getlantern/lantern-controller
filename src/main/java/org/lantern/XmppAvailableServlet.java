@@ -71,6 +71,10 @@ public class XmppAvailableServlet extends HttpServlet {
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
+        final String hostAndPort = LanternControllerUtils.getProperty(doc,
+                LanternConstants.HOST_AND_PORT);
+        final String fallbackHostAndPort = LanternControllerUtils.getProperty(
+                doc, LanternConstants.FALLBACK_HOST_AND_PORT);
         final boolean isFallbackProxy = "true".equalsIgnoreCase(
                 LanternControllerUtils.getProperty(doc,
                         LanternConstants.IS_FALLBACK_PROXY));
@@ -128,7 +132,8 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "name");
 
         processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource, isFallbackProxy);
+                name, mode, resource, hostAndPort, fallbackHostAndPort,
+                isFallbackProxy);
 
         sendUpdateTime(presence, xmpp, responseJson);
 
@@ -290,6 +295,7 @@ public class XmppAvailableServlet extends HttpServlet {
     private void processClientInfo(final Presence presence,
         final String stats, final String idToUse, final String instanceId,
         final String name, final Mode mode, final String resource,
+        final String hostAndPort, final String fallbackHostAndPort,
         final boolean isFallbackProxy) {
 
         if (StringUtils.isBlank(stats)) {
@@ -315,7 +321,8 @@ public class XmppAvailableServlet extends HttpServlet {
                 countryCode = "XX";
             }
             dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
-                                     resource, isFallbackProxy);
+                                     resource, hostAndPort, fallbackHostAndPort,
+                                     isFallbackProxy);
             try {
                 updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {
