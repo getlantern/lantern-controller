@@ -183,15 +183,10 @@ public class Dao extends DAOBase {
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
         
-        if (isFallbackProxy && !userId.equals(user.getFallbackProxyUserId())) {
-            // We've just learned that a fallback proxy is running under this
-            // userId - set the fallbackProxyUserId on the user to reflect this
-            log.info(String.format("Detected user '%1$s' running as fallback proxy",
-                    userId));
-            user.setFallbackProxyUserId(userId);
-            ofy.put(user);
+        if (isFallbackProxy) {
+            updateFallbackInfo(ofy, user, instanceId);
         }
-
+        
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                 userId);
 
@@ -203,11 +198,24 @@ public class Dao extends DAOBase {
         if (instance != null && StringUtils.equals(instance.getResource(), resource)) {
             //this is an available message for the same resource as
             //is currently in use, so it must be bogus.
+            log.info(String.format("Detected bogus available message for '%1$s",
+                    instanceId));
             return Collections.emptyList();
         }
 
         ArrayList<String> counters = new ArrayList<String>();
-        if (instance != null) {
+        boolean isNewInstance = instance == null;
+        if (isNewInstance) {
+            instance = new LanternInstance(instanceId, parentKey);
+        }
+        
+        // Update properties common to new and updated instances
+        instance.setResource(resource);
+        instance.setListenHostAndPort(listenHostAndPort);
+        instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
+        instance.setFallbackProxy(isFallbackProxy);
+        
+        if (!isNewInstance) {
             log.info("Setting availability to true for " + userId + "/" + instanceId);
             if (instance.isAvailable()) {
                 //handle mode changes
@@ -232,26 +240,18 @@ public class Dao extends DAOBase {
                         countryCode, mode, counters);
             }
             instance.setLastUpdated(new Date());
-            instance.setResource(resource);
-            instance.setListenHostAndPort(listenHostAndPort);
-            instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
-            instance.setFallbackProxy(isFallbackProxy);
             ofy.put(instance);
         } else {
             log.info("Could not find instance!!");
 
-            instance = new LanternInstance(instanceId, parentKey);
-            instance.setResource(resource);
             instance.setUser(userId);
-            instance.setListenHostAndPort(listenHostAndPort);
-            instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
-            instance.setFallbackProxy(isFallbackProxy);
             // The only counter that we need handling differently for new
             // instances is the global peers ever.
             counters.add(dottedPath(GLOBAL, NPEERS, EVER, modeStr));
             updateStatsForNewlyAvailableInstance(ofy, user, instance,
                     countryCode, mode, counters);
         }
+        
         return counters;
     }
     
@@ -297,6 +297,47 @@ public class Dao extends DAOBase {
         log.info("Finished updating datastore...");
     }
 
+    /**
+     * Update fallback info at the user level.
+     */
+    private void updateFallbackInfo(Objectify ofy,
+            LanternUser user,
+            String instanceId) {
+        String userId = user.getId();
+        log.info(String.format(
+                "Considering updating info for fallback proxy for user '%1$s'",
+                userId));
+        
+        boolean fallbackUserIdNewOrChanged = 
+                !userId.equals(user.getFallbackProxyUserId());
+        boolean discoveredFallbackProxy = 
+                user.getFallbackForNewInvitees() == null;
+        boolean userDirty = false;
+        
+        if (fallbackUserIdNewOrChanged) {
+            // We've just learned that a fallback proxy is running under this
+            // userId - set the fallbackProxyUserId on the user to reflect this
+            log.info(String.format(
+                    "Detected user '%1$s' running as fallback proxy", userId));
+            user.setFallbackProxyUserId(userId);
+            userDirty = true;
+        }
+
+        if (discoveredFallbackProxy) {
+            log.info(String.format(
+                    "Discovered fallback proxy for invitees of user '%1$s'",
+                    userId));
+            user.setFallbackForNewInvitees(
+                    new Key<LanternInstance>(LanternInstance.class,
+                            instanceId));
+            userDirty = true;
+        }
+        
+        if (userDirty) {
+            ofy.put(user);
+        }
+    }
+    
     private static String dottedPath(String ... strings) {
         return StringUtils.join(strings, ".");
     }

@@ -8,6 +8,8 @@ import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
+import com.googlecode.objectify.Key;
+
 
 public class LanternUser implements Serializable {
     private static final long serialVersionUID = 1953109001251375722L;
@@ -45,7 +47,7 @@ public class LanternUser implements Serializable {
     private boolean everSignedIn = false;
 
     private Date lastAccessed = new Date();
-
+    
     /**
      * The instances we have seen running in behalf of this user.
      *
@@ -72,6 +74,11 @@ public class LanternUser implements Serializable {
      * The ID of the Fallback Proxy used by this user's invitees.
      */
     private String fallbackProxyUserId;
+    
+    /**
+     * Tracks the fallback proxy to use for new invitees.
+     */
+    private Key<LanternInstance> fallbackForNewInvitees;
 
     public LanternUser() {
         super();
@@ -235,5 +242,14 @@ public class LanternUser implements Serializable {
     
     public String getFallbackProxyUserId() {
         return fallbackProxyUserId;
+    }
+    
+    public void setFallbackForNewInvitees(
+            Key<LanternInstance> fallbackForNewInvitees) {
+        this.fallbackForNewInvitees = fallbackForNewInvitees;
+    }
+    
+    public Key<LanternInstance> getFallbackForNewInvitees() {
+        return fallbackForNewInvitees;
     }
 }
