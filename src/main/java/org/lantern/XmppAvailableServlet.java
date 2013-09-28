@@ -71,13 +71,18 @@ public class XmppAvailableServlet extends HttpServlet {
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
+        final boolean isFallbackProxy = "true".equalsIgnoreCase(
+                LanternControllerUtils.getProperty(doc,
+                        LanternConstants.IS_FALLBACK_PROXY));
+        log.info("Is fallback proxy: " + isFallbackProxy + " from " + LanternControllerUtils.getProperty(doc,
+                        LanternConstants.IS_FALLBACK_PROXY));
 
         if (!presence.isAvailable()) {
             log.info(userId + "/" + resource + " logging out.");
             dao.setInstanceUnavailable(userId, resource);
             return;
         }
-
+        
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
 
@@ -123,7 +128,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "name");
 
         processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource);
+                name, mode, resource, isFallbackProxy);
 
         sendUpdateTime(presence, xmpp, responseJson);
 
@@ -284,7 +289,8 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final String idToUse, final String instanceId,
-        final String name, final Mode mode, final String resource) {
+        final String name, final Mode mode, final String resource,
+        final boolean isFallbackProxy) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
@@ -308,7 +314,8 @@ public class XmppAvailableServlet extends HttpServlet {
             if (StringUtils.isBlank(countryCode)) {
                 countryCode = "XX";
             }
-            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode, resource);
+            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
+                                     resource, isFallbackProxy);
             try {
                 updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {

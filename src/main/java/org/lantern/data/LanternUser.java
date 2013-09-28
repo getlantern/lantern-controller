@@ -67,6 +67,11 @@ public class LanternUser implements Serializable {
     private String name;
 
     private String refreshToken;
+    
+    /**
+     * The ID of the Fallback Proxy used by this user's invitees.
+     */
+    private String fallbackProxyUserId;
 
     public LanternUser() {
         super();
@@ -222,5 +227,13 @@ public class LanternUser implements Serializable {
 
     public String getRefreshToken() {
         return refreshToken;
+    }
+    
+    public void setFallbackProxyUserId(String fallbackProxyUserId) {
+        this.fallbackProxyUserId = fallbackProxyUserId;
+    }
+    
+    public String getFallbackProxyUserId() {
+        return fallbackProxyUserId;
     }
 }

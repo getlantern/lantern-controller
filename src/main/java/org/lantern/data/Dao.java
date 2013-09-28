@@ -137,13 +137,14 @@ public class Dao extends DAOBase {
 
     public void setInstanceAvailable(final String userId,
             final String instanceId, final String countryCode, final Mode mode,
-            final String resource) {
+            final String resource, final boolean isFallbackProxy) {
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
                 final List<String> countersToUpdate = setInstanceAvailable(
-                        ofy, userId, instanceId, countryCode, mode, resource);
+                        ofy, userId, instanceId, countryCode, mode, resource,
+                        isFallbackProxy);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -175,10 +176,20 @@ public class Dao extends DAOBase {
      */
     public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final Mode mode, final String resource) {
+            final Mode mode, final String resource,
+            boolean isFallbackProxy) {
 
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
+        
+        if (isFallbackProxy && !userId.equals(user.getFallbackProxyUserId())) {
+            // We've just learned that a fallback proxy is running under this
+            // userId - set the fallbackProxyUserId on the user to reflect this
+            log.info(String.format("Detected user '%1$s' running as fallback proxy",
+                    userId));
+            user.setFallbackProxyUserId(userId);
+            ofy.put(user);
+        }
 
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                 userId);
