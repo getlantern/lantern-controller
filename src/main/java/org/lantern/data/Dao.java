@@ -328,7 +328,9 @@ public class Dao extends DAOBase {
                     "Discovered fallback proxy for invitees of user '%1$s'",
                     userId));
             user.setFallbackForNewInvitees(
-                    new Key<LanternInstance>(LanternInstance.class,
+                    new Key<LanternInstance>(
+                            new Key<LanternUser>(LanternUser.class, userId),
+                            LanternInstance.class,
                             instanceId));
             userDirty = true;
         }
