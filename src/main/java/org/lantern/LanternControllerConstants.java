@@ -14,6 +14,7 @@ public class LanternControllerConstants {
     static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
     static final String INVITE_EMAIL_FROM_SUFFIX = " via Lantern";
     static final String INVITE_EMAIL_BCC_ADDRESS = "lantern-invites@googlegroups.com";
+    public static final String DEFAULT_FALLBACK_HOST_AND_PORT;
 
     private static String mandrillApiKey;
     private static String awsAccessKeyId;
@@ -29,6 +30,8 @@ public class LanternControllerConstants {
             mandrillApiKey = config.getString("mandrillApiKey");
             awsAccessKeyId = config.getString("awsAccessKeyId");
             awsSecretKey = config.getString("awsSecretKey");
+            DEFAULT_FALLBACK_HOST_AND_PORT
+                = config.getString("defaultFallbackHostAndPort");
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }

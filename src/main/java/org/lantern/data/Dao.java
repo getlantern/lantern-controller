@@ -137,7 +137,6 @@ public class Dao extends DAOBase {
     public void setInstanceAvailable(final String userId,
             final String instanceId, final String countryCode, final Mode mode,
             final String resource, final String listenHostAndPort,
-            final String fallbackProxyHostAndPort,
             final boolean isFallbackProxy) {
 
         Boolean result = new RetryingTransaction<Boolean>() {
@@ -145,7 +144,7 @@ public class Dao extends DAOBase {
             protected Boolean run(Objectify ofy) {
                 final List<String> countersToUpdate = setInstanceAvailable(
                         ofy, userId, instanceId, countryCode, mode, resource,
-                        listenHostAndPort, fallbackProxyHostAndPort, isFallbackProxy);
+                        listenHostAndPort, isFallbackProxy);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
                 // transaction succeeded.  Since these affect the memcache
@@ -178,7 +177,7 @@ public class Dao extends DAOBase {
     public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
             final Mode mode, final String resource, String listenHostAndPort,
-            String fallbackProxyHostAndPort, boolean isFallbackProxy) {
+            boolean isFallbackProxy) {
 
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
@@ -294,6 +293,72 @@ public class Dao extends DAOBase {
         ofy.put(instance);
         ofy.put(user);
         log.info("Finished updating datastore...");
+    }
+
+    /**
+     * Update fallbackProxyUserId if we got a non-default
+     * fallbackProxyHostAndPort.
+     */
+    public void processFallbackProxyHostAndPort(final String userId,
+                                                final String hostAndPort) {
+        if (StringUtils.isBlank(hostAndPort)) {
+            log.info("No hostAndPort.");
+            return;
+        }
+        if (LanternControllerConstants.DEFAULT_FALLBACK_HOST_AND_PORT
+                .equals(hostAndPort)) {
+            // This may be caused by a wiped ~/.lantern folder.  Don't
+            // treat this as a valid fallbackProxyUserId.
+            log.info("Ignoring default fallback.");
+            return;
+        }
+
+        Boolean updateInvites = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify txnOfy) {
+                LanternUser user = txnOfy.find(LanternUser.class, userId);
+
+                // The only point of the transaction is to protect the read
+                // and write of the user entry, and to make sure that we only
+                // update invites once.  We don't need to include the query
+                // in the transaction for this.
+                Objectify queryOfy = ofy();
+                List<LanternInstance> matches
+                    = queryOfy.query(LanternInstance.class)
+                        .filter("listenHostAndPort =", hostAndPort).list();
+                if (matches.size() == 0) {
+                    log.severe("No instance found with ip:port"
+                               + hostAndPort + "!");
+                    return false;
+                } else if (matches.size() > 1) {
+                    log.severe(matches.size() + "instances found with ip:port"
+                               + hostAndPort + "!");
+                    // Bail rather than pair user with someone they don't
+                    // trust.
+                    return false;
+                }
+
+                String oldId = user.getFallbackProxyUserId();
+                String newId = matches.get(0).getUser();
+
+                if (newId.equals(oldId)) {
+                    log.info("fallbackProxyUserId unchanged.");
+                    return false;
+                }
+                user.setFallbackProxyUserId(newId);
+                txnOfy.put(user);
+                txnOfy.getTxn().commit();
+                log.info("Set " + userId + "'s fallbackProxyUserId to "
+                         + newId + " (was " + oldId + ")");
+                return oldId == null;
+            }
+        }.run();
+
+        if (updateInvites == null) {
+            log.warning("Transaction failed!");
+        } else if (updateInvites) {
+            log.info("Now I would process pending invites for this user.");
+        }
     }
 
     /**
