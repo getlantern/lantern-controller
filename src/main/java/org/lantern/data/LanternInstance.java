@@ -39,11 +39,6 @@ public class LanternInstance {
     private String listenHostAndPort;
     
     /**
-     * The host and port for the fallback proxy used by this instance (Get mode).
-     */
-    private String fallbackProxyHostAndPort;
-    
-    /**
      * Tracks the number of invitees for this fallback proxy (only applies to
      * fallback proxy instances).
      */
@@ -140,14 +135,6 @@ public class LanternInstance {
     
     public String getListenHostAndPort() {
         return listenHostAndPort;
-    }
-    
-    public void setFallbackProxyHostAndPort(String fallbackProxyHostAndPort) {
-        this.fallbackProxyHostAndPort = fallbackProxyHostAndPort;
-    }
-    
-    public String getFallbackProxyHostAndPort() {
-        return fallbackProxyHostAndPort;
     }
     
     public void setNumberOfInviteesForFallback(int numberOfInviteesForFallback) {

@@ -212,7 +212,6 @@ public class Dao extends DAOBase {
         // Update properties common to new and updated instances
         instance.setResource(resource);
         instance.setListenHostAndPort(listenHostAndPort);
-        instance.setFallbackProxyHostAndPort(fallbackProxyHostAndPort);
         instance.setFallbackProxy(isFallbackProxy);
         
         if (!isNewInstance) {
