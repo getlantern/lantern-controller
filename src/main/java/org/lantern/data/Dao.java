@@ -237,8 +237,6 @@ public class Dao extends DAOBase {
                 updateStatsForNewlyAvailableInstance(ofy, user, instance,
                         countryCode, mode, counters);
             }
-            instance.setLastUpdated(new Date());
-            ofy.put(instance);
         } else {
             log.info("Could not find instance!!");
 
@@ -250,12 +248,22 @@ public class Dao extends DAOBase {
                     countryCode, mode, counters);
         }
         
+        instance.setLastUpdated(new Date());
+        ofy.put(instance);
+        
         return counters;
     }
     
     /**
-     * Possibly modifies the user, instance and the counters (via the
-     * `counters` list).
+     * <p>
+     * Possibly modifies the user, instance and the counters (via the `counters`
+     * list).
+     * </p>
+     * 
+     * <p>
+     * Note - the instance is not saved with a call to put() because that is
+     * handled by the calling function.
+     * </p>
      */
     private void updateStatsForNewlyAvailableInstance(Objectify ofy,
             LanternUser user, LanternInstance instance,
@@ -289,8 +297,6 @@ public class Dao extends DAOBase {
         instance.setCurrentCountry(countryCode);
         instance.setMode(mode);
         instance.setAvailable(true);
-        instance.setLastUpdated(new Date());
-        ofy.put(instance);
         ofy.put(user);
         log.info("Finished updating datastore...");
     }

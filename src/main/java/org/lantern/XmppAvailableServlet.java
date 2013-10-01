@@ -78,9 +78,7 @@ public class XmppAvailableServlet extends HttpServlet {
         final boolean isFallbackProxy = "true".equalsIgnoreCase(
                 LanternControllerUtils.getProperty(doc,
                         LanternConstants.IS_FALLBACK_PROXY));
-        log.info("Is fallback proxy: " + isFallbackProxy + " from " + LanternControllerUtils.getProperty(doc,
-                        LanternConstants.IS_FALLBACK_PROXY));
-
+        
         if (!presence.isAvailable()) {
             log.info(userId + "/" + resource + " logging out.");
             dao.setInstanceUnavailable(userId, resource);
