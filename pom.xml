@@ -147,11 +147,11 @@
         <directory>src/main/resources</directory>
       </resource>
     </resources>
-    
+
     <testResources>
       <testResource>
         <directory>src/test/resources</directory>
-      </testResource> 
+      </testResource>
     </testResources>
 
     <plugins>
@@ -243,7 +243,6 @@
       <url>http://maven.objectify-appengine.googlecode.com/git/</url>
     </repository>
   </repositories>
-
   <parent>
     <groupId>org.getlantern</groupId>
     <artifactId>lantern-common</artifactId>

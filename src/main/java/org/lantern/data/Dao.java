@@ -562,8 +562,8 @@ public class Dao extends DAOBase {
                         return false;
                     }
                 }
-                // invite status is queued, so we have never tried sending an
-                // invite
+
+                // we have never tried sending an invite
 
                 invite.setStatus(Status.sending);
                 invite.setLastAttempt(now);
@@ -967,7 +967,7 @@ public class Dao extends DAOBase {
      *
      *  While this would not be terrible, it's not hard to avoid either.
      */
-    public Collection<String> setInstallerLocationAndGetInvitees(
+    public Collection<String> setInstallerLocationAndGetAuthorizedInvitees(
             final String inviterEmail, final String installerLocation)
             throws UnknownUserException {
         final Collection<String> results = new HashSet<String>();
@@ -994,7 +994,7 @@ public class Dao extends DAOBase {
                 user.setInstallerLocation(installerLocation);
                 ofy.put(user);
                 final Query<Invite> invites = ofy.query(Invite.class).ancestor(
-                        ancestor);
+                        ancestor).filter("status =", Invite.Status.authorized);
                 for (Invite invite : invites) {
                     results.add(invite.getInvitee());
                 }
@@ -1211,24 +1211,29 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void sentInvite(final String inviterEmail, final String invitedEmail) {
-        Boolean inviteFinalized = new RetryingTransaction<Boolean>() {
+    public void setInviteStatus(final String inviterEmail,
+                                final String inviteeEmail,
+                                final Invite.Status status) {
+        RetryingTransaction<Void> tx = new RetryingTransaction<Void>() {
             @Override
-            protected Boolean run(Objectify ofy) {
-                Invite invite = getInvite(ofy, inviterEmail, invitedEmail);
-                invite.setStatus(Status.sent);
+            protected Void run(Objectify ofy) {
+                Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
+                invite.setStatus(status);
                 ofy.put(invite);
                 ofy.getTxn().commit();
-                return true;
+                return null;
             }
 
-        }.run();
-
-        if (inviteFinalized == null)
-            inviteFinalized = false;
-        String status = inviteFinalized ? "" : "not ";
-        log.info("Invite " + status + "finalized: " + inviterEmail + " to "
-                + invitedEmail);
+        };
+        String desc = "Invite from " + inviterEmail
+                      + " to " + inviteeEmail
+                      + ": setting status to " + status;
+        tx.run();
+        if (tx.failed()) {
+            throw new RuntimeException(desc + " -- transaction failed!");
+        } else {
+            log.info(desc + ": OK");
+        }
     }
 
     public PendingInvites getPendingInvites(String cursorStr) {

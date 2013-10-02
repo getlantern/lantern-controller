@@ -126,7 +126,7 @@ public class MandrillEmailer {
         //TODO: get language from client
         //String body = getTemplate(templateName, "en_US");
         
-        final String body = readFile("invite-notification.html");
+        final String body = readFile("email/invite-notification.html");
 
         if (body == null) {
             throw new RuntimeException("Could not find template invite-notification");

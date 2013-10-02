@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lantern.data.Dao;
+import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.lantern.data.UnknownUserException;
 import org.littleshoot.util.ThreadUtils;
@@ -29,6 +30,11 @@ public class InvitedServerLauncher {
                                   final String invitedEmail) {
 
         final Dao dao = new Dao();
+        // An invite only gets to this point once it has been authorized, so
+        // this is a good place to make sure we record that fact.
+        dao.setInviteStatus(inviterEmail,
+                            invitedEmail,
+                            Invite.Status.authorized);
 
         // TODO: instead of fetching using a hardcoded instanceid, pass the real one here
         log.info("Maximum client count from Librato: " + Librato.getMaximumClientCountForProxyInLastMonth("429e523560d0f39949843833f05c808e"));
@@ -63,7 +69,7 @@ public class InvitedServerLauncher {
                                          final String installerLocation) {
         final Dao dao = new Dao();
         try {
-            final Collection<String> invitees = dao.setInstallerLocationAndGetInvitees(inviterEmail, installerLocation);
+            final Collection<String> invitees = dao.setInstallerLocationAndGetAuthorizedInvitees(inviterEmail, installerLocation);
             for (String invitedEmail : invitees) {
                 sendInviteEmail(inviterEmail, inviterEmail, invitedEmail, installerLocation);
             }
@@ -96,7 +102,9 @@ public class InvitedServerLauncher {
                 baseUrl + "macos_" + version + ".dmg",
                 baseUrl + "windows_" + version + ".exe",
                 baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());
-            dao.sentInvite(inviterEmail, invitedEmail);
+            dao.setInviteStatus(inviterEmail,
+                                invitedEmail,
+                                Invite.Status.sent);
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
         }
