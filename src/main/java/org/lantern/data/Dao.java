@@ -340,8 +340,16 @@ public class Dao extends DAOBase {
                     = queryOfy.query(LanternInstance.class)
                         .filter("listenHostAndPort =", hostAndPort).list();
                 if (matches.size() == 0) {
-                    log.severe("No instance found with ip:port"
-                               + hostAndPort + "!");
+                    // (TRANSITION)
+                    // We may get this condition right after deploying the
+                    // fallback-balancing logic.  After a few minutes, we should
+                    // have received Available presences for all fallback
+                    // proxies, so their instances should have the right ip:port
+                    // initialized.  So, after a few minutes after deploying this
+                    // to the production controller we can change this to
+                    // log.severe.
+                    log.warning("No instance found with ip:port"
+                                + hostAndPort + "!");
                     return false;
                 } else if (matches.size() > 1) {
                     log.severe(matches.size() + "instances found with ip:port"
