@@ -314,6 +314,9 @@ public class XmppAvailableServlet extends HttpServlet {
             final Stats data = mapper.readValue(stats, Stats.class);
             // The following will delete the instance if it's not available,
             // updating all counters.
+            // (aranhoide: XXX is the comment above still accurate?  I remember
+            // at some point available/unavailable events were being handled
+            // together up to here, but not anymore.)
             log.info("Setting instance availability");
             final Dao dao = new Dao();
             String countryCode = data.getCountryCode();
