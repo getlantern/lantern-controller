@@ -324,7 +324,7 @@ public class Dao extends DAOBase {
             protected Boolean run(Objectify txnOfy) {
                 LanternUser user = txnOfy.find(LanternUser.class, userId);
 
-                if (userId.equals(user.getFallbackProxyUserId()) {
+                if (userId.equals(user.getFallbackProxyUserId())) {
                     // Once we know a user has a fallback proxy running as them,
                     // that takes precedence over what proxy are they using.
                     log.info("User is its own proxy; we never override that.");
