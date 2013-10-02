@@ -504,7 +504,7 @@ public class Dao extends DAOBase {
      * @param inviteeEmail
      * @return
      */
-    public boolean addInvite(final String sponsor, final String inviteeEmail,
+    public boolean addInvite(final String inviterId, final String inviteeEmail,
             final String refreshToken) {
         // We just add the invite object here. We create the invitee when the
         // invite is sent in shouldSendInvite (and yes, that one needs
@@ -513,13 +513,13 @@ public class Dao extends DAOBase {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
-                LanternUser inviter = ofy.find(LanternUser.class, sponsor);
+                LanternUser inviter = ofy.find(LanternUser.class, inviterId);
                 if (inviter == null) {
-                    log.warning("Could not find sponsor sending invite: " + sponsor);
+                    log.warning("Could not find inviterId sending invite: " + inviterId);
                     return false;
                 }
 
-                if (alreadyInvitedBy(ofy, sponsor, inviteeEmail)) {
+                if (alreadyInvitedBy(ofy, inviterId, inviteeEmail)) {
                     log.info("Not re-sending e-mail since user is already invited");
                     return false;
                 }
@@ -527,7 +527,7 @@ public class Dao extends DAOBase {
                 inviter.setRefreshToken(refreshToken);
                 ofy.put(inviter);
 
-                Invite invite = new Invite(sponsor, inviteeEmail);
+                Invite invite = new Invite(inviterId, inviteeEmail);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
