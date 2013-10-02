@@ -425,6 +425,33 @@ public class Dao extends DAOBase {
     }
 
     /**
+     * Allow user to start fallback proxies.
+     *
+     * If the user is already a fallbackProxyUserId this does nothing.
+     * Otherwise, a proxy will be launched next time we approve an invite by
+     * this user.
+     */
+    //XXX: as of this writing nobody is calling this.  This is meant to be
+    // called from some admin page.
+    public void makeFallbackProxyUser(final String userId) {
+        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setFallbackProxyUserId(userId);
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        txn.run();
+        if (txn.failed()) {
+            log.severe("Transaction failed!");
+        } else {
+            updateInvitesToFallbackBalancingScheme(userId);
+        }
+    }
+
+    /**
      * Update fallback info at the user level.
      */
     private void updateFallbackInfo(Objectify ofy,
