@@ -324,6 +324,13 @@ public class Dao extends DAOBase {
             protected Boolean run(Objectify txnOfy) {
                 LanternUser user = txnOfy.find(LanternUser.class, userId);
 
+                if (userId.equals(user.getFallbackProxyUserId()) {
+                    // Once we know a user has a fallback proxy running as them,
+                    // that takes precedence over what proxy are they using.
+                    log.info("User is its own proxy; we never override that.");
+                    return false;
+                }
+
                 // The only point of the transaction is to protect the read
                 // and write of the user entry, and to make sure that we only
                 // update invites once.  We don't need to include the query
