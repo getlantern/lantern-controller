@@ -94,16 +94,14 @@ public class XmppAvailableServlet extends HttpServlet {
 
             queueInvite(xmpp, presence, doc, invitedEmail);
 
-            if (!dao.areInvitesPaused()) {
+            if (dao.areInvitesPaused()) {
+                log.info("Invites are paused, so not sending invite");
+            } else {
                 String inviterName = LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITER_NAME);
-
-                String refreshToken = LanternControllerUtils.getProperty(doc,
-                        LanternConstants.INVITER_REFRESH_TOKEN);
-
-                InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail);
-            } else {
-                log.info("Invites are paused, so not sending invite");
+                InvitedServerLauncher.sendInvite(inviterName,
+                                                 userId,
+                                                 invitedEmail);
             }
             return;
         }

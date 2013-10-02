@@ -2,14 +2,13 @@ package org.lantern;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
-import org.lantern.data.UnknownUserException;
 import org.littleshoot.util.ThreadUtils;
 
 public class InvitedServerLauncher {
@@ -23,10 +22,9 @@ public class InvitedServerLauncher {
     // compatibility.
     private static final String
         DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
-    
+
     public static void sendInvite(final String inviterName,
                                   final String inviterEmail,
-                                  final String refreshToken,
                                   final String invitedEmail) {
 
         final Dao dao = new Dao();
@@ -36,45 +34,74 @@ public class InvitedServerLauncher {
                             invitedEmail,
                             Invite.Status.authorized);
 
+        String fpuid = dao.getUser(inviterEmail).getFallbackProxyUserId();
+        if (fpuid == null) {
+            log.warning("Old invite; we'll process this when the user gets"
+                        + " a fallbackProxyUserId");
+            return;
+        }
+        String refreshToken = dao.getUser(fpuid).getRefreshToken();
+        if (refreshToken == null) {
+            throw new RuntimeException(
+                    "Fallback proxy user without refresh token?" + fpuid);
+        }
         // TODO: instead of fetching using a hardcoded instanceid, pass the real one here
         log.info("Maximum client count from Librato: " + Librato.getMaximumClientCountForProxyInLastMonth("429e523560d0f39949843833f05c808e"));
-        String installerLocation = dao.getAndSetInstallerLocation(inviterEmail);
-        if (installerLocation == null && refreshToken == null) {
-            // Inviter is running an old client.
-            sendInviteEmail(inviterName, inviterEmail, invitedEmail,
-                            DEFAULT_INSTALLER_LOCATION);
-        } else if (installerLocation == null && refreshToken != null) {
-            // Ask invsrvlauncher to create an instance for this user.
+        String installerLocation = dao.getAndSetInstallerLocation(fpuid);
+        if (installerLocation == null) {
+            // XXX: as of this writing, this should never happen, because we
+            // are only ever setting fallbackProxyUserId for users as whom we
+            // have fallback proxies running.  But this hints at how we can
+            // allow users to run new fallback proxies: we just set their
+            // fallbackProxyUserId to themselves and a proxy will be launched
+            // next time they invite someone.
+
+            // Ask cloudmaster to create an instance for this user.
             log.info("Ordering launch of new invited server for "
-                     + inviterEmail);
-            
-            
-            Map<String, Object> map = new LinkedHashMap<String, Object>();
+                     + fpuid);
+            Map<String, Object> map = new HashMap<String, Object>();
             /* These aren't in LanternConstants because they are not handled
              * by the client, but by a Python bot.
-             * (salt/invsrvlauncher/invsrvlauncher.py at lantern_aws, branch
-             * invsrvlauncher)
+             * (salt/cloudmaster/cloudmaster.py)
              */
-            map.put("launch-invsrv-as", inviterEmail);
+            map.put("launch-invsrv-as", fpuid);
             map.put("launch-refrtok", refreshToken);
-            //new SQSUtil().send(map);
-        } else if (!installerLocation.equals(PENDING)) {
-            sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
+            new SQSUtil().send(map);
+        } else if (installerLocation.equals(PENDING)) {
+            log.info("Proxy is still starting up -- not sending invite");
         } else {
-            log.info("Installer location is pending -- not sending invite");
+            sendInviteEmail(inviterName, inviterEmail, invitedEmail, installerLocation);
         }
     }
 
-    public static void onInvitedServerUp(final String inviterEmail, 
+    public static void onInvitedServerUp(final String fallbackProxyUserId,
                                          final String installerLocation) {
         final Dao dao = new Dao();
-        try {
-            final Collection<String> invitees = dao.setInstallerLocationAndGetAuthorizedInvitees(inviterEmail, installerLocation);
-            for (String invitedEmail : invitees) {
-                sendInviteEmail(inviterEmail, inviterEmail, invitedEmail, installerLocation);
+        final Collection<Invite> invites =
+            dao.setInstallerLocationAndGetAuthorizedInvites(
+                    fallbackProxyUserId, installerLocation);
+        // We will probably have several invites by the same user.  For each
+        // inviter, we need their name, which is unlikely to change.  So let's
+        // memoize these.
+        Map<String, String> nameCache = new HashMap<String, String>();
+        for (Invite invite : invites) {
+            String inviterEmail = invite.getInviter();
+            String inviterName = nameCache.get(inviterEmail);
+            if (inviterName == null) {
+                inviterName = dao.getUser(inviterEmail).getName();
+                if (inviterName == null) {
+                    // Mandrill does this too; we're only doing it here to
+                    // avoid looking the LanternUser up again, since AFAIK
+                    // Java HashMaps won't let me tell a missing key from one
+                    // assigned the value null.
+                    inviterName = inviterEmail;
+                }
+                nameCache.put(inviterEmail, inviterName);
             }
-        } catch (final UnknownUserException e) {
-            log.severe("Server up for unknown inviter " + inviterEmail);
+            sendInviteEmail(inviterName,
+                            inviterEmail,
+                            invite.getInvitee(),
+                            installerLocation);
         }
     }
 
@@ -109,6 +136,4 @@ public class InvitedServerLauncher {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
         }
     }
-    
-    
 }

@@ -977,21 +977,19 @@ public class Dao extends DAOBase {
     }
 
    /** Perform, as an atomic operation, the setting of the installerLocation
-     *  and the getting of whatever invitees had been waiting for the installers
-     *  to be built.
-     *
-     *  This is to prevent the case that an invitation is processed between
-     *  these operations, thus triggering the sending of two invite e-mails
-     *  (one in the handling of the server-up event, and another in the
-     *  handling of the invitation proper, which sees the server as available
-     *  and thus sends the e-mail immediately).
-     *
-     *  While this would not be terrible, it's not hard to avoid either.
-     */
-    public Collection<String> setInstallerLocationAndGetAuthorizedInvitees(
-            final String inviterEmail, final String installerLocation)
-            throws UnknownUserException {
-        final Collection<String> results = new HashSet<String>();
+    * and the getting of whatever invitees had been waiting for the installers
+    * to be built.
+    *
+    * This is to prevent the case that an invitation is processed between
+    * these operations, thus triggering the sending of two invite e-mails
+    * (one in the handling of the server-up event, and another in the
+    * handling of the invitation proper, which sees the server as available
+    * and thus sends the e-mail immediately).
+    *
+    * While this would not be terrible, it's not hard to avoid either.
+    */
+    public Collection<Invite> setInstallerLocationAndGetAuthorizedInvites(
+            final String fallbackProxyUserId, final String installerLocation) {
         // The GAE datastore only gives strong consistency guarantees for
         // queries that specify an 'ancestor' constraint ("ancestor queries").
         // In addition, no other queries are allowed in a transaction.
@@ -999,39 +997,38 @@ public class Dao extends DAOBase {
         // As of this writing, we are only ever querying invites per inviter,
         // hence the grouping.
         final Key<LanternUser> ancestor = new Key<LanternUser>(
-                LanternUser.class, inviterEmail);
-        Boolean result = new RetryingTransaction<Boolean>() {
-            @Override
-            public Boolean run(Objectify ofy) {
-                // We don't need to reset `results` inside the loop because it
-                // will
-                // only ever grow. If we get a collision, the only point of
-                // retrying is to incorporate any new invites.
+                LanternUser.class, fallbackProxyUserId);
 
-                LanternUser user = ofy.find(LanternUser.class, inviterEmail);
+        RetryingTransaction<Collection<Invite>> txn =
+                new RetryingTransaction<Collection<Invite>>() {
+            @Override
+            public Collection<Invite> run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class,
+                                            fallbackProxyUserId);
                 if (user == null) {
-                    throw new UnknownUserException(inviterEmail);
+                    throw new RuntimeException("Unknown user?"
+                                               + fallbackProxyUserId);
                 }
                 user.setInstallerLocation(installerLocation);
+                final Collection<Invite> invites = ofy.query(Invite.class)
+                    .ancestor(ancestor)
+                    .filter("status =", Invite.Status.authorized)
+                    .list();
                 ofy.put(user);
-                final Query<Invite> invites = ofy.query(Invite.class).ancestor(
-                        ancestor).filter("status =", Invite.Status.authorized);
-                for (Invite invite : invites) {
-                    results.add(invite.getInvitee());
-                }
-
                 ofy.getTxn().commit();
-                log.info("Returning instances: " + results);
-                return true;
+                log.info("Returning " + invites.size() + " invites.");
+                return invites;
             }
-        }.run();
+        };
 
-        if (result == null) {
-            log.warning("Gave up because of too many failed transactions!");
+        Collection<Invite> invites = txn.run();
+
+        if (txn.failed()) {
+            throw new RuntimeException(
+                    "Gave up because of too many failed transactions!");
         }
-        // Since the correctness of this is not critical, returning our best
-        // effort guess is better than failing altogether.
-        return results;
+
+        return invites;
     }
 
     public void addInstallerBucket(final String name) {
