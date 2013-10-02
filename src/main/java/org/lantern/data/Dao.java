@@ -527,7 +527,12 @@ public class Dao extends DAOBase {
                 inviter.setRefreshToken(refreshToken);
                 ofy.put(inviter);
 
-                Invite invite = new Invite(inviterId, inviteeEmail);
+                String fpuid = inviter.getFallbackProxyUserId();
+                // TRANSITION: if we don't have a fallbackProxyUserId for the
+                // inviter yet, let this be handled like an old invite.
+                String parentId = fpuid == null ? inviterId : fpuid;
+
+                Invite invite = new Invite(inviterId, inviteeEmail, parentId);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
