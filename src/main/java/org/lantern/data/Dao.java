@@ -378,7 +378,49 @@ public class Dao extends DAOBase {
         if (updateInvites == null) {
             log.warning("Transaction failed!");
         } else if (updateInvites) {
-            log.info("Now I would process pending invites for this user.");
+            updateInvitesToFallbackBalancingScheme(userId);
+        }
+    }
+
+    /** Update invites for this user so they're parented to its
+     * fallbackProxyUserId.
+     *
+     * In the old scheme, invites were parented to the inviter instead.
+     *
+     * TRANSITION: this can be removed as soon as there are no longer old
+     * Invites or users without fallbackProxyUserId.
+     */
+    private void updateInvitesToFallbackBalancingScheme(final String userId) {
+        Objectify ofy = ofy();
+        Key<LanternUser> userKey = new Key<LanternUser>(
+                                        LanternUser.class, userId);
+        LanternUser user = ofy.get(userKey);
+        String fpuid = user.getFallbackProxyUserId();
+        if (fpuid == userId) {
+            // In this case the old Invites happen to have the right parent.
+            log.info("No need; " + userId
+                     + " is their own fallbackProxyUserId");
+            return;
+        }
+        List<Invite> invites = ofy.query(Invite.class)
+                                  .ancestor(userKey)
+                                  .list();
+        for (Invite invite : invites) {
+            ofy.delete(invite);
+            Invite newInvite = new Invite(userId,
+                                          invite.getInvitee(),
+                                          fpuid);
+            newInvite.setStatus(invite.getStatus());
+            newInvite.setLastAttempt(invite.getLastAttempt());
+            ofy.put(newInvite);
+        }
+
+        for (Invite invite : invites) {
+            if (invite.getStatus() == Invite.Status.authorized) {
+                InvitedServerLauncher.sendInvite(user.getName(),
+                                                 userId,
+                                                 invite.getInvitee());
+            }
         }
     }
 
