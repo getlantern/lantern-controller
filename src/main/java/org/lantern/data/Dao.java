@@ -506,8 +506,9 @@ public class Dao extends DAOBase {
      */
     public boolean addInvite(final String sponsor, final String inviteeEmail,
             final String refreshToken) {
-        // We just add the invite object here. We create the invitee when
-        // the invite is sent in sendingInvite
+        // We just add the invite object here. We create the invitee when the
+        // invite is sent in shouldSendInvite (and yes, that one needs
+        // a better name and/or some refactoring).
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
