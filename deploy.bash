@@ -5,7 +5,7 @@ function die() {
   exit 1
 }
 
-./predeploy.py || die "Could not predeploy?"
+./predeploy.py $* || die "Could not predeploy?"
 mvn clean install || die "Could not run clean install"
 mvn appengine:enhance || die "Could not enhance"
 mvn appengine:update || die "Could not update"
