@@ -33,22 +33,11 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
-<form method="POST" action="/admin/post/addInvites">
-
-<input type="text" name="n" value="0">
-<button type="submit" name="add" value="true">Add invites</button><br/>
+<form method="POST" action="/admin/post/setMaxInvitesPerProxy">
+<input type="text" name="n" value="100">
+<button type="submit" name="set" value="true">Set max invites per proxy</button><br/>
 <%= AdminServlet.getCsrfTag() %>
 </form>
-
-
-<form method="POST" action="/admin/post/setDefaultInvites">
-
-<input type="text" name="n" value="2">
-<button type="submit" name="add" value="true">Set default number of invites</button><br/>
-<%= AdminServlet.getCsrfTag() %>
-</form>
-
-
 
 </body>
 </html>

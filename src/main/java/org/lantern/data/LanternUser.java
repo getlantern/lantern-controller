@@ -31,8 +31,6 @@ public class LanternUser implements Serializable {
 
     private String countryCodes = "";
 
-    private int invites;
-
     /**
      * This is the number of degrees this user is from the original core of
      * Lantern developers.
@@ -87,7 +85,6 @@ public class LanternUser implements Serializable {
     public LanternUser(final String id) {
         super();
         this.id = id;
-        this.invites = 0;
     }
 
     public String getId() {
@@ -132,14 +129,6 @@ public class LanternUser implements Serializable {
 
     public void setRequestsProxied(long requestsProxied) {
         this.requestsProxied = requestsProxied;
-    }
-
-    public void setInvites(int invites) {
-        this.invites = invites;
-    }
-
-    public int getInvites() {
-        return invites;
     }
 
     public void setDegree(int degree) {

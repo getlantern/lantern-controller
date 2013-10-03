@@ -137,16 +137,16 @@ public class AdminServlet extends HttpServlet {
         LanternControllerUtils.populateOKResponse(response, "Test: " + StringUtils.join(pathComponents, ","));
     }
 
-    public void addInvites(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
+    public void setMaxInvitesPerProxy(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            String[] pathComponents) {
         Dao dao = new Dao();
-
         int n = Integer.parseInt(request.getParameter("n"));
-
-        dao.globalAddInvites(n);
-
-        LanternControllerUtils.populateOKResponse(response, "Invites added: " + n);
+        dao.setMaxInvitesPerProxy(n);
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "Set invites per proxy to: " + n);
     }
 
     public void setInvitesPaused(final HttpServletRequest request,
@@ -159,20 +159,6 @@ public class AdminServlet extends HttpServlet {
         dao.setInvitesPaused(paused);
 
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
-
-    }
-
-    public void setDefaultInvites(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
-        Dao dao = new Dao();
-
-
-        int n = Integer.parseInt(request.getParameter("n"));
-
-        dao.setDefaultInvites(n);
-
-        LanternControllerUtils.populateOKResponse(response, "Default invites: " + n);
 
     }
 

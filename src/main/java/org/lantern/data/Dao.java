@@ -498,15 +498,6 @@ public class Dao extends DAOBase {
         return StringUtils.join(strings, ".");
     }
 
-    public int getInvites(final String userId) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, userId);
-        if (user == null) {
-            return 0;
-        }
-        return user.getInvites();
-    }
-
 
     public boolean alreadyInvitedBy(String sponsor, String guest) {
         Objectify ofy = ofy();
@@ -693,10 +684,6 @@ public class Dao extends DAOBase {
                     invitee = new LanternUser(inviteeEmail);
 
                     invitee.setDegree(inviter.getDegree() + 1);
-                    if (getUserCount() < LanternControllerConstants.MAX_USERS
-                            && invitee.getInvites() < 2) {
-                        invitee.setInvites(getDefaultInvites());
-                    }
                     invitee.setSponsor(inviter.getId());
                     ofy.put(invitee);
                 } else {
@@ -1172,18 +1159,6 @@ public class Dao extends DAOBase {
         log.info("Logged!");
     }
 
-    /** Add n invites to each user.  N may be negative; a user who would have
-     *  negative invites as a result of this instead gets zero invites
-     *
-     * @param n
-     */
-    public void globalAddInvites(int n) {
-        Objectify ofy = ofy();
-        for (LanternUser user : ofy.query(LanternUser.class)) {
-            user.setInvites(Math.max(user.getInvites() + n, 0));
-            ofy.put(user);
-        }
-    }
     public boolean areInvitesPaused() {
         return settingsManager.getBoolean("invitesPaused");
     }
@@ -1192,15 +1167,17 @@ public class Dao extends DAOBase {
         settingsManager.set("invitesPaused", "" + paused);
     }
 
-    public void setDefaultInvites(int n) {
-        settingsManager.set("defaultInvites", "" + n);
+    public void setMaxInvitesPerProxy(int n) {
+        settingsManager.set("maxInvitesPerProxy", "" + n);
     }
 
-    public int getDefaultInvites() {
+    public int getMaxInvitesPerProxy() {
         try {
-            return Integer.parseInt(settingsManager.get("defaultInvites"));
+            return Integer.parseInt(settingsManager.get("maxInvitesPerProxy"));
         } catch (NumberFormatException e) {
-            return 2;
+            // Pulled out of thin air; set this to a more empirical estimate
+            // when we actually gather the data.
+            return 200;
         }
     }
 
