@@ -46,16 +46,6 @@ public class SQSChecker extends HttpServlet {
                                                     installerLocation);
             return;
         }
-        // New buckets for installers have been created.
-        final List<String> bucketList = (List<String>)msg.get(
-                "register-buckets");
-        if (bucketList != null) {
-            final Dao dao = new Dao();
-            for (String bucketName : bucketList) {
-                dao.addInstallerBucket(bucketName);
-            }
-            return;
-        }
         log.warning("I don't understand this message: " + msg);
     }
 }

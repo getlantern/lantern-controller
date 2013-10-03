@@ -89,7 +89,6 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LanternUser.class);
         ObjectifyService.register(LanternInstance.class);
         ObjectifyService.register(Invite.class);
-        ObjectifyService.register(InstallerBucket.class);
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
 
@@ -1085,43 +1084,6 @@ public class Dao extends DAOBase {
         }
 
         return invites;
-    }
-
-    public void addInstallerBucket(final String name) {
-        // We don't wrap this in a transaction because we add buckets serially
-        // as a preprocess.  Also, a race condition would only overwrite
-        // a bucket that we have just added, which would have the same count.
-        final Objectify ofy = ofy();
-        final InstallerBucket bucket = ofy.find(InstallerBucket.class, name);
-        if (bucket != null) {
-            log.severe("Tried to add existing bucket?");
-            return;
-        }
-        ofy.put(new InstallerBucket(name));
-    }
-
-    public String getAndIncrementLeastUsedBucket() {
-        // Not really guaranteed to return the minimum, but since we'll make
-        // sure to increment whatever we get, we get a balanced bucket usage
-        // eventually.
-        final InstallerBucket leastUsed = ofy().query(InstallerBucket.class)
-                .order("installerLocations").get();
-        Boolean result = new RetryingTransaction<Boolean>() {
-            @Override
-            public Boolean run(Objectify ofy) {
-                leastUsed.setInstallerLocations(leastUsed
-                        .getInstallerLocations() + 1);
-                ofy.put(leastUsed);
-                ofy.getTxn().commit();
-                return true;
-            }
-        }.run();
-        if (result == null) {
-            // If we ever get this we probably want to move to sharded counters
-            // instead.
-            log.warning("Too much contention for buckets; you may want to look into this.");
-        }
-        return leastUsed.getId();
     }
 
     private boolean emailsMatch(final String one, final String other) {
