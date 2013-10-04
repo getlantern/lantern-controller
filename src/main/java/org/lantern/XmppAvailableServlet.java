@@ -99,7 +99,7 @@ public class XmppAvailableServlet extends HttpServlet {
             } else {
                 String inviterName = LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITER_NAME);
-                InvitedServerLauncher.sendInvite(inviterName,
+                FallbackProxyLauncher.sendInvite(inviterName,
                                                  userId,
                                                  invitedEmail);
             }

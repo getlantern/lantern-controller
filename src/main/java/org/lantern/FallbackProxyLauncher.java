@@ -11,17 +11,12 @@ import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.littleshoot.util.ThreadUtils;
 
-public class InvitedServerLauncher {
+public class FallbackProxyLauncher {
 
     private static final transient Logger log = 
-        Logger.getLogger(InvitedServerLauncher.class.getName());
+        Logger.getLogger(FallbackProxyLauncher.class.getName());
 
     public static final String PENDING = "pending";
-
-    // Contains installers with default fallback servers, for backwards
-    // compatibility.
-    private static final String
-        DEFAULT_INSTALLER_LOCATION = "lantern-installers/fallback,default";
 
     public static void sendInvite(final String inviterName,
                                   final String inviterEmail,
@@ -64,7 +59,7 @@ public class InvitedServerLauncher {
              * by the client, but by a Python bot.
              * (salt/cloudmaster/cloudmaster.py)
              */
-            map.put("launch-invsrv-as", fpuid);
+            map.put("launch-fp-as", fpuid);
             map.put("launch-refrtok", refreshToken);
             new SQSUtil().send(map);
         } else if (installerLocation.equals(PENDING)) {
@@ -74,7 +69,7 @@ public class InvitedServerLauncher {
         }
     }
 
-    public static void onInvitedServerUp(final String fallbackProxyUserId,
+    public static void onFallbackProxyUp(final String fallbackProxyUserId,
                                          final String installerLocation) {
         final Dao dao = new Dao();
         final Collection<Invite> invites =

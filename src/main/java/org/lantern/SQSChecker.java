@@ -28,24 +28,24 @@ public class SQSChecker extends HttpServlet {
 
     private void handleMessage(final Map<String, Object> msg) {
         /*
-         * DRY Warning: The key strings in these messages are not in
-         * LanternConstants because they are shared with Python code.
+         * DRY Warning: The key strings in these messages are not constants
+         * because they are shared with Python code (just grep for them in
+         * the lantern_aws project source).
          */
-        // Invitee server reports it's up and running.
-        final String inviterEmail = (String)msg.get("invsrvup-user");
-        if (inviterEmail != null) {
-            final String installerLocation = (String)msg.get(
-                    "invsrvup-insloc");
-            if (installerLocation == null) {
-                log.severe(
-                        inviterEmail
-                        + " sent invsrv-up with no installer location.");
-                return;
-            }
-            InvitedServerLauncher.onInvitedServerUp(inviterEmail,
-                                                    installerLocation);
+        // Fallback proxy reports it's up and running.
+        final String inviterEmail = (String)msg.get("fp-up-user");
+        if (inviterEmail == null) {
+            log.severe("I don't understand this message: " + msg);
             return;
         }
-        log.warning("I don't understand this message: " + msg);
+        final String installerLocation = (String)msg.get("fp-up-insloc");
+        if (installerLocation == null) {
+            log.severe(inviterEmail
+                       + " sent fp-up with no installer location.");
+            return;
+        }
+        FallbackProxyLauncher.onFallbackProxyUp(inviterEmail,
+                                                installerLocation);
+        }
     }
 }

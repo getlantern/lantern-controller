@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
-import org.lantern.InvitedServerLauncher;
+import org.lantern.FallbackProxyLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
@@ -416,7 +416,7 @@ public class Dao extends DAOBase {
 
         for (Invite invite : invites) {
             if (invite.getStatus() == Invite.Status.authorized) {
-                InvitedServerLauncher.sendInvite(user.getName(),
+                FallbackProxyLauncher.sendInvite(user.getName(),
                                                  userId,
                                                  invite.getInvitee());
             }
@@ -1015,7 +1015,7 @@ public class Dao extends DAOBase {
                 LanternUser user = ofy.find(LanternUser.class, email);
                 String old = user.getInstallerLocation();
                 if (old == null) {
-                    user.setInstallerLocation(InvitedServerLauncher.PENDING);
+                    user.setInstallerLocation(FallbackProxyLauncher.PENDING);
                     ofy.put(user);
                 }
                 ofy.getTxn().commit();
