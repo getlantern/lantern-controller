@@ -193,11 +193,10 @@ public class Dao extends DAOBase {
 
         LanternInstance instance = ofy.find(key);
 
-        if (instance != null && StringUtils.equals(instance.getResource(), resource)) {
-            //this is an available message for the same resource as
-            //is currently in use, so it must be bogus.
-            log.info(String.format("Detected bogus available message for '%1$s",
-                    instanceId));
+        if (instance != null
+            && StringUtils.equals(instance.getResource(), resource)) {
+            log.info(String.format("We already knew '%1$s' was available",
+                                   instanceId));
             return Collections.emptyList();
         }
 
