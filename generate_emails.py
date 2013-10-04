@@ -55,7 +55,10 @@ rendered = [i.render(
     LANGS=LANGS,
     ) for i in templates]
 
-transformed = [transform(i) for i in rendered]
+transformed = [transform(i).replace('%7C', '|') for i in rendered]
+# `transform` helpfully escapes characters like '|' inside href attributes for
+# us, but this breaks Mailchimp merge variables inside hrefs
+# e.g. <a href="mailto:*|INVITER_EMAIL|*">...</a>
 
 for (filename, content) in zip(TMPL_FILENAMES, transformed):
     opath = join(BASE_DIR, filename.replace('.tmpl', '.html'))
