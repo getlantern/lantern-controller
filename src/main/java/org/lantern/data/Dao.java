@@ -705,8 +705,11 @@ public class Dao extends DAOBase {
 
     private Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
-        Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
-                inviterEmail);
+        Key<LanternUser> inviterKey = getUserKey(inviterEmail);
+        LanternUser inviter = ofy.find(inviterKey);
+        String fpuid = inviter.getFallbackProxyUserId();
+        Key<LanternUser> parentKey
+            = (fpuid == null) ? inviterKey : getUserKey(fpuid);
         String id = Invite.makeId(inviterEmail, inviteeEmail);
         final Invite invite = ofy.find(new Key<Invite>(parentKey, Invite.class,
                 id));
