@@ -180,11 +180,11 @@ public class Dao extends DAOBase {
 
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
-        
+
         if (isFallbackProxy) {
             updateFallbackInfo(ofy, user, instanceId);
         }
-        
+
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                 userId);
 
@@ -206,12 +206,12 @@ public class Dao extends DAOBase {
         if (isNewInstance) {
             instance = new LanternInstance(instanceId, parentKey);
         }
-        
+
         // Update properties common to new and updated instances
         instance.setResource(resource);
         instance.setListenHostAndPort(listenHostAndPort);
         instance.setFallbackProxy(isFallbackProxy);
-        
+
         if (!isNewInstance) {
             log.info("Setting availability to true for " + userId + "/" + instanceId);
             if (instance.isAvailable()) {
@@ -246,13 +246,13 @@ public class Dao extends DAOBase {
             updateStatsForNewlyAvailableInstance(ofy, user, instance,
                     countryCode, mode, counters);
         }
-        
+
         instance.setLastUpdated(new Date());
         ofy.put(instance);
-        
+
         return counters;
     }
-    
+
     /**
      * <p>
      * Possibly modifies the user, instance and the counters (via the `counters`
@@ -460,13 +460,13 @@ public class Dao extends DAOBase {
         log.info(String.format(
                 "Considering updating info for fallback proxy for user '%1$s'",
                 userId));
-        
+
         boolean fallbackUserIdNewOrChanged = 
                 !userId.equals(user.getFallbackProxyUserId());
         boolean discoveredFallbackProxy = 
                 user.getFallbackForNewInvitees() == null;
         boolean userDirty = false;
-        
+
         if (fallbackUserIdNewOrChanged) {
             // We've just learned that a fallback proxy is running under this
             // userId - set the fallbackProxyUserId on the user to reflect this
@@ -487,12 +487,12 @@ public class Dao extends DAOBase {
                             instanceId));
             userDirty = true;
         }
-        
+
         if (userDirty) {
             ofy.put(user);
         }
     }
-    
+
     private static String dottedPath(String ... strings) {
         return StringUtils.join(strings, ".");
     }
@@ -513,7 +513,7 @@ public class Dao extends DAOBase {
         final LanternUser lu = getUser(user);
         final QueryResultIterable<TrustRelationship> children = 
                 getChildren(lu, TrustRelationship.class);
-        
+
         for (final TrustRelationship tr : children) {
             if (tr.getId().equals(friend)) {
                 System.out.println("Found friend: "+tr.getId());
@@ -534,14 +534,14 @@ public class Dao extends DAOBase {
         final LanternUser lu = getUser(user);
         final QueryResultIterable<TrustRelationship> children = 
             getChildren(lu, TrustRelationship.class);
-        
+
         final Collection<String> friends = new ArrayList<String>();
         for (final TrustRelationship tr : children) {
             friends.add(tr.getId());
         }
         return friends;
     }
-    
+
     /**
      * Utility method to get the children of a given ancestor.
      * 
@@ -554,7 +554,7 @@ public class Dao extends DAOBase {
         final Objectify ofy = ofy();
         return ofy.query(clazz).ancestor(ofy.getFactory().getKey(parent)).fetch();
     }
-    
+
     /**
      * Returns true if the invite was added, false if it wasn't (because it
      * already existed, for instance)

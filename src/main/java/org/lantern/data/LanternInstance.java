@@ -25,19 +25,19 @@ public class LanternInstance {
     private String countries = "";
 
     private String currentCountry;
-    
+
     /* The most recent resource id we have seen for this instance. */
     private String resource;
 
     private Mode mode;
-    
+
     private boolean isFallbackProxy;
-    
+
     /**
      * The host and port on which this proxy (Give mode) is listening.
      */
     private String listenHostAndPort;
-    
+
     /**
      * Tracks the number of invitees for this fallback proxy (only applies to
      * fallback proxy instances).

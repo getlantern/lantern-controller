@@ -13,7 +13,7 @@ import org.littleshoot.util.ThreadUtils;
 
 public class FallbackProxyLauncher {
 
-    private static final transient Logger log = 
+    private static final transient Logger log =
         Logger.getLogger(FallbackProxyLauncher.class.getName());
 
     public static final String PENDING = "pending";
@@ -23,6 +23,7 @@ public class FallbackProxyLauncher {
                                   final String invitedEmail) {
 
         final Dao dao = new Dao();
+
         // An invite only gets to this point once it has been authorized, so
         // this is a good place to make sure we record that fact.
         dao.setInviteStatus(inviterEmail,
@@ -76,8 +77,8 @@ public class FallbackProxyLauncher {
             dao.setInstallerLocationAndGetAuthorizedInvites(
                     fallbackProxyUserId, installerLocation);
         // We will probably have several invites by the same user.  For each
-        // inviter, we need their name, which is unlikely to change.  So let's
-        // memoize these.
+        // inviter, we need their name, which won't change.  So let's memoize
+        // these.
         Map<String, String> nameCache = new HashMap<String, String>();
         for (Invite invite : invites) {
             String inviterEmail = invite.getInviter();

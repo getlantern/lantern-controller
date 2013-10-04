@@ -224,11 +224,11 @@ public class LanternUser implements Serializable {
     public String getRefreshToken() {
         return refreshToken;
     }
-    
+
     public void setFallbackProxyUserId(String fallbackProxyUserId) {
         this.fallbackProxyUserId = fallbackProxyUserId;
     }
-    
+
     public String getFallbackProxyUserId() {
         return fallbackProxyUserId;
     }
