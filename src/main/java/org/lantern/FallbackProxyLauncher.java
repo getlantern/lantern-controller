@@ -11,6 +11,7 @@ import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.littleshoot.util.ThreadUtils;
 
+
 public class FallbackProxyLauncher {
 
     private static final transient Logger log =
@@ -105,6 +106,7 @@ public class FallbackProxyLauncher {
         Dao dao = new Dao();
         Integer newInvites = dao.incrementFallbackInvites(userId,
                                                           increment);
+        log.info("New invite count is " + newInvites);
         if (newInvites == null) {
             // Because of a race condition, someone managed to start a new proxy
             // while we were trying to increment the invites for the old one.

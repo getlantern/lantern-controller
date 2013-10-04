@@ -1383,6 +1383,7 @@ public class Dao extends DAOBase {
                                                                userId,
                                                                instanceId);
                 instance.incrementNumberOfInvitesForFallback(increment);
+                ofy.put(instance);
                 ofy.getTxn().commit();
                 return instance.getNumberOfInvitesForFallback();
             }
