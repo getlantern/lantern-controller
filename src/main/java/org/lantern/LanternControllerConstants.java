@@ -15,6 +15,7 @@ public class LanternControllerConstants {
     static final String INVITE_EMAIL_FROM_SUFFIX = " via Lantern";
     static final String INVITE_EMAIL_BCC_ADDRESS = "lantern-invites@googlegroups.com";
     public static final String DEFAULT_FALLBACK_HOST_AND_PORT;
+    public static final String FALLBACK_PROXY_LAUNCHING = "launching";
 
     private static String mandrillApiKey;
     private static String awsAccessKeyId;

@@ -55,14 +55,6 @@ public class LanternUser implements Serializable {
      */
     private final HashSet<String> instanceIds = new HashSet<String>();
 
-    /**
-     * The location where invitees of this user should get their installers.
-     *
-     * This is in `bucket/folder` format, where bucket is the name of an
-     * Amazon S3 Bucket and folder is the name of a folder in that bucket,
-     * which contains the installers.
-     */
-    private String installerLocation;
 
     private String name;
 
@@ -74,9 +66,14 @@ public class LanternUser implements Serializable {
     private String fallbackProxyUserId;
     
     /**
-     * Tracks the fallback proxy to use for new invitees.
+     * instanceId of the fallback proxy to use for new invitees.
+     *
+     * null if we have never launched a fallback proxy to run as this user.
+     *
+     * LanternControllerConstants.FALLBACK_PROXY_LAUNCHING if we are currently
+     * launching a fallback proxy to run as this user.
      */
-    private Key<LanternInstance> fallbackForNewInvitees;
+    private String fallbackForNewInvitees;
 
     public LanternUser() {
         super();
@@ -201,13 +198,6 @@ public class LanternUser implements Serializable {
     }
 */
 
-    public String getInstallerLocation() {
-        return installerLocation;
-    }
-
-    public void setInstallerLocation(final String installerLocation) {
-        this.installerLocation = installerLocation;
-    }
 
     public String getName() {
         return name;
@@ -232,13 +222,12 @@ public class LanternUser implements Serializable {
     public String getFallbackProxyUserId() {
         return fallbackProxyUserId;
     }
-    
-    public void setFallbackForNewInvitees(
-            Key<LanternInstance> fallbackForNewInvitees) {
+
+    public void setFallbackForNewInvitees(String fallbackForNewInvitees) {
         this.fallbackForNewInvitees = fallbackForNewInvitees;
     }
-    
-    public Key<LanternInstance> getFallbackForNewInvitees() {
+
+    public String getFallbackForNewInvitees() {
         return fallbackForNewInvitees;
     }
 }

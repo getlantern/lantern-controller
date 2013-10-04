@@ -38,6 +38,11 @@ public class SQSChecker extends HttpServlet {
             log.severe("I don't understand this message: " + msg);
             return;
         }
+        final String instanceId = (String)msg.get("fp-up-instance");
+        if (instanceId == null) {
+            log.severe(inviterEmail + " sent fp-up with no instance ID.");
+            return;
+        }
         final String installerLocation = (String)msg.get("fp-up-insloc");
         if (installerLocation == null) {
             log.severe(inviterEmail
@@ -45,7 +50,7 @@ public class SQSChecker extends HttpServlet {
             return;
         }
         FallbackProxyLauncher.onFallbackProxyUp(inviterEmail,
+                                                instanceId,
                                                 installerLocation);
-        }
     }
 }
