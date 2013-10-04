@@ -1393,4 +1393,37 @@ public class Dao extends DAOBase {
         }
         return ret;
     }
+
+    /**
+     * Move installerLocation from user to fallbackProxy if necessary.
+     *
+     * TRANSITION: In the old scheme installerLocation was set by user.  This
+     * code is for porting proxies that predate the fallback-balancing scheme.
+     */
+    public void transitionInstallerLocation(final String userId,
+                                            final String instanceId) {
+        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                String insloc = user.getInstallerLocation();
+                if (insloc == null) {
+                    return null;
+                }
+                log.info("Moving legacy installer location from " + userId
+                         + " to fallback proxy " + instanceId);
+                user.setInstallerLocation(null);
+                ofy.put(user);
+                LanternInstance instance = findLanternInstance(
+                        ofy, userId, instanceId);
+                instance.setInstallerLocation(insloc);
+                ofy.put(instance);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        txn.run();
+        if (txn.failed()) {
+            log.severe("Transaction failed!");
+        }
+    }
 }

@@ -321,7 +321,9 @@ public class XmppAvailableServlet extends HttpServlet {
             }
             dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
                                      resource, hostAndPort, isFallbackProxy);
-            if (!isFallbackProxy) {
+            if (isFallbackProxy) {
+                dao.transitionInstallerLocation(idToUse, instanceId);
+            } else {
                 dao.processFallbackProxyHostAndPort(
                         idToUse, fallbackHostAndPort);
             }

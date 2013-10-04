@@ -45,7 +45,7 @@ public class LanternUser implements Serializable {
     private boolean everSignedIn = false;
 
     private Date lastAccessed = new Date();
-    
+
     /**
      * The instances we have seen running in behalf of this user.
      *
@@ -59,12 +59,12 @@ public class LanternUser implements Serializable {
     private String name;
 
     private String refreshToken;
-    
+
     /**
      * The ID of the Fallback Proxy used by this user's invitees.
      */
     private String fallbackProxyUserId;
-    
+
     /**
      * instanceId of the fallback proxy to use for new invitees.
      *
@@ -74,6 +74,10 @@ public class LanternUser implements Serializable {
      * launching a fallback proxy to run as this user.
      */
     private String fallbackForNewInvitees;
+
+    // TRANSITION: we use this to initialize the installerLocation of fallback
+    // proxies that predate the fallback-balancing scheme.
+    private String installerLocation;
 
     public LanternUser() {
         super();
@@ -229,5 +233,13 @@ public class LanternUser implements Serializable {
 
     public String getFallbackForNewInvitees() {
         return fallbackForNewInvitees;
+    }
+
+    public void setInstallerLocation(String installerLocation) {
+        this.installerLocation = installerLocation;
+    }
+
+    public String getInstallerLocation() {
+        return installerLocation;
     }
 }
