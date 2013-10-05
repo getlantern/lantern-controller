@@ -1017,6 +1017,7 @@ public class Dao extends DAOBase {
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 String old = user.getFallbackForNewInvitees();
                 user.setFallbackForNewInvitees(newFallback);
+                ofy.put(user);
                 ofy.getTxn().commit();
                 return old;
             }
