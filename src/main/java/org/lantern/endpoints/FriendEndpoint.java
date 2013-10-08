@@ -49,7 +49,9 @@ public class FriendEndpoint {
         try {
             final Query query = mgr.newQuery(ServerFriend.class);
             query.setFilter("userEmail == '"+email+"'");
-            query.setRange(0L, 1000L); 
+            
+            // Make sure we stay under the app engine limit.
+            query.getFetchPlan().setFetchSize(999);
             for (final Object obj : (List<Object>) query.execute()) {
                 result.add(((ServerFriend) obj));
             }
