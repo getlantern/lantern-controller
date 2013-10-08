@@ -163,11 +163,14 @@ public class FriendEndpoint {
             final Query query = mgr.newQuery(ServerFriend.class);
             query.setFilter("userEmail == '"+email+"'");
             query.setFilter("email == '"+friend.getEmail().toLowerCase()+"'");
-            query.setUnique(true);
-            return (ServerFriend) query.execute();
+            query.setRange(0L, 1L);
+            for (final Object obj : (List<Object>) query.execute()) {
+                return (ServerFriend) obj;
+            }
         } finally {
             mgr.close();
         }
+        return null;
     }
 
     private void persist(final PersistenceManager mgr, final ServerFriend friend) {
