@@ -2,6 +2,7 @@ package org.lantern.endpoints;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.inject.Named;
 import javax.jdo.PersistenceManager;
@@ -25,6 +26,8 @@ import com.google.appengine.api.users.User;
      scopes = { "https://www.googleapis.com/auth/userinfo.email" })
 public class FriendEndpoint {
 
+    private final transient Logger log = Logger.getLogger(getClass().getName());
+    
     /**
      * This method lists all the entities inserted in datastore. It uses HTTP
      * GET method.
@@ -47,7 +50,7 @@ public class FriendEndpoint {
             final Query query = mgr.newQuery(ServerFriend.class);
             query.setFilter("userEmail == '"+email+"'");
             query.setRange(0L, 1000L); 
-            for (Object obj : (List<Object>) query.execute()) {
+            for (final Object obj : (List<Object>) query.execute()) {
                 result.add(((ServerFriend) obj));
             }
         } finally {
@@ -101,13 +104,22 @@ public class FriendEndpoint {
             throws UnauthorizedException {
         checkAuthorization(user);
         friend.setUserEmail(email(user));
-        PersistenceManager mgr = getPersistenceManager();
-        try {
-            mgr.makePersistent(friend);
-        } finally {
-            mgr.close();
+        final PersistenceManager mgr = getPersistenceManager();
+        final ServerFriend existing = getExistingFriend(friend, user);
+        if (existing != null) {
+            log.warning("Found existing friend?");
+            update(existing, friend);
+            return existing;
         }
+        
+        persist(mgr, friend);
         return friend;
+    }
+
+    private void update(final ServerFriend older, final ServerFriend newer) {
+        older.setName(newer.getName());
+        older.setStatus(newer.getStatus());
+        older.setLastUpdated(newer.getLastUpdated());
     }
 
     /**
@@ -125,14 +137,45 @@ public class FriendEndpoint {
         final com.google.appengine.api.users.User user) 
                 throws UnauthorizedException {
         checkAuthorization(user);
+        final PersistenceManager mgr = getPersistenceManager();
         friend.setUserEmail(email(user));
-        PersistenceManager mgr = getPersistenceManager();
+        if (friend.getId() == 0L) {
+            log.warning("No ID on friend?");
+        }
+        persist(mgr, friend);
+        return friend;
+    }
+
+    /**
+     * Check for an existing friend to avoid duplicate friends that somehow
+     * are creeping into the database.
+     * 
+     * @param friend The friend of the logged-in user.
+     * @param user The user with the given friend.
+     * @return The existing friend or <code>null</code> if no such friend
+     * exists.
+     */
+    private ServerFriend getExistingFriend(final ServerFriend friend,
+            final User user) {
+        final String email = email(user);
+        final PersistenceManager mgr = getPersistenceManager();
+        try {
+            final Query query = mgr.newQuery(ServerFriend.class);
+            query.setFilter("userEmail == '"+email+"'");
+            query.setFilter("email == '"+friend.getEmail().toLowerCase()+"'");
+            query.setUnique(true);
+            return (ServerFriend) query.execute();
+        } finally {
+            mgr.close();
+        }
+    }
+
+    private void persist(final PersistenceManager mgr, final ServerFriend friend) {
         try {
             mgr.makePersistent(friend);
         } finally {
             mgr.close();
         }
-        return friend;
     }
 
     /**
