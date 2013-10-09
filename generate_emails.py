@@ -22,14 +22,17 @@ with open(CSS_PATH, encoding='utf-8') as fp:
 Lang = namedtuple('lang', 'code name dir')
 
 # get these from some standard dataset
-LANG_EN_US = Lang('en_US', 'English', 'ltr')
-#LANG_ZH_CN = Lang('zh_CN', '中文', 'ltr')
-#LANG_AR_AR = Lang('ar_AR', 'العربية', 'rtl')
-#LANG_FA_IR = Lang('fa_IR', 'پارسی', 'rtl')
+LANG_EN_US = Lang('en_US', u'English', 'ltr')
+LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
+LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
+#LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
+#LANG_FA_IR = Lang('fa_IR', u'پارسی', 'rtl')
 LANG_DEFAULT = LANG_EN_US
 
 LANGS = [
     LANG_EN_US,
+    LANG_ZH_CN,
+    LANG_VI
     ]
 
 # must be kept in sync with .tx/config
@@ -55,7 +58,10 @@ rendered = [i.render(
     LANGS=LANGS,
     ) for i in templates]
 
-transformed = [transform(i) for i in rendered]
+transformed = [transform(i).replace('%7C', '|') for i in rendered]
+# `transform` helpfully escapes characters like '|' inside href attributes for
+# us, but this breaks Mailchimp merge variables inside hrefs
+# e.g. <a href="mailto:*|INVITER_EMAIL|*">...</a>
 
 for (filename, content) in zip(TMPL_FILENAMES, transformed):
     opath = join(BASE_DIR, filename.replace('.tmpl', '.html'))

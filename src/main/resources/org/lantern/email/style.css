@@ -42,12 +42,14 @@ a.big-header {
 }
 .langbar ul {
   list-style-type: none;
-  word-spacing: 8px;
 }
 .langbar ul, .langbar ul li {
   margin: 0px;
   padding: 0px;
   display: inline;
+}
+.langbar a {
+  text-decoration: none;
 }
 
 .lang-container {
@@ -143,7 +145,6 @@ a.big-header {
 }
 .more-info ul {
   list-style-type: none;
-  word-spacing: 8px;
 }
 .more-info ul, .more-info ul li {
   margin: 0px;
@@ -173,7 +174,6 @@ a.big-header {
 }
 .footer ul {
   list-style-type: none;
-  word-spacing: 8px;
 }
 .footer ul, .footer ul li {
   margin: 0px;
