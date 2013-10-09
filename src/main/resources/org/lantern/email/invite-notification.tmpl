@@ -15,11 +15,9 @@
     <div class="langbar">
       <ul>
         {% for lang in LANGS -%}
-        <li>
-          <a href="#{{lang.code}}">{{lang.name}}</a>
-          {% if not loop.last %} ∙ {% endif %}
-        </li>
+        <li><a href="#{{lang.code}}">{{lang.name}}</a> ∙ </li>
         {%- endfor %}
+        <li><a href="https://github.com/getlantern/lantern/wiki/Translating-Lantern">Help Translate</a></li>
       </ul>
     </div>
     {% endif %}
