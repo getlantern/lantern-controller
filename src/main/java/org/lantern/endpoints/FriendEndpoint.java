@@ -141,7 +141,7 @@ public class FriendEndpoint {
         checkAuthorization(user);
         final PersistenceManager mgr = getPersistenceManager();
         friend.setUserEmail(email(user));
-        if (friend.getId() == 0L) {
+        if (friend.getId() == null) {
             log.warning("No ID on friend?");
         }
         persist(mgr, friend);
