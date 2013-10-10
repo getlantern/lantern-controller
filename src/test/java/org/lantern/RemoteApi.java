@@ -10,10 +10,10 @@ import com.google.appengine.tools.remoteapi.RemoteApiOptions;
 public class RemoteApi {
 
     public static void main(final String[] args) {
-        String username = "ox@getlantern.org"; //System.console().readLine("username: ");
-        String password = "htsrnvowtvzovjgt"; //new String(System.console().readPassword("password: "));
+        String username = System.console().readLine("username: ");
+        String password = new String(System.console().readPassword("password: "));
         RemoteApiOptions options = new RemoteApiOptions()
-            .server("oxlanternctrl.appspot.com", 443)
+            .server("lanternctrl.appspot.com", 443)
             .credentials(username, password);
         RemoteApiInstaller installer = new RemoteApiInstaller();
         try {
@@ -28,7 +28,7 @@ public class RemoteApi {
             final Dao dao = new Dao();
             //dao.forgetEveryoneSignedIn();
             /* Trigger your hacks here.*/
-            dao.createInitialUser("ox@getlantern.org");
+            //dao.createInitialUser("insertmyaccount@gmail.com");
         } finally {
             installer.uninstall();
         }
