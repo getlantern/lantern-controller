@@ -71,8 +71,8 @@ public class FallbackProxyLauncher {
         incrementFallbackInvites(fallbackProxyUserId,
                                  invites.size());
         // We will probably have several invites by the same user.  For each
-        // inviter, we need their name, which won't change.  So let's memoize
-        // these.
+        // inviter, we need their name, which won't change.  So let's cache
+        // these to avoid hitting the datastore multiple times for each inviter.
         Map<String, String> nameCache = new HashMap<String, String>();
         for (Invite invite : invites) {
             String inviterEmail = invite.getInviter();
