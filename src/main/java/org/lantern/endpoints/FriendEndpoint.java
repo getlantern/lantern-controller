@@ -142,7 +142,7 @@ public class FriendEndpoint {
         }
         friend.setUserEmail(email(user));
         if (friend.getId() == null) {
-            log.warning("No ID on friend?");
+            log.warning("No ID on friend? Ignoring update.");
             return friend;
         }
         persist(mgr, friend);
