@@ -23,7 +23,7 @@
     {% endif %}
 
     {% for lang in LANGS %}
-    <div class="lang-container">
+    <div class="lang-container" dir="{{lang.dir}}">
       <div class="header">
         <h1><a class="big-header" name="{{lang.code}}">{{'INVITED_HEADER'|trans(lang)}}</a></h1>
         <h2>{{'INVITED_SUBHEADER'|trans(lang)}}</h2>
