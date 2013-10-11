@@ -23,20 +23,22 @@
     {% endif %}
 
     {% for lang in LANGS %}
-    <div class="lang-container">
+    <div class="lang-container {{lang.dir}}" dir="{{lang.dir}}">
       <div class="header">
         <h1><a class="big-header" name="{{lang.code}}">{{'INVITED_HEADER'|trans(lang)}}</a></h1>
         <h2>{{'INVITED_SUBHEADER'|trans(lang)}}</h2>
       </div>
       <div class="blurb">{{'LANTERN_BLURB'|trans(lang)}}</div>
 
-      <h2 class="download-header">{{'DOWNLOAD_HEADER'|trans(lang)}}</h2>
-      <h3 class="download-subheader">{{'DOWNLOAD_SUBHEADER'|trans(lang)}}</h3>
-      <ul class="download-links">
-        <li><a href="*|INSTALLER_URL_EXE|*">{{'MINVER_WINDOWS'|trans(lang)}}</a></li>
-        <li><a href="*|INSTALLER_URL_DMG|*">{{'MINVER_OS_X'|trans(lang)}}</a></li>
-        <li><a href="*|INSTALLER_URL_DEB|*">{{'MINVER_UBUNTU'|trans(lang)}}</a></li>
-      </ul>
+      <div class="download-container">
+        <h2 class="download-header">{{'DOWNLOAD_HEADER'|trans(lang)}}</h2>
+        <h3 class="download-subheader">{{'DOWNLOAD_SUBHEADER'|trans(lang)}}</h3>
+        <ul class="download-links">
+          <li><a href="*|INSTALLER_URL_EXE|*">{{'MINVER_WINDOWS'|trans(lang)}}</a></li>
+          <li><a href="*|INSTALLER_URL_DMG|*">{{'MINVER_OS_X'|trans(lang)}}</a></li>
+          <li><a href="*|INSTALLER_URL_DEB|*">{{'MINVER_UBUNTU'|trans(lang)}}</a></li>
+        </ul>
+      </div>
 
       <div class="details">
         <div class="need">
