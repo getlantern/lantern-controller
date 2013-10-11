@@ -32,10 +32,10 @@ LANG_DEFAULT = LANG_EN_US
 
 LANGS = [
     LANG_EN_US,
-    LANG_ES,
     LANG_ZH_CN,
-    LANG_VI,
     LANG_FA_IR,
+    LANG_ES,
+    LANG_VI,
     ]
 
 # must be kept in sync with .tx/config
