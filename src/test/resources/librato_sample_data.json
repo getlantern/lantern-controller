@@ -1,0 +1,35 @@
+{
+    "attributes": {
+        "aggregate": true,
+        "created_by_ua": "metrics-librato/3.0.1 metrics/3.0.1.RC1 librato-java/0.1.1",
+        "display_stacked": false,
+        "display_units_long": "# of Distinct Clients",
+        "gap_detection": true,
+        "summarize_function": "max"
+    },
+    "description": null,
+    "display_name": null,
+    "measurements": {
+        "proxy-429e523560d0f39949843833f05c808e": [
+            {
+                "count": 518,
+                "max": 1.0,
+                "max_avg": 0.8888888888888888,
+                "max_sum": 16.0,
+                "measure_time": 1380002400,
+                "min": 0.0,
+                "sum": 16.0,
+                "sum_maxes": 1.0,
+                "sum_means": 0.8888888888888888,
+                "sum_squares": 16.0,
+                "summarized": 12,
+                "value": 0.03088803088803089
+            }
+        ]
+    },
+    "name": "LanternStat_countOfDistinctProxiedClientAddresses",
+    "period": null,
+    "resolution": 3600,
+    "source_display_names": {},
+    "type": "gauge"
+}

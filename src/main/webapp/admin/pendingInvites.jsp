@@ -20,7 +20,8 @@
 <th>degree</th>
 <th>countryCodes</th>
 <th>sponsor</th>
-<th>has installer</th>
+<th>has proxy</th>
+<th>fallback user</th>
 
 <th>Invitee</th>
 <th>degree</th>
@@ -70,8 +71,11 @@
 	    ${inviter.sponsor}
 	    </td>
 	    <td>
-	    ${inviter.installerLocation != null}
+	    ${inviter.fallbackForNewInvitees != null}
 	    </td>
+        <td>
+        ${inviter.fallbackProxyUserId}
+        </td>
 	    <td>
 	    ${invitee_email}
 	    </td>

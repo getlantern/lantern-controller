@@ -71,13 +71,20 @@ public class XmppAvailableServlet extends HttpServlet {
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
-
+        final String hostAndPort = LanternControllerUtils.getProperty(doc,
+                LanternConstants.HOST_AND_PORT);
+        final String fallbackHostAndPort = LanternControllerUtils.getProperty(
+                doc, LanternConstants.FALLBACK_HOST_AND_PORT);
+        final boolean isFallbackProxy = "true".equalsIgnoreCase(
+                LanternControllerUtils.getProperty(doc,
+                        LanternConstants.IS_FALLBACK_PROXY));
+        
         if (!presence.isAvailable()) {
             log.info(userId + "/" + resource + " logging out.");
             dao.setInstanceUnavailable(userId, resource);
             return;
         }
-
+        
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
 
@@ -87,16 +94,14 @@ public class XmppAvailableServlet extends HttpServlet {
 
             queueInvite(xmpp, presence, doc, invitedEmail);
 
-            if (!dao.areInvitesPaused()) {
+            if (dao.areInvitesPaused()) {
+                log.info("Invites are paused, so not sending invite");
+            } else {
                 String inviterName = LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITER_NAME);
-
-                String refreshToken = LanternControllerUtils.getProperty(doc,
-                        LanternConstants.INVITER_REFRESH_TOKEN);
-
-                InvitedServerLauncher.sendInvite(inviterName, userId, refreshToken, invitedEmail);
-            } else {
-                log.info("Invites are paused, so not sending invite");
+                FallbackProxyLauncher.sendInvite(inviterName,
+                                                 userId,
+                                                 invitedEmail);
             }
             return;
         }
@@ -123,7 +128,8 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "name");
 
         processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource);
+                name, mode, resource, hostAndPort, fallbackHostAndPort,
+                isFallbackProxy);
 
         sendUpdateTime(presence, xmpp, responseJson);
 
@@ -284,7 +290,9 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final String idToUse, final String instanceId,
-        final String name, final Mode mode, final String resource) {
+        final String name, final Mode mode, final String resource,
+        final String hostAndPort, final String fallbackHostAndPort,
+        final boolean isFallbackProxy) {
 
         if (StringUtils.isBlank(stats)) {
             log.info("No stats to process!");
@@ -302,13 +310,23 @@ public class XmppAvailableServlet extends HttpServlet {
             final Stats data = mapper.readValue(stats, Stats.class);
             // The following will delete the instance if it's not available,
             // updating all counters.
+            // (aranhoide: XXX is the comment above still accurate?  I remember
+            // at some point available/unavailable events were being handled
+            // together up to here, but not anymore.)
             log.info("Setting instance availability");
             final Dao dao = new Dao();
             String countryCode = data.getCountryCode();
             if (StringUtils.isBlank(countryCode)) {
                 countryCode = "XX";
             }
-            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode, resource);
+            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
+                                     resource, hostAndPort, isFallbackProxy);
+            if (isFallbackProxy) {
+                dao.transitionInstallerLocation(idToUse, instanceId);
+            } else {
+                dao.processFallbackProxyHostAndPort(
+                        idToUse, fallbackHostAndPort);
+            }
             try {
                 updateStats(data, idToUse, instanceId, name, mode);
             } catch (final UnsupportedOperationException e) {

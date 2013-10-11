@@ -37,9 +37,7 @@ import com.google.appengine.api.memcache.ErrorHandlers;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
-/**
- * Manages settings.
- */
+
 public class SettingsManager {
 
     private static final transient Logger log = Logger
@@ -53,28 +51,29 @@ public class SettingsManager {
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
 
     public SettingsManager() {
-        cache.setErrorHandler(ErrorHandlers.getConsistentLogAndContinue(Level.INFO));
+        cache.setErrorHandler(
+                ErrorHandlers.getConsistentLogAndContinue(Level.INFO));
     }
 
     public String get(final String name) {
-        loadSettings();
+        assureSettingsLoaded();
         return settings.get(name);
     }
 
     public void set(final String name, final String value) {
-        loadSettings();
-        settings.set(name, value);
-
         DatastoreService datastore =
                 DatastoreServiceFactory.getDatastoreService();
         for (int tries=10; tries > 0; --tries) {
             Transaction txn = datastore.beginTransaction();
             try {
                 PersistenceManager pm = PMF.get().getPersistenceManager();
-                writeSettingsToDatastore(pm, settings);
+                Settings s = loadSettings(pm);
+                s.set(name, value);
+                writeSettings(pm, s);
                 pm.close();
                 txn.commit();
-                log.info("Saving settings.");
+                cache.delete("settings");
+                log.info("Saved settings.");
                 return;
             }  catch (ConcurrentModificationException e) {
                 log.warning("Concurrent modification!");
@@ -85,72 +84,41 @@ public class SettingsManager {
             }
         }
         throw new RuntimeException("Too much contention for group!");
-
     }
 
     public Map<String, String> getAllSettings() {
-        loadSettings();
+        assureSettingsLoaded();
         return settings.getAllSettings();
     }
 
-    private void loadSettings() {
+    private void assureSettingsLoaded() {
         if (settings != null)
             return;
-
         // try to get from cache
         settings = (Settings) cache.get("settings");
         if (settings != null)
             return;
-
         log.info("Forced to load settings from database.");
-        Settings s;
-        DatastoreService datastore =
-            DatastoreServiceFactory.getDatastoreService();
-        for (int tries=10; tries > 0; --tries) {
-            Transaction txn = datastore.beginTransaction();
-            try {
-                final PersistenceManager pm =
-                    PMF.get().getPersistenceManager();
-                try {
-                    s = readSettingsFromDatastore(pm);
-                } catch (JDOObjectNotFoundException e) {
-                    log.warning("Did not find a settings object."
-                        + " Creating a new one. This should only ever happen"
-                        + " once.");
-                    s = new Settings();
-                    writeSettingsToDatastore(pm, s);
-                }
-                pm.close();
-                txn.commit();
-                settings = s;
+        final PersistenceManager pm =
+            PMF.get().getPersistenceManager();
+        Settings s = loadSettings(pm);
+        pm.close();
+        cache.put("settings", s);
+    }
 
-                cache.put("settings", s);
-                return;
-            } catch (ConcurrentModificationException e) {
-                log.warning("Concurrent modification!");
-                // If some thread has concurrently succeeded in loading this
-                // group, we don't need to do it again.
-                if (settings != null) {
-                    return;
-                }
-            } finally {
-                if (txn.isActive()) {
-                    txn.rollback();
-                }
-            }
+    private Settings loadSettings(PersistenceManager pm) {
+        try {
+            Settings s = pm.getObjectById(Settings.class, SETTINGSKEY);
+            s.restore();
+            return s;
+        } catch (JDOObjectNotFoundException e) {
+            log.warning("Did not find a settings object."
+                        + " Creating a new one.");
+            return new Settings();
         }
-        throw new RuntimeException("Too much contention for group!");
     }
 
-
-    private Settings readSettingsFromDatastore(PersistenceManager pm) {
-        Settings s = pm.getObjectById(Settings.class, SETTINGSKEY);
-        s.restore();
-        return s;
-    }
-
-
-    private void writeSettingsToDatastore(PersistenceManager pm, Settings s) {
+    private void writeSettings(PersistenceManager pm, Settings s) {
         long now = new Date().getTime() / 1000;
         s.setLastUpdated(now);
         s.prepareForPersistence();

@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.util.Date;
+import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
@@ -10,9 +11,10 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 public class LanternInstance {
-    private static long METRIC_BUCKET_DURATION_IN_MILLIS = 60 * 60 * 1000;
-    private static long NUMBER_OF_BUCKETS_TO_KEEP = 24;
-    
+
+    private static final transient Logger log =
+        Logger.getLogger(LanternInstance.class.getName());
+
     @Id
     private String id;
 
@@ -28,11 +30,35 @@ public class LanternInstance {
     private String countries = "";
 
     private String currentCountry;
-    
+
     /* The most recent resource id we have seen for this instance. */
     private String resource;
 
     private Mode mode;
+
+    private boolean isFallbackProxy;
+
+    /**
+     * The host and port on which this proxy (Give mode) is listening.
+     */
+    private String listenHostAndPort;
+
+    /**
+     * Tracks the number of invites sent out with installers pointing to this
+     * instance.
+     *
+     * Only makes sense for fallback proxies.
+     */
+    private int numberOfInvitesForFallback;
+
+    /**
+     * The location of the installers pointing to this instance.
+     *
+     * This is generated in the fallback proxies and unpacked in
+     * FallbackProxyLauncher.sendInviteEmail.  See that one if you're
+     * interested in the actual format.
+     */
+    private String installerLocation;
 
     public LanternInstance() {
         super();
@@ -110,11 +136,48 @@ public class LanternInstance {
     public void setResource(String resource) {
         this.resource = resource;
     }
-    
+
+    public void setFallbackProxy(boolean isFallbackProxy) {
+        if (this.isFallbackProxy && !isFallbackProxy) {
+            log.severe("No longer a fallback proxy?  What gives?");
+        }
+        this.isFallbackProxy = isFallbackProxy;
+    }
+
+    public boolean isFallbackProxy() {
+        return isFallbackProxy;
+    }
+
+    public void setListenHostAndPort(String listenHostAndPort) {
+        this.listenHostAndPort = listenHostAndPort;
+    }
+
+    public String getListenHostAndPort() {
+        return listenHostAndPort;
+    }
+
+    public void incrementNumberOfInvitesForFallback(int increment) {
+        if (increment < 0) {
+            throw new RuntimeException("Actually decrementing?");
+        }
+        this.numberOfInvitesForFallback += increment;
+    }
+
+    public int getNumberOfInvitesForFallback() {
+        return numberOfInvitesForFallback;
+    }
+
     public boolean isCurrent() {
         long now = new Date().getTime();
         long age = now - lastUpdated.getTime();
         return age < 1000L * 60 * 15;
     }
 
+    public String getInstallerLocation() {
+        return installerLocation;
+    }
+
+    public void setInstallerLocation(final String installerLocation) {
+        this.installerLocation = installerLocation;
+    }
 }

@@ -21,6 +21,9 @@ public class Invite {
     private String id;
 
     @Parent
+    // TRANSITION: this points to the inviter's fallbackProxyUserId if they
+    // have a non-null one.  Otherwise (or for old invites created before the
+    // fallback-balancing scheme was deployed) this points to the inviter.
     private Key<LanternUser> inviterKey;
 
     private String inviter;
@@ -49,9 +52,9 @@ public class Invite {
     public Invite() {
     };
 
-    public Invite(String inviter, String invitee) {
+    public Invite(String inviter, String invitee, String parent) {
         this.id = makeId(inviter, invitee);
-        this.inviterKey = new Key<LanternUser>(LanternUser.class, inviter);
+        this.inviterKey = new Key<LanternUser>(LanternUser.class, parent);
         this.inviter = inviter;
         this.invitee = invitee;
     }
