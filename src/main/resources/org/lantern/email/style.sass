@@ -15,6 +15,17 @@ $getModeColor: #cc8800
 =custom-inline-list
   +inline-list
 
+=centered
+  text-align: center !important
+
+.ltr *
+  direction: ltr
+  text-align: left
+
+.rtl *
+  direction: rtl
+  text-align: right
+
 html
   font-size: 100%
   -webkit-text-size-adjust: 100%
@@ -25,7 +36,7 @@ body
   line-height: $baseLineHeight
   font-family: $baseFontFamily
   background-color: #eee
-  text-align: center
+  +centered
 
 a
   color: $linkColor
@@ -56,11 +67,14 @@ a.big-header
 
 .lang-container
   background-color: #fff
+  border-bottom: 1px dotted #ccc
 
 .header
   margin: auto
   background: #fff
   padding: 20px
+  *
+    +centered
   h1
     font-size: 28px
     line-height: 30px
@@ -69,11 +83,8 @@ a.big-header
     line-height: 30px
     margin-bottom: 10px
 
-.lang-container
-  border-bottom: 1px dotted #ccc
-
-.blurb
-  text-align: left
+.download-container *
+  +centered
 
 .download-header
   font-size: 22px
@@ -95,7 +106,7 @@ a.big-header
 .details
   font-size: 13px
   margin: 50px 0
-  text-align: left
+  //text-align: left
 
 .need, .have, .sponsor
   margin-bottom: $baseFontSize
@@ -110,7 +121,7 @@ a.big-header
   margin: 10px
   color: #f00
   font-weight: bold
-  text-align: center
+  +centered
 
 .note
   margin-bottom: $baseFontSize
@@ -118,7 +129,9 @@ a.big-header
     color: $accentColor
 
 .more-info
-  text-align: center
+  +centered
+  *
+    +centered
   h4
     +small
     margin: 2px 0
@@ -127,20 +140,20 @@ a.big-header
 
 .from-us-header
   +small
-  text-align: left
+  //text-align: left
   padding-top: 20px
   font-size: 12px
 
 .from-us-body
-  text-align: left
+  //text-align: left
   margin: 5px 30px
   color: #888
   font-family: 'Times New Roman', Times, serif
 
 .footer
   +small
+  +centered
   padding-top: 10px
   border-top: 1px dotted #eee
-  text-align: center
   ul
     +custom-inline-list

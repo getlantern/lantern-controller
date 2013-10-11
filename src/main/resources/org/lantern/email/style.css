@@ -1,3 +1,13 @@
+.ltr * {
+  direction: ltr;
+  text-align: left;
+}
+
+.rtl * {
+  direction: rtl;
+  text-align: right;
+}
+
 html {
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
@@ -9,7 +19,7 @@ body {
   line-height: 18px;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   background-color: #eeeeee;
-  text-align: center;
+  text-align: center !important;
 }
 
 a {
@@ -54,12 +64,16 @@ a.big-header {
 
 .lang-container {
   background-color: white;
+  border-bottom: 1px dotted #cccccc;
 }
 
 .header {
   margin: auto;
   background: white;
   padding: 20px;
+}
+.header * {
+  text-align: center !important;
 }
 .header h1 {
   font-size: 28px;
@@ -71,12 +85,8 @@ a.big-header {
   margin-bottom: 10px;
 }
 
-.lang-container {
-  border-bottom: 1px dotted #cccccc;
-}
-
-.blurb {
-  text-align: left;
+.download-container * {
+  text-align: center !important;
 }
 
 .download-header {
@@ -107,7 +117,6 @@ a.big-header {
 .details {
   font-size: 13px;
   margin: 50px 0;
-  text-align: left;
 }
 
 .need, .have, .sponsor {
@@ -126,7 +135,7 @@ a.big-header {
   margin: 10px;
   color: red;
   font-weight: bold;
-  text-align: center;
+  text-align: center !important;
 }
 
 .note {
@@ -137,7 +146,10 @@ a.big-header {
 }
 
 .more-info {
-  text-align: center;
+  text-align: center !important;
+}
+.more-info * {
+  text-align: center !important;
 }
 .more-info h4 {
   font-size: 11px;
@@ -154,13 +166,11 @@ a.big-header {
 
 .from-us-header {
   font-size: 11px;
-  text-align: left;
   padding-top: 20px;
   font-size: 12px;
 }
 
 .from-us-body {
-  text-align: left;
   margin: 5px 30px;
   color: #888888;
   font-family: "Times New Roman", Times, serif;
@@ -168,9 +178,9 @@ a.big-header {
 
 .footer {
   font-size: 11px;
+  text-align: center !important;
   padding-top: 10px;
   border-top: 1px dotted #eeeeee;
-  text-align: center;
 }
 .footer ul {
   list-style-type: none;
