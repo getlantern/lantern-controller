@@ -43,6 +43,7 @@ public class FriendEndpoint {
             throws UnauthorizedException {
         checkAuthorization(user);
         
+        log.info("Listing friends");
         final String email = email(user);
         final PersistenceManager mgr = getPersistenceManager();
         final List<Friend> result = new ArrayList<Friend>();
@@ -82,6 +83,7 @@ public class FriendEndpoint {
         try {
             friend = mgr.getObjectById(ServerFriend.class, id);
             if (!friend.getUserEmail().toLowerCase().equals(email(user))) {
+                log.warning("Emails don't match?");
                 throw new UnauthorizedException("Unauthorized");
             }
         } finally {
@@ -105,23 +107,17 @@ public class FriendEndpoint {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
+        log.info("Inserting friend...");
         friend.setUserEmail(email(user));
         final PersistenceManager mgr = getPersistenceManager();
         final ServerFriend existing = getExistingFriend(friend, user);
         if (existing != null) {
             log.warning("Found existing friend?");
-            update(existing, friend);
             return existing;
         }
         
         persist(mgr, friend);
         return friend;
-    }
-
-    private void update(final ServerFriend older, final ServerFriend newer) {
-        older.setName(newer.getName());
-        older.setStatus(newer.getStatus());
-        older.setLastUpdated(newer.getLastUpdated());
     }
 
     /**
@@ -139,13 +135,29 @@ public class FriendEndpoint {
         final com.google.appengine.api.users.User user) 
                 throws UnauthorizedException {
         checkAuthorization(user);
+        log.info("Updating friend...");
         final PersistenceManager mgr = getPersistenceManager();
+        final ServerFriend existing = getExistingFriend(friend, user);
+        if (existing != null) {
+            log.warning("Found existing friend?");
+            update(existing, friend);
+            persist(mgr, existing);
+            return existing;
+        }
         friend.setUserEmail(email(user));
         if (friend.getId() == null) {
-            log.warning("No ID on friend?");
+            log.warning("No ID on friend? Ignoring update.");
+            return friend;
         }
         persist(mgr, friend);
         return friend;
+    }
+    
+
+    private void update(final ServerFriend older, final ServerFriend newer) {
+        older.setName(newer.getName());
+        older.setStatus(newer.getStatus());
+        older.setLastUpdated(newer.getLastUpdated());
     }
 
     /**
@@ -220,6 +232,7 @@ public class FriendEndpoint {
     private void checkAuthorization(final User user) 
             throws UnauthorizedException {
         if (user == null) {
+            log.warning("User is unauthorized!");
             throw new UnauthorizedException("Unauthorized");
         }
         /*
