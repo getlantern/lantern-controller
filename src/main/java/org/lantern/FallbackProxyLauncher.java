@@ -134,7 +134,10 @@ public class FallbackProxyLauncher {
             log.warning("We were already launching a proxy for this user.");
             return;
         }
-        log.info("Ordering launch of new fallback proxy for " + userId);
+        Integer serial = dao.incrementFallbackSerialNumber(userId);
+        // Grammar be damned :).
+        log.info("Ordering launch of " + serial + "th fallback proxy for "
+                 + userId);
         Map<String, Object> map = new HashMap<String, Object>();
         /* These aren't in LanternConstants because they are not handled
          * by the client, but by a Python bot.
@@ -142,6 +145,7 @@ public class FallbackProxyLauncher {
          */
         map.put("launch-fp-as", userId);
         map.put("launch-refrtok", refreshToken);
+        map.put("launch-serial", serial);
         new SQSUtil().send(map);
     }
 

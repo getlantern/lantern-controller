@@ -75,6 +75,16 @@ public class LanternUser implements Serializable {
      */
     private String fallbackForNewInvitees;
 
+    /**
+     * A counter we keep to provide a unique serial number to all fallback launch
+     * requests for this user.
+     *
+     * The cloudmaster needs this in the SQS message we send them in order to
+     * make sure that for each SQS message it spawns one, and only one,
+     * fallback proxy.
+     */
+    private int fallbackSerialNumber = 0;
+
     // TRANSITION: we use this to initialize the installerLocation of fallback
     // proxies that predate the fallback-balancing scheme.
     private String installerLocation;
@@ -241,5 +251,10 @@ public class LanternUser implements Serializable {
 
     public String getInstallerLocation() {
         return installerLocation;
+    }
+
+    public int incrementFallbackSerialNumber() {
+        fallbackSerialNumber += 1;
+        return fallbackSerialNumber;
     }
 }

@@ -1428,4 +1428,23 @@ public class Dao extends DAOBase {
             log.severe("Transaction failed!");
         }
     }
+
+    public int incrementFallbackSerialNumber(final String userId) {
+        RetryingTransaction<Integer> txn = new RetryingTransaction<Integer>() {
+            protected Integer run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                int ret = user.incrementFallbackSerialNumber();
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return ret;
+            }
+        };
+        int ret = txn.run();
+        if (txn.failed()) {
+            throw new RuntimeException("Transaction failed!");
+        }
+        log.info("Incremented " + userId + "'s fallbackSerialNumber to "
+                 + ret);
+        return ret;
+    }
 }
