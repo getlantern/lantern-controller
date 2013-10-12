@@ -415,9 +415,9 @@ public class Dao extends DAOBase {
 
         for (Invite invite : invites) {
             if (invite.getStatus() == Invite.Status.authorized) {
-                FallbackProxyLauncher.sendInvite(user.getName(),
-                                                 userId,
-                                                 invite.getInvitee());
+                FallbackProxyLauncher.authorizeInvite(user.getName(),
+                                                      userId,
+                                                      invite.getInvitee());
             }
         }
     }

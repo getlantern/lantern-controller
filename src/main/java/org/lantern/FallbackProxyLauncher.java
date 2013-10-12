@@ -12,19 +12,27 @@ import org.lantern.data.LanternUser;
 import org.littleshoot.util.ThreadUtils;
 
 
+/**
+ * Process authorized invites, launch fallback proxies as required, and match
+ * invitees to such proxies.
+ */
 public class FallbackProxyLauncher {
 
     private static final transient Logger log =
         Logger.getLogger(FallbackProxyLauncher.class.getName());
 
-    public static void sendInvite(final String inviterName,
-                                  final String inviterEmail,
-                                  final String invitedEmail) {
+    /**
+     * Process invite authorization.
+     *
+     * Handle an invite once it has been authorized, or we have determined it
+     * doesn't need authorization.
+     */
+    public static void authorizeInvite(final String inviterName,
+                                       final String inviterEmail,
+                                       final String invitedEmail) {
 
         final Dao dao = new Dao();
 
-        // An invite only gets to this point once it has been authorized, so
-        // this is a good place to make sure we record that fact.
         dao.setInviteStatus(inviterEmail,
                             invitedEmail,
                             Invite.Status.authorized);
@@ -122,6 +130,11 @@ public class FallbackProxyLauncher {
         }
     }
 
+    /**
+     * Order a new fallback proxy to be launched.
+     *
+     * The proxy will run as the given user.
+     */
     private static void launchNewProxy(String userId) {
         Dao dao = new Dao();
         String refreshToken = dao.findUser(userId).getRefreshToken();
@@ -149,6 +162,11 @@ public class FallbackProxyLauncher {
         new SQSUtil().send(map);
     }
 
+    /**
+     * Ask MandrillEmailer to send an invite e-mail.
+     *
+     * 'Unpack' the parameters into the format MandrillEmailer expects.
+     */
     private static void sendInviteEmail(final String inviterName,
                                         final String inviterEmail,
                                         final String invitedEmail,

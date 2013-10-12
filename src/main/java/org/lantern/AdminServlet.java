@@ -179,7 +179,7 @@ public class AdminServlet extends HttpServlet {
             inviterName = inviterEmail;
         }
 
-        FallbackProxyLauncher.sendInvite(
+        FallbackProxyLauncher.authorizeInvite(
                 inviterName, inviterEmail, invitedEmail);
 
         log.info("Redirecting");
