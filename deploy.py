@@ -62,8 +62,8 @@ else:
 print "Ready to deploy!"
 
 assert call("mvn clean install", shell=True) == 0, "Could not run clean install"
-assert call("mvn appengine:enhance", shell=True) == 0, "Could not enhance"
-assert call("mvn appengine:update", shell=True) == 0, "Could not update"
+assert call("mvn appengine:enhance -Dmaven.test.skip=true", shell=True) == 0, "Could not enhance"
+assert call("mvn appengine:update -Dmaven.test.skip=true", shell=True) == 0, "Could not update"
 
 if setdefault:
     assert call("mvn appengine:set_default_version", shell=True) == 0, "Could not set default version?"
