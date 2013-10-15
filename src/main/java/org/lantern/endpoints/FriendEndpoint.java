@@ -177,8 +177,8 @@ public class FriendEndpoint {
         final PersistenceManager mgr = getPersistenceManager();
         try {
             final Query query = mgr.newQuery(ServerFriend.class);
-            query.setFilter("userEmail == '"+email+"'");
-            query.setFilter("email == '"+friend.getEmail().toLowerCase()+"'");
+            query.setFilter("userEmail == '"+email+"' AND email = '"+
+                    friend.getEmail().toLowerCase()+"'");
             query.setRange(0L, 1L);
             log.info("Querying for existing friend using: " + query);
             for (final Object obj : (List<Object>) query.execute()) {
