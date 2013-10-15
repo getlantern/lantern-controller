@@ -1,0 +1,12 @@
+<!doctype html>
+<html ng-app="LanternVersion">
+  <head>
+    <script src="/bower_components/angular/angular.js"></script>
+    <script src="LanternVersion.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+  </head>
+  <body ng-controller="MainCtrl">
+    <textarea rows="30" cols="80" readonly>{{dummyVersion | json}}</textarea>
+    <button class="btn" ng-click="submit()">Submit</button>
+  </body>
+</html>

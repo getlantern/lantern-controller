@@ -8,42 +8,58 @@ import java.util.logging.Logger;
 import javax.persistence.Embedded;
 import javax.persistence.Id;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.lantern.OS;
 import org.lantern.VersionNumber;
+
+import com.googlecode.objectify.annotation.Serialized;
 
 /**
  * TODO: reduce duplication with Lantern's {@link VersionNumber}
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LanternVersion {
-    private final static transient Logger LOG = Logger.getLogger("LanternVersion");
+    private final static transient Logger LOG = Logger
+            .getLogger("LanternVersion");
 
     @Id
-    @Embedded
-    private SemanticVersion version;
+    private String id;
 
     private String gitSha;
 
     private Date releaseDate;
 
-    private Map <OS,String> installerUrls = new HashMap<OS,String>();
+    @Embedded
+    private InstallerUrls installerUrls = new InstallerUrls();
 
     private String infoUrl;
 
-    public LanternVersion(SemanticVersion version, String gitSha, Date releaseDate,
-            Map<OS, String> installerUrls, String infoUrl) {
-        this.version = version;
+    public LanternVersion() {
+    }
+
+    public LanternVersion(String id, String gitSha, Date releaseDate,
+            InstallerUrls installerUrls, String infoUrl) {
+        this.id = id;
         this.gitSha = gitSha;
         this.releaseDate = releaseDate;
         this.installerUrls = installerUrls;
         this.infoUrl = infoUrl;
     }
 
-    public SemanticVersion getVersion() {
-        return version;
+    public String getId() {
+        return id;
     }
 
-    public void setVersion(SemanticVersion version) {
-        this.version = version;
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public SemanticVersion getSemanticVersion() {
+        return SemanticVersion.from(id);
+    }
+
+    public void setSemanticVersion(SemanticVersion semanticVersion) {
+        id = semanticVersion.toString();
     }
 
     public String getGitSha() {
@@ -62,11 +78,11 @@ public class LanternVersion {
         this.releaseDate = releaseDate;
     }
 
-    public Map<OS, String> getInstallerUrls() {
+    public InstallerUrls getInstallerUrls() {
         return installerUrls;
     }
 
-    public void setInstallerUrls(Map<OS, String> installerUrls) {
+    public void setInstallerUrls(InstallerUrls installerUrls) {
         this.installerUrls = installerUrls;
     }
 
@@ -76,5 +92,18 @@ public class LanternVersion {
 
     public void setInfoUrl(String infoUrl) {
         this.infoUrl = infoUrl;
+    }
+
+    /**
+     * Return a new LanternVersion with installerUrls merged between this
+     * instance and other
+     * 
+     * @param other
+     * @return
+     */
+    public LanternVersion merge(LanternVersion other) {
+        InstallerUrls mergedInstallerUrls = installerUrls.merge(other.getInstallerUrls());
+        return new LanternVersion(other.getId(), other.getGitSha(),
+                other.getReleaseDate(), mergedInstallerUrls, other.getInfoUrl());
     }
 }

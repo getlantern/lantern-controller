@@ -16,7 +16,6 @@ import org.lantern.InvitedServerLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
-import org.lantern.Stats;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.state.Mode;
@@ -169,6 +168,31 @@ public class Dao extends DAOBase {
             log.warning("Too much contention; giving up!");
         }
     }
+
+    public void createOrUpdateLanternVersion(final LanternVersion lanternVersion) {
+
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, lanternVersion.getId());
+                LanternVersion toSave = ofy.find(key);
+                if (toSave == null) {
+                    toSave = lanternVersion;
+                } else {
+                    toSave = toSave.merge(lanternVersion);
+                }
+                ofy.put(toSave);
+                ofy.getTxn().commit();
+                log.info("Transaction successful.");
+                return true;
+            }
+        }.run();
+
+        if (result == null) {
+            log.warning("Too much contention; giving up!");
+        }
+    }
+
 
     /**
      * @return a list of the counters that should be incremented as a
