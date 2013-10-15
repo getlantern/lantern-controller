@@ -118,13 +118,16 @@
       <param-name>javax.ws.rs.Application</param-name>
       <param-value>org.lantern.admin.rest.LanternAdminApplication</param-value>
     </init-param>
+    <init-param>
+        <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+        <param-value>true</param-value>
+    </init-param>
     <load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>
     <servlet-name>Jersey REST Service</servlet-name>
     <url-pattern>/admin/rest/*</url-pattern>
   </servlet-mapping>
-  
   <servlet-mapping>
     <servlet-name>RemoteApiServlet</servlet-name>
     <url-pattern>/remote_api</url-pattern>

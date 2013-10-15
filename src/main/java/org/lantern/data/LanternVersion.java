@@ -9,17 +9,19 @@ import javax.persistence.Embedded;
 import javax.persistence.Id;
 
 import org.lantern.OS;
+import org.lantern.VersionNumber;
 
+/**
+ * TODO: reduce duplication with Lantern's {@link VersionNumber}
+ */
 public class LanternVersion {
-    private static final long serialVersionUID = 1953109001251375722L;
-
     private final static transient Logger LOG = Logger.getLogger("LanternVersion");
 
     @Id
     @Embedded
-    private Version version;
+    private SemanticVersion version;
 
-    private int gitSha;
+    private String gitSha;
 
     private Date releaseDate;
 
@@ -27,7 +29,7 @@ public class LanternVersion {
 
     private String infoUrl;
 
-    public LanternVersion(Version version, int gitSha, Date releaseDate,
+    public LanternVersion(SemanticVersion version, String gitSha, Date releaseDate,
             Map<OS, String> installerUrls, String infoUrl) {
         this.version = version;
         this.gitSha = gitSha;
@@ -36,19 +38,19 @@ public class LanternVersion {
         this.infoUrl = infoUrl;
     }
 
-    public Version getVersion() {
+    public SemanticVersion getVersion() {
         return version;
     }
 
-    public void setVersion(Version version) {
+    public void setVersion(SemanticVersion version) {
         this.version = version;
     }
 
-    public int getGitSha() {
+    public String getGitSha() {
         return gitSha;
     }
 
-    public void setGitSha(int gitSha) {
+    public void setGitSha(String gitSha) {
         this.gitSha = gitSha;
     }
 
