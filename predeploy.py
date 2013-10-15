@@ -41,21 +41,23 @@ if len(sys.argv) > 2:
     bump_str = sys.argv[2]
 else:
     bump_str = raw_input("Shall I bump version? (y/N) ")
-if bump_str.lower().startswith('y'):
+bump = bump_str.lower().startswith('y')
+
+if bump:
     contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
                     re.MULTILINE)
-    if name == "lanternctrl":
-        assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
-        assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
-        assert call("git push origin master", shell=True) == 0, "Could not push new version"
-
     print "Version bumped!"
 else:
     print "OK, version left alone."
 
 file(filename, 'w').write(contents)
+
+if bump and name == "lanternctrl":
+    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
+    assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
+    assert call("git push origin master", shell=True) == 0, "Could not push new version"
 
 print "Ready to deploy!"
