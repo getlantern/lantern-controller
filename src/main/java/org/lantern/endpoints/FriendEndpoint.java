@@ -107,15 +107,17 @@ public class FriendEndpoint {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
-        log.info("Inserting friend...");
-        friend.setUserEmail(email(user));
+        String userEmail = email(user);
+        log.info(userEmail + " is considering inserting friend " + friend.getEmail());
+        friend.setUserEmail(userEmail);
         final PersistenceManager mgr = getPersistenceManager();
         final ServerFriend existing = getExistingFriend(friend, user);
         if (existing != null) {
-            log.warning("Found existing friend?");
+            log.warning("Found existing friend " + existing.getEmail());
             return existing;
         }
         
+        log.info("Inserting friend");
         persist(mgr, friend);
         return friend;
     }
@@ -175,9 +177,11 @@ public class FriendEndpoint {
         final PersistenceManager mgr = getPersistenceManager();
         try {
             final Query query = mgr.newQuery(ServerFriend.class);
-            query.setFilter("userEmail == '"+email+"'");
-            query.setFilter("email == '"+friend.getEmail().toLowerCase()+"'");
+            String str = "userEmail == '%s' && email == '%s'";
+            str = String.format(str, email, friend.getEmail().toLowerCase());
+            query.setFilter(str);
             query.setRange(0L, 1L);
+            log.info("Querying for existing friend using: " + query);
             for (final Object obj : (List<Object>) query.execute()) {
                 return (ServerFriend) obj;
             }
