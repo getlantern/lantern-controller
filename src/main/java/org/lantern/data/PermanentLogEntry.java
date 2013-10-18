@@ -6,7 +6,7 @@ import javax.persistence.Id;
 public class PermanentLogEntry {
 
     @Id
-    private Long id;
+    private String id;
 
     private Date date = new Date();
 
@@ -16,8 +16,9 @@ public class PermanentLogEntry {
         super();
     }
 
-    public PermanentLogEntry(final String contents) {
+    public PermanentLogEntry(String id, String contents) {
         super();
+        this.id = id;
         this.contents = contents;
     }
 

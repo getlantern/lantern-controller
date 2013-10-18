@@ -334,16 +334,10 @@ public class Dao extends DAOBase {
                     = queryOfy.query(LanternInstance.class)
                         .filter("listenHostAndPort =", hostAndPort).list();
                 if (matches.size() == 0) {
-                    // (TRANSITION)
-                    // We may get this condition right after deploying the
-                    // fallback-balancing logic.  After a few minutes, we should
-                    // have received Available presences for all fallback
-                    // proxies, so their instances should have the right ip:port
-                    // initialized.  So, after a few minutes after deploying this
-                    // to the production controller we can change this to
-                    // log.severe.
-                    log.warning("No instance found with ip:port"
-                                + hostAndPort + "!");
+                    logPermanently("fallbackNotFound:" + userId,
+                                   userId + "'s fallback host and port "
+                                   + hostAndPort
+                                   + " don't match any fallback proxy.");
                     return false;
                 } else if (matches.size() > 1) {
                     log.severe(matches.size() + "instances found with ip:port"
@@ -353,13 +347,24 @@ public class Dao extends DAOBase {
                     return false;
                 }
 
+                LanternInstance instance = matches.get(0);
+
+                if (instance.isFallbackProxyShutdown()) {
+                    logPermanently("obsoleteHostPort:" + userId,
+                                   userId + " has obsolete fallback proxy "
+                                   + instance.getId() + " of user "
+                                   + instance.getUser());
+                    return false;
+                }
+
                 String oldId = user.getFallbackProxyUserId();
-                String newId = matches.get(0).getUser();
+                String newId = instance.getUser();
 
                 if (newId.equals(oldId)) {
                     log.info("fallbackProxyUserId unchanged.");
                     return false;
                 }
+
                 user.setFallbackProxyUserId(newId);
                 txnOfy.put(user);
                 txnOfy.getTxn().commit();
@@ -1074,9 +1079,14 @@ public class Dao extends DAOBase {
         */
     }
 
-    public void logPermanently(final String contents) {
-        ofy().put(new PermanentLogEntry(contents));
-        log.info("Logged!");
+    public void logPermanently(String key, String contents) {
+        Objectify ofy = ofy();
+        if (ofy.find(PermanentLogEntry.class, key) == null) {
+            ofy().put(new PermanentLogEntry(key, contents));
+            log.warning("Permanent log: " + contents);
+        } else {
+            log.warning("Already logged: " + contents);
+        }
     }
 
     public boolean areInvitesPaused() {
