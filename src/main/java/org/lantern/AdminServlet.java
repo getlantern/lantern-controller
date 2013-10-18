@@ -137,16 +137,69 @@ public class AdminServlet extends HttpServlet {
         LanternControllerUtils.populateOKResponse(response, "Test: " + StringUtils.join(pathComponents, ","));
     }
 
-    public void addInvites(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
+    public void setMaxInvitesPerProxy(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            String[] pathComponents) {
         Dao dao = new Dao();
-
         int n = Integer.parseInt(request.getParameter("n"));
+        dao.setMaxInvitesPerProxy(n);
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "Set invites per proxy to: " + n);
+    }
 
-        dao.globalAddInvites(n);
+    public void promoteFallbackProxyUser(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            String[] pathComponents) {
+        String userId = request.getParameter("user");
+        Dao dao = new Dao();
+        if (dao.findUser(userId) == null) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "no such user: " + userId);
+            return;
+        }
+        if (isFallbackProxyUser(dao, userId)) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    userId + " is already a fallback proxy user.");
+            return;
+        }
+        dao.makeFallbackProxyUser(userId);
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "A proxy will run as " + userId
+                + " next time they invite someone.");
+    }
 
-        LanternControllerUtils.populateOKResponse(response, "Invites added: " + n);
+    public void demoteUserAndShutDownFallbacks(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            String[] pathComponents) {
+        String userId = request.getParameter("user");
+        Dao dao = new Dao();
+        if (dao.findUser(userId) == null) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "no such user: " + userId);
+            return;
+        }
+        if (!isFallbackProxyUser(dao, userId)) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "No fallbacks will run as " + userId + " anymore.");
+            return;
+        }
+        FallbackProxyLauncher.demoteUserAndShutDownFallbacks(userId);
+        LanternControllerUtils.populateOKResponse(
+                response,
+                userId + " is no longer a fallback proxy user.");
+    }
+
+    private boolean isFallbackProxyUser(Dao dao, String userId) {
+        return userId.equals(dao.findUser(userId).getFallbackProxyUserId());
     }
 
     public void setInvitesPaused(final HttpServletRequest request,
@@ -159,20 +212,6 @@ public class AdminServlet extends HttpServlet {
         dao.setInvitesPaused(paused);
 
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
-
-    }
-
-    public void setDefaultInvites(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
-        Dao dao = new Dao();
-
-
-        int n = Integer.parseInt(request.getParameter("n"));
-
-        dao.setDefaultInvites(n);
-
-        LanternControllerUtils.populateOKResponse(response, "Default invites: " + n);
 
     }
 
@@ -193,10 +232,8 @@ public class AdminServlet extends HttpServlet {
             inviterName = inviterEmail;
         }
 
-        String refreshToken = inviter.getRefreshToken();
-
-        InvitedServerLauncher.sendInvite(
-                inviterName, inviterEmail, refreshToken, invitedEmail);
+        FallbackProxyLauncher.authorizeInvite(
+                inviterName, inviterEmail, invitedEmail);
 
         log.info("Redirecting");
         try {

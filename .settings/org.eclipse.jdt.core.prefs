@@ -1,4 +1,4 @@
-#Tue Oct 08 13:57:38 EDT 2013
+#Wed Sep 25 13:30:36 CDT 2013
 encoding/src/test/java=UTF-8
 org.eclipse.jdt.core.compiler.debug.localVariable=generate
 org.eclipse.jdt.core.compiler.compliance=1.6
@@ -13,5 +13,7 @@ eclipse.preferences.version=1
 org.eclipse.jdt.core.compiler.debug.lineNumber=generate
 encoding/src/test/resources=UTF-8
 org.eclipse.jdt.core.compiler.codegen.inlineJsrBytecode=enabled
+encoding/src/test/resources=UTF-8
+encoding/lantern-common/src/test/resources=UTF-8
 org.eclipse.jdt.core.compiler.source=1.6
 org.eclipse.jdt.core.compiler.problem.assertIdentifier=error

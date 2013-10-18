@@ -10,7 +10,7 @@
 
   <properties>
     <appengine.app.version>159</appengine.app.version>
-    <appengine.target.version>1.8.4</appengine.target.version>
+    <appengine.target.version>1.8.6</appengine.target.version>
     <jersey.version>1.17.1</jersey.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -116,21 +116,11 @@
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-jaxrs</artifactId>
-      <version>1.9.11</version>
-    </dependency>
+	    <groupId>com.jayway.jsonpath</groupId>
+	    <artifactId>json-path</artifactId>
+	    <version>0.8.1</version>
+	</dependency>
 
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mrbean</artifactId>
-      <version>1.9.11</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.9.11</version>
-    </dependency>
     <dependency>
       <groupId>org.littleshoot</groupId>
       <artifactId>util</artifactId>

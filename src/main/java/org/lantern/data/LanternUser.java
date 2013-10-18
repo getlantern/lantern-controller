@@ -8,6 +8,8 @@ import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
+import com.googlecode.objectify.Key;
+
 
 public class LanternUser implements Serializable {
     private static final long serialVersionUID = 1953109001251375722L;
@@ -28,8 +30,6 @@ public class LanternUser implements Serializable {
     private Date created = new Date();
 
     private String countryCodes = "";
-
-    private int invites;
 
     /**
      * This is the number of degrees this user is from the original core of
@@ -55,18 +55,39 @@ public class LanternUser implements Serializable {
      */
     private final HashSet<String> instanceIds = new HashSet<String>();
 
-    /**
-     * The location where invitees of this user should get their installers.
-     *
-     * This is in `bucket/folder` format, where bucket is the name of an
-     * Amazon S3 Bucket and folder is the name of a folder in that bucket,
-     * which contains the installers.
-     */
-    private String installerLocation;
 
     private String name;
 
     private String refreshToken;
+
+    /**
+     * The ID of the Fallback Proxy used by this user's invitees.
+     */
+    private String fallbackProxyUserId;
+
+    /**
+     * instanceId of the fallback proxy to use for new invitees.
+     *
+     * null if we have never launched a fallback proxy to run as this user.
+     *
+     * LanternControllerConstants.FALLBACK_PROXY_LAUNCHING if we are currently
+     * launching a fallback proxy to run as this user.
+     */
+    private String fallbackForNewInvitees;
+
+    /**
+     * A counter we keep to provide a unique serial number to all fallback launch
+     * requests for this user.
+     *
+     * The cloudmaster needs this in the SQS message we send them in order to
+     * make sure that for each SQS message it spawns one, and only one,
+     * fallback proxy.
+     */
+    private int fallbackSerialNumber = 0;
+
+    // TRANSITION: we use this to initialize the installerLocation of fallback
+    // proxies that predate the fallback-balancing scheme.
+    private String installerLocation;
 
     public LanternUser() {
         super();
@@ -75,7 +96,6 @@ public class LanternUser implements Serializable {
     public LanternUser(final String id) {
         super();
         this.id = id;
-        this.invites = 0;
     }
 
     public String getId() {
@@ -120,14 +140,6 @@ public class LanternUser implements Serializable {
 
     public void setRequestsProxied(long requestsProxied) {
         this.requestsProxied = requestsProxied;
-    }
-
-    public void setInvites(int invites) {
-        this.invites = invites;
-    }
-
-    public int getInvites() {
-        return invites;
     }
 
     public void setDegree(int degree) {
@@ -200,13 +212,6 @@ public class LanternUser implements Serializable {
     }
 */
 
-    public String getInstallerLocation() {
-        return installerLocation;
-    }
-
-    public void setInstallerLocation(final String installerLocation) {
-        this.installerLocation = installerLocation;
-    }
 
     public String getName() {
         return name;
@@ -222,5 +227,34 @@ public class LanternUser implements Serializable {
 
     public String getRefreshToken() {
         return refreshToken;
+    }
+
+    public void setFallbackProxyUserId(String fallbackProxyUserId) {
+        this.fallbackProxyUserId = fallbackProxyUserId;
+    }
+
+    public String getFallbackProxyUserId() {
+        return fallbackProxyUserId;
+    }
+
+    public void setFallbackForNewInvitees(String fallbackForNewInvitees) {
+        this.fallbackForNewInvitees = fallbackForNewInvitees;
+    }
+
+    public String getFallbackForNewInvitees() {
+        return fallbackForNewInvitees;
+    }
+
+    public void setInstallerLocation(String installerLocation) {
+        this.installerLocation = installerLocation;
+    }
+
+    public String getInstallerLocation() {
+        return installerLocation;
+    }
+
+    public int incrementFallbackSerialNumber() {
+        fallbackSerialNumber += 1;
+        return fallbackSerialNumber;
     }
 }

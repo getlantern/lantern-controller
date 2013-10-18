@@ -23,33 +23,41 @@ file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
 filename = os.path.join(here, 'src', 'main', 'webapp', 'WEB-INF', 'appengine-web.xml')
 contents = file(filename).read()
 
-name = raw_input("Name of appengine app? (leave blank for 'lanternctrl') ").strip()
-if len(name) == 0:
-    name = "lanternctrl"
-    print "Defaulting name to '%s'" % (name)
-    
+if len(sys.argv) > 1:
+    name = sys.argv[1]
+else:
+    name = raw_input("Name of appengine app? (leave blank for 'lanternctrl') ").strip()
+    if len(name) == 0:
+        name = "lanternctrl"
+        print "Defaulting name to '%s'" % (name)
+
 contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
                 name,
                 contents,
                 1,
                 re.MULTILINE)
-    
-if raw_input("Shall I bump version? (y/N) ").lower().startswith('y'):
+
+if len(sys.argv) > 2:
+    bump_str = sys.argv[2]
+else:
+    bump_str = raw_input("Shall I bump version? (y/N) ")
+bump = bump_str.lower().startswith('y')
+
+if bump:
     contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
                     re.MULTILINE)
-    
-    file(filename, 'w').write(contents)                    
-    if name == "lanternctrl":
-        assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
-        assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
-        assert call("git push origin master", shell=True) == 0, "Could not push new version"
-
     print "Version bumped!"
 else:
     print "OK, version left alone."
-    file(filename, 'w').write(contents)
+
+file(filename, 'w').write(contents)
+
+if bump and name == "lanternctrl":
+    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
+    assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
+    assert call("git push origin master", shell=True) == 0, "Could not push new version"
 
 print "Ready to deploy!"
