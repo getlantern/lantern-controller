@@ -181,10 +181,6 @@ public class Dao extends DAOBase {
         String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
 
-        if (isFallbackProxy) {
-            updateFallbackInfo(ofy, user, instanceId);
-        }
-
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
                 userId);
 
@@ -443,48 +439,7 @@ public class Dao extends DAOBase {
         };
         txn.run();
         if (txn.failed()) {
-            log.severe("Transaction failed!");
-        } else {
-            updateInvitesToFallbackBalancingScheme(userId);
-        }
-    }
-
-    /**
-     * Update fallback info at the user level.
-     */
-    private void updateFallbackInfo(Objectify ofy,
-            LanternUser user,
-            String instanceId) {
-        String userId = user.getId();
-        log.info(String.format(
-                "Considering updating info for fallback proxy for user '%1$s'",
-                userId));
-
-        boolean fallbackUserIdNewOrChanged = 
-                !userId.equals(user.getFallbackProxyUserId());
-        boolean discoveredFallbackProxy = 
-                user.getFallbackForNewInvitees() == null;
-        boolean userDirty = false;
-
-        if (fallbackUserIdNewOrChanged) {
-            // We've just learned that a fallback proxy is running under this
-            // userId - set the fallbackProxyUserId on the user to reflect this
-            log.info(String.format(
-                    "Detected user '%1$s' running as fallback proxy", userId));
-            user.setFallbackProxyUserId(userId);
-            userDirty = true;
-        }
-
-        if (discoveredFallbackProxy) {
-            log.info(String.format(
-                    "Discovered fallback proxy for invitees of user '%1$s'",
-                    userId));
-            user.setFallbackForNewInvitees(instanceId);
-            userDirty = true;
-        }
-
-        if (userDirty) {
-            ofy.put(user);
+            throw new RuntimeException("Transaction failed!");
         }
     }
 
@@ -1446,5 +1401,36 @@ public class Dao extends DAOBase {
         log.info("Incremented " + userId + "'s fallbackSerialNumber to "
                  + ret);
         return ret;
+    }
+
+    /**
+     * @return: a list of the instanceIds of the fallbacks.
+     */
+    public Collection<String> demoteUserAndMarkFallbacksShutDown(
+            final String userId) {
+        RetryingTransaction<Collection<String>> txn
+            = new RetryingTransaction<Collection<String>>() {
+            protected Collection<String> run(Objectify ofy) {
+                List<String> result = new ArrayList<String>();
+                Query<LanternInstance> q = ofy.query(LanternInstance.class)
+                                              .ancestor(getUserKey(userId))
+                                              .filter("isFallbackProxy", true);
+                for (LanternInstance instance : q) {
+                    instance.setFallbackProxyShutdown(true);
+                    ofy.put(instance);
+                    result.add(instance.getId());
+                }
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setFallbackProxyUserId(null);
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return result;
+            }
+        };
+        Collection<String> instanceIds = txn.run();
+        if (txn.failed()) {
+            log.severe("Transaction failed!");
+        }
+        return instanceIds;
     }
 }

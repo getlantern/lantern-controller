@@ -60,6 +60,14 @@ public class LanternInstance {
      */
     private String installerLocation;
 
+    /**
+     * Is this a fallback proxy for which we have requested shutdown?
+     *
+     * We use this to issue warnings when users report this as their current
+     * fallback proxy.
+     */
+    private boolean fallbackProxyShutdown;
+
     public LanternInstance() {
         super();
     }
@@ -179,5 +187,13 @@ public class LanternInstance {
 
     public void setInstallerLocation(final String installerLocation) {
         this.installerLocation = installerLocation;
+    }
+
+    public boolean isFallbackProxyShutdown() {
+        return fallbackProxyShutdown;
+    }
+
+    public void setFallbackProxyShutdown(boolean fallbackProxyShutdown) {
+        this.fallbackProxyShutdown = fallbackProxyShutdown;
     }
 }

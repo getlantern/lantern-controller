@@ -103,6 +103,19 @@ public class FallbackProxyLauncher {
         }
     }
 
+    public static void demoteUserAndShutDownFallbacks(String userId) {
+        Collection<String> instanceIds
+            = new Dao().demoteUserAndMarkFallbacksShutDown(userId);
+        for (String instanceId : instanceIds) {
+            Map<String, Object> map = new HashMap<String, Object>();
+            /* This is not in LanternConstants because it's not handled by the
+             * client, but by a Python bot.  (salt/cloudmaster/cloudmaster.py)
+             */
+            map.put("shutdown-fp", instanceId);
+            new SQSUtil().send(map);
+        }
+    }
+
     /** Increment number of invites for the currently filling fallback proxy
      * for this user, launching a new one if necessary.
      *
