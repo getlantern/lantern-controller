@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
-import org.lantern.data.LanternUser;
 
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
@@ -223,17 +222,7 @@ public class AdminServlet extends HttpServlet {
         String cursor = request.getParameter("cursor");
 
         log.info("Approving pending invite from " + inviterEmail + " to " + invitedEmail);
-        Dao dao = new Dao();
-
-        LanternUser inviter = dao.getUser(inviterEmail);
-
-        String inviterName = inviter.getName();
-        if (StringUtils.isBlank(inviterName)) {
-            inviterName = inviterEmail;
-        }
-
-        FallbackProxyLauncher.authorizeInvite(
-                inviterName, inviterEmail, invitedEmail);
+        FallbackProxyLauncher.authorizeInvite(inviterEmail, invitedEmail);
 
         log.info("Redirecting");
         try {
