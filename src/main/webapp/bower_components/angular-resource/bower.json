@@ -1,7 +1,7 @@
 {
-  "name": "angular-scenario",
+  "name": "angular-resource",
   "version": "1.2.0-rc.3",
-  "main": "./angular-scenario.js",
+  "main": "./angular-resource.js",
   "dependencies": {
     "angular": "1.2.0-rc.3"
   }

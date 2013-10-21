@@ -1,7 +1,7 @@
-# bower-angular-mocks
+# bower-angular-resource
 
 This repo is for distribution on `bower`. The source for this module is in the
-[main AngularJS repo](https://github.com/angular/angular.js/tree/master/src/ngMock).
+[main AngularJS repo](https://github.com/angular/angular.js/tree/master/src/ngResource).
 Please file issues and pull requests against that repo.
 
 ## Install
@@ -9,13 +9,25 @@ Please file issues and pull requests against that repo.
 Install with `bower`:
 
 ```shell
-bower install angular-mocks
+bower install angular-resource
+```
+
+Add a `<script>` to your `index.html`:
+
+```html
+<script src="/bower_components/angular-resource/angular-resource.js"></script>
+```
+
+And add `ngResource` as a dependency for your app:
+
+```javascript
+angular.module('myApp', ['ngResource']);
 ```
 
 ## Documentation
 
 Documentation is available on the
-[AngularJS docs site](http://docs.angularjs.org/guide/dev_guide.unit-testing).
+[AngularJS docs site](http://docs.angularjs.org/api/ngResource).
 
 ## License
 
