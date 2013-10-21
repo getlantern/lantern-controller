@@ -39,5 +39,17 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<form method="POST" action="/admin/post/promoteFallbackProxyUser">
+<input type="text" name="user" value="user@example.com">
+<button type="submit" name="set" value="true">Promote Fallback User</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+
+<form method="POST" action="/admin/post/demoteUserAndShutDownFallbacks">
+<input type="text" name="user" value="user@example.com">
+<button type="submit" name="set" value="true">Demote user and shut down fallbacks</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+
 </body>
 </html>
