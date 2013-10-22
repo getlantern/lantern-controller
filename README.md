@@ -43,6 +43,30 @@ management tasks:
   pending invites
 
 
+## Setting up a Test Lantern Controller
+
+ 1. Set up a appengine instance
+ 2. In `Dao.java`, uncomment the body of the method `createInitialUser`.
+ 3. Deploy your app using `deploy.py` (make sure to specify the right instance
+    name).
+ 4. Open `org.lantern.RemoteApi.java` and edit it to call
+    dao.createInitialUser() - this will set up a seed user with which you can
+    run Lantern
+ 5. Set up a remoteapi.properties in your root folder with the following:
+ 
+```
+username=<your google username>
+password=<your google password (Strongly recommend using app-specific password)>
+controller=<name of your controller>
+```
+
+ 6. `mvn exec:java -Dexec.mainClass="org.lantern.RemoteApi" -Dexec.classpathScope="test"`
+ 7. Revert `Dao.java`
+ 8. Revert `RemoteApi.java`
+ 9. Open /admin/index.jsp of your app in a browser
+ 10. Click "Pause Invites"
+  
+
 ## i18n
 
 Translated strings are fetched from json files in the "locale" directory. To
