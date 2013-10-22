@@ -153,7 +153,7 @@ public class AdminServlet extends HttpServlet {
             final HttpServletRequest request,
             final HttpServletResponse response,
             String[] pathComponents) {
-        String userId = request.getParameter("user");
+        String userId = request.getParameter("user").trim();
         Dao dao = new Dao();
         if (dao.findUser(userId) == null) {
             LanternControllerUtils.populateOKResponse(
@@ -178,7 +178,7 @@ public class AdminServlet extends HttpServlet {
             final HttpServletRequest request,
             final HttpServletResponse response,
             String[] pathComponents) {
-        String userId = request.getParameter("user");
+        String userId = request.getParameter("user").trim();
         Dao dao = new Dao();
         if (dao.findUser(userId) == null) {
             LanternControllerUtils.populateOKResponse(
@@ -189,13 +189,13 @@ public class AdminServlet extends HttpServlet {
         if (!isFallbackProxyUser(dao, userId)) {
             LanternControllerUtils.populateOKResponse(
                     response,
-                    "No fallbacks will run as " + userId + " anymore.");
+                    userId + " is not a fallback proxy user.");
             return;
         }
         FallbackProxyLauncher.demoteUserAndShutDownFallbacks(userId);
         LanternControllerUtils.populateOKResponse(
                 response,
-                userId + " is no longer a fallback proxy user.");
+                "No fallbacks will run as " + userId + " anymore.");
     }
 
     private boolean isFallbackProxyUser(Dao dao, String userId) {
