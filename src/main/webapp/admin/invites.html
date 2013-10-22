@@ -29,12 +29,12 @@
       .inviter td {
         padding-bottom: 0 !important;
       }
-      .invitee td {
+      .invite td {
         border-color: #fff !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
       }
-      .invitee label.checkbox {
+      .invite label.checkbox {
         font-weight: normal;
       }
     </style>
@@ -78,12 +78,12 @@
         <td>{{inviter.countries|json}}</td>
         <td>{{inviter.sponsor}}</td>
       </tr>
-      <tr ng-repeat="invitee in inviter.invitees" class="invitee" ng-repeat-end>
+      <tr ng-repeat="invite in inviter.invites" class="invite" ng-repeat-end>
         <td></td>
         <td class="indented" colspan="4">
           <label class="checkbox">
-            <input type="checkbox" ng-checked="invitee.selected" ng-click="toggleInviteeSelected(invitee, inviter)">
-            {{invitee.id}}
+            <input type="checkbox" ng-checked="invite.selected" ng-click="toggleInviteSelected(invite, inviter)">
+            {{invite.invitee.id}}
           </label>
         </td>
       </tr>

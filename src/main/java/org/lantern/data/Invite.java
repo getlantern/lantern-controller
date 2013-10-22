@@ -90,6 +90,10 @@ public class Invite {
         }
         return false;
     }
+    
+    public String getId() {
+        return id;
+    }
 
     public String getInviter() {
         return inviter;

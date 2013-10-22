@@ -1292,6 +1292,16 @@ public class Dao extends DAOBase {
     public LanternUser findUser(String email) {
         return ofy().find(LanternUser.class, email);
     }
+    
+    public List<LanternUser> findUsersByIds(Collection<String> ids) {
+        if (ids == null || ids.size() == 0) {
+            return Collections.EMPTY_LIST;
+        } else {
+            return ofy().query(LanternUser.class)
+                    .filter("id IN", ids)
+                    .list();
+        }
+    }
 
     public LanternInstance findLanternInstance(String userId, String instanceId) {
         return findLanternInstance(ofy(), userId, instanceId);
