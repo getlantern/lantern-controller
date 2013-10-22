@@ -66,13 +66,17 @@ public class FallbackProxyLauncher {
         }
     }
 
-    public static void onFallbackProxyUp(final String fallbackProxyUserId,
-                                         final String instanceId,
-                                         final String installerLocation) {
+    public static void onFallbackProxyUp(String fallbackProxyUserId,
+                                         String instanceId,
+                                         String installerLocation,
+                                         String ip,
+                                         String port) {
         final Dao dao = new Dao();
-        dao.setInstallerLocation(fallbackProxyUserId,
-                                 instanceId,
-                                 installerLocation);
+        dao.registerFallbackProxy(fallbackProxyUserId,
+                                  instanceId,
+                                  installerLocation,
+                                  ip,
+                                  port);
         final Collection<Invite> invites =
             dao.setFallbackAndGetAuthorizedInvites(
                     fallbackProxyUserId, instanceId);

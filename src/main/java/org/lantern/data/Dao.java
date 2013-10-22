@@ -1299,11 +1299,19 @@ public class Dao extends DAOBase {
     /**
      * Find or create the instance and set its installerLocation.
      */
-    public void setInstallerLocation(final String userId,
-                                     final String instanceId,
-                                     final String installerLocation) {
+    public void registerFallbackProxy(final String userId,
+                                        final String instanceId,
+                                        final String installerLocation,
+                                        final String ip,
+                                        final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
+                // Backwards compatibility: it is the case as of this writing
+                // that we have proxies running as users but we haven't that
+                // fact recorded in the corresponding LanternUser table.
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setFallbackProxyUserId(userId);
+                ofy.put(user);
                 LanternInstance instance = findLanternInstance(ofy,
                                                                userId,
                                                                instanceId);
@@ -1316,7 +1324,9 @@ public class Dao extends DAOBase {
                     instance = new LanternInstance(instanceId,
                                                    getUserKey(userId));
                 }
+                instance.setFallbackProxy(true);
                 instance.setInstallerLocation(installerLocation);
+                instance.setListenHostAndPort(ip + ":" + port);
                 ofy.put(instance);
                 ofy.getTxn().commit();
                 return null;

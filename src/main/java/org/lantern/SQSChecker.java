@@ -33,24 +33,38 @@ public class SQSChecker extends HttpServlet {
          * the lantern_aws project source).
          */
         // Fallback proxy reports it's up and running.
-        final String inviterEmail = (String)msg.get("fp-up-user");
+        String inviterEmail = (String)msg.get("fp-up-user");
         if (inviterEmail == null) {
             log.severe("I don't understand this message: " + msg);
             return;
         }
-        final String instanceId = (String)msg.get("fp-up-instance");
+        String instanceId = (String)msg.get("fp-up-instance");
         if (instanceId == null) {
             log.severe(inviterEmail + " sent fp-up with no instance ID.");
             return;
         }
-        final String installerLocation = (String)msg.get("fp-up-insloc");
+        String installerLocation = (String)msg.get("fp-up-insloc");
         if (installerLocation == null) {
             log.severe(inviterEmail
                        + " sent fp-up with no installer location.");
             return;
         }
+        String ip = (String)msg.get("fp-up-ip");
+        if (ip == null) {
+            log.severe(inviterEmail
+                       + " sent fp-up with no ip.");
+            return;
+        }
+        String port = (String)msg.get("fp-up-port");
+        if (port == null) {
+            log.severe(inviterEmail
+                       + " sent fp-up with no port.");
+            return;
+        }
         FallbackProxyLauncher.onFallbackProxyUp(inviterEmail,
                                                 instanceId,
-                                                installerLocation);
+                                                installerLocation,
+                                                ip,
+                                                port);
     }
 }
