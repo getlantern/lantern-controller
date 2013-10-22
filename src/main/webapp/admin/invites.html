@@ -37,8 +37,46 @@
       .invite label.checkbox {
         font-weight: normal;
       }
+      
       .input-group {
         max-width: 600px;
+      }
+      
+      #messages-header {
+        margin-top: 30px;
+      }
+      
+      #messages {
+          background-color: #000000;
+          color: #00FF00;
+          border-color: #333333;
+          padding: 15px;
+          border-radius: 7px;
+      }
+      
+      #messages li.error {
+          color: #FF0000;
+      }
+      
+      #busy-overlay {
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        width: 100%;
+        height: 100%;
+        background-color: #000000;
+        z-index: 5000;
+        opacity: 0.6;
+      }
+      
+      #busy-overlay img {
+        width: 32px;
+        height: 32px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -16px;
+        margin-top: -16px;
       }
     </style>
   </head>
@@ -94,6 +132,17 @@
     <div>
       <button class="btn" ng-click="approve()">Approve</button>
       <button class="btn" ng-click="delete()">Delete</button>
+    </div>
+    
+    <h3 id="messages-header">Messages</h3>
+    <ul id="messages" class="list-unstyled" ng-show="messages.length > 0">
+        <li ng-repeat="message in messages" class="{{ message.type }}">
+            {{ message.text }}
+        </li>
+    </ul>
+    
+    <div id="busy-overlay" ng-show="busy">
+       <img src="/img/ajax-loader.gif">
     </div>
   </body>
 </html>

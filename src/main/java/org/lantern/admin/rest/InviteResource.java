@@ -37,35 +37,40 @@ public class InviteResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Collection<InviteWithUsers> query(@QueryParam("where") String where,
             @QueryParam("ordering") String ordering) {
-        final PersistenceManager mgr = PMF.get().getPersistenceManager();
-        final Query query = mgr.newQuery(Invite.class);
-        String filter = "status == 'queued'";
-        if (!StringUtils.isBlank(where)) {
-            filter = String.format("%1$s && %2$s", filter, where);
+        try {
+            final PersistenceManager mgr = PMF.get().getPersistenceManager();
+            final Query query = mgr.newQuery(Invite.class);
+            String filter = "status == 'queued'";
+            if (!StringUtils.isBlank(where)) {
+                filter = String.format("%1$s && %2$s", filter, where);
+            }
+            query.setFilter(filter);
+            if (!StringUtils.isBlank(ordering)) {
+                query.setOrdering(ordering);
+            }
+            Collection<Invite> invites = (Collection<Invite>) query.execute();
+            Set<String> ids = new HashSet<String>();
+            for (Invite invite : invites) {
+                ids.add(invite.getInvitee());
+                ids.add(invite.getInviter());
+            }
+            List<LanternUser> lanternUsers = new Dao().findUsersByIds(ids);
+            Map<String, LanternUser> lanternUsersById = new HashMap<String, LanternUser>();
+            for (LanternUser lanternUser : lanternUsers) {
+                lanternUsersById.put(lanternUser.getId(), lanternUser);
+            }
+            List<InviteWithUsers> result = new ArrayList<InviteWithUsers>();
+            for (Invite invite : invites) {
+                result.add(new InviteWithUsers(invite,
+                        lanternUsersById.get(invite.getInviter()),
+                        invite.getInvitee(),
+                        lanternUsersById.get(invite.getInvitee())));
+            }
+            return result;
+        } catch (Exception e) {
+            throw new RestException("Unable to search pending invites: "
+                    + e.getMessage());
         }
-        query.setFilter(filter);
-        if (!StringUtils.isBlank(ordering)) {
-            query.setOrdering(ordering);
-        }
-        Collection<Invite> invites = (Collection<Invite>) query.execute();
-        Set<String> ids = new HashSet<String>();
-        for (Invite invite : invites) {
-            ids.add(invite.getInvitee());
-            ids.add(invite.getInviter());
-        }
-        List<LanternUser> lanternUsers = new Dao().findUsersByIds(ids);
-        Map<String, LanternUser> lanternUsersById = new HashMap<String, LanternUser>();
-        for (LanternUser lanternUser : lanternUsers) {
-            lanternUsersById.put(lanternUser.getId(), lanternUser);
-        }
-        List<InviteWithUsers> result = new ArrayList<InviteWithUsers>();
-        for (Invite invite : invites) {
-            result.add(new InviteWithUsers(invite,
-                    lanternUsersById.get(invite.getInviter()),
-                    invite.getInvitee(),
-                    lanternUsersById.get(invite.getInvitee())));
-        }
-        return result;
     }
 
     @POST
