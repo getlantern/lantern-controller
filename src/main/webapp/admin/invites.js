@@ -8,15 +8,12 @@ angular.module('InvitesApp', ['ngResource'])
     // Tracks messages for user
     $rootScope.messages = [];
     $rootScope.addMessage = function(text, type) {
-      $rootScope.messages.unshift({type: type, text: new Date() + ' -> ' + text});
+      $rootScope.messages.unshift({type: type, text: text, date: new Date()});
     };
     
     // For search query
     $rootScope.where = '';
     
-    // At the moment, there is no way to change the ordering in the UI
-    $rootScope.ordering = 'inviter'
-      
     // Checkbox management
     $rootScope.allSelected = false;
     
@@ -51,14 +48,13 @@ angular.module('InvitesApp', ['ngResource'])
     
     $rootScope.search = function() {
       // Fetch the invites
-      var invites = invitesResource.query({where: $rootScope.where,
-                                           ordering: $rootScope.ordering},
-                                           function () {
+      var invites = invitesResource.query({where: $rootScope.where}, function () {
         // Organize them into a tree grouped by inviters
         // Below is some sample data for testing locally
         // invites = [{"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}}] 
 
         var inviters = {};
+        invites = _.sortBy(invites, 'inviter.id');
         invites.forEach(function(invite) {
           var inviter = inviters[invite.inviter.id];
           if (!inviter) {
@@ -69,7 +65,7 @@ angular.module('InvitesApp', ['ngResource'])
           inviter.invites.push(invite);
         });
         $rootScope.inviters = _.values(inviters);
-        $rootScope.addMessage(invites.length + " invites found");
+        $rootScope.addMessage('found ' + invites.length + ' invites');
       });
     };
   })
