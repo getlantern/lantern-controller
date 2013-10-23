@@ -46,8 +46,6 @@ public class SettingsManager {
     private static final Key SETTINGSKEY = KeyFactory.createKey(
             Settings.class.getSimpleName(), Settings.singletonKey);
 
-    Settings settings;
-
     MemcacheService cache = MemcacheServiceFactory.getMemcacheService();
 
     public SettingsManager() {
@@ -56,8 +54,7 @@ public class SettingsManager {
     }
 
     public String get(final String name) {
-        assureSettingsLoaded();
-        return settings.get(name);
+        return loadSettings().get(name);
     }
 
     public void set(final String name, final String value) {
@@ -67,7 +64,7 @@ public class SettingsManager {
             Transaction txn = datastore.beginTransaction();
             try {
                 PersistenceManager pm = PMF.get().getPersistenceManager();
-                Settings s = loadSettings(pm);
+                Settings s = loadSettingsFromDatastore(pm);
                 s.set(name, value);
                 writeSettings(pm, s);
                 pm.close();
@@ -87,26 +84,24 @@ public class SettingsManager {
     }
 
     public Map<String, String> getAllSettings() {
-        assureSettingsLoaded();
-        return settings.getAllSettings();
+        return loadSettings().getAllSettings();
     }
 
-    private void assureSettingsLoaded() {
-        if (settings != null)
-            return;
+    private Settings loadSettings() {
         // try to get from cache
-        settings = (Settings) cache.get("settings");
-        if (settings != null)
-            return;
+        Settings s = (Settings) cache.get("settings");
+        if (s != null)
+            return s;
         log.info("Forced to load settings from database.");
         final PersistenceManager pm =
             PMF.get().getPersistenceManager();
-        Settings s = loadSettings(pm);
+        s = loadSettingsFromDatastore(pm);
         pm.close();
         cache.put("settings", s);
+        return s;
     }
 
-    private Settings loadSettings(PersistenceManager pm) {
+    private Settings loadSettingsFromDatastore(PersistenceManager pm) {
         try {
             Settings s = pm.getObjectById(Settings.class, SETTINGSKEY);
             s.restore();
