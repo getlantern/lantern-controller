@@ -26,7 +26,7 @@ LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'Español', 'ltr')
 LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
 LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
-LANG_FA_IR = Lang('fa_IR', u'پارسی', 'rtl')
+LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
 #LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
 LANG_DEFAULT = LANG_EN_US
 
