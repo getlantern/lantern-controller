@@ -1300,10 +1300,10 @@ public class Dao extends DAOBase {
      * Find or create the instance and set its installerLocation.
      */
     public void registerFallbackProxy(final String userId,
-                                        final String instanceId,
-                                        final String installerLocation,
-                                        final String ip,
-                                        final String port) {
+                                      final String instanceId,
+                                      final String installerLocation,
+                                      final String ip,
+                                      final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
                 // Backwards compatibility: it is the case as of this writing
@@ -1311,6 +1311,7 @@ public class Dao extends DAOBase {
                 // fact recorded in the corresponding LanternUser table.
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 user.setFallbackProxyUserId(userId);
+                user.setFallbackForNewInvitees(instanceId);
                 ofy.put(user);
                 LanternInstance instance = findLanternInstance(ofy,
                                                                userId,
