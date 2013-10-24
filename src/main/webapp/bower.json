@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "dependencies": {
     "angular": "1.2.0-rc.3",
-    "angular-resource": "1.2.0-rc.3",
     "lodash": "~2.2.1",
     "angular-lodash": "cabrel/angular-lodash"
   },

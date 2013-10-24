@@ -1,4 +1,4 @@
-angular.module('InvitesApp', ['ngResource'])
+angular.module('InvitesApp', [])
   .run(function($http, $rootScope) {
     // For busy indicator
     $rootScope.busy = false;
