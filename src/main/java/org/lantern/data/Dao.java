@@ -1281,10 +1281,19 @@ public class Dao extends DAOBase {
             protected Integer run(Objectify ofy) {
                 int totalDeleted = 0;
                 for (String id : ids) {
-                    Invite invite = ofy.find(Invite.class, id);
-                    if (invite != null && invite.getStatus() != Status.authorized) {
-                        ofy.delete(invite);
-                        totalDeleted += 1;
+                    String[] parsedId = Invite.parseId(id);
+                    Invite invite = getInvite(ofy, parsedId[0], parsedId[1]);
+                    if (invite != null) {
+                        if (invite.getStatus() == Status.queued) {
+                            ofy.delete(invite);
+                            totalDeleted += 1;
+                        } else {
+                            log.info(String
+                                    .format("Refusing to delete invite %1$s in status %2$s",
+                                            id, invite.getStatus()));
+                        }
+                    } else {
+                        log.info(String.format("Unable to find invite: %1$s", id));
                     }
                 }
                 ofy.getTxn().commit();
