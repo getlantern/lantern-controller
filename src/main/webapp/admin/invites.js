@@ -1,7 +1,5 @@
 angular.module('InvitesApp', ['ngResource'])
-  .run(function($resource, $rootScope) {
-    var invitesResource = $resource('rest/invites/pending');
-    
+  .run(function($http, $rootScope) {
     // For busy indicator
     $rootScope.busy = false;
     
@@ -16,6 +14,7 @@ angular.module('InvitesApp', ['ngResource'])
     
     // Checkbox management
     $rootScope.allSelected = false;
+    $rootScope.anySelected = false;
     
     function setSelectionForAllInvites(inviter, selected) {
       _.each(inviter.invites, function (invite) {
@@ -24,34 +23,43 @@ angular.module('InvitesApp', ['ngResource'])
       inviter.allSelected = selected;
     }
     
-    reevaluateAllSelected = function (inviter) {
+    function reevaluateAnyAndAllSelected(inviter) {
       $rootScope.allSelected = _.all($rootScope.inviters, 'allSelected');
+      $rootScope.anySelected = _($rootScope.inviters).flatten('invites').any('selected');
     }
     
     $rootScope.toggleInviteSelected = function(invite, inviter) {
       invite.selected = !invite.selected;
       inviter.allSelected = _.all(inviter.invites, 'selected');
-      reevaluateAllSelected();
+      reevaluateAnyAndAllSelected();
+    }
+    
+    function setAllSelected(selected) {
+      _.each($rootScope.inviters, function(inviter) {
+        setSelectionForAllInvites(inviter, selected);
+      });
+      $rootScope.allSelected = selected;
+      $rootScope.anySelected = selected;
     }
     
     $rootScope.toggleAllSelected = function() {
-      _.each($rootScope.inviters, function(inviter) {
-        setSelectionForAllInvites(inviter, !$rootScope.allSelected);
-      });
-      $rootScope.allSelected = !$rootScope.allSelected;
+      setAllSelected(!$rootScope.allSelected);
     };
     
     $rootScope.toggleAllForInviter = function (inviter) {
       setSelectionForAllInvites(inviter, !inviter.allSelected);
-      reevaluateAllSelected();
+      reevaluateAnyAndAllSelected();
     };
     
     $rootScope.search = function() {
       // Fetch the invites
-      var invites = invitesResource.query({where: $rootScope.where}, function () {
+      $http.get('rest/invites/pending').success(function(invites) {
         // Organize them into a tree grouped by inviters
         // Below is some sample data for testing locally
-        // invites = [{"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}}] 
+//        invites = [
+//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}},
+//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox2@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}}
+//                   ]; 
 
         var inviters = {};
         invites = _.sortBy(invites, 'inviter.id');
@@ -65,9 +73,54 @@ angular.module('InvitesApp', ['ngResource'])
           inviter.invites.push(invite);
         });
         $rootScope.inviters = _.values(inviters);
+        
+        setAllSelected(false);
         $rootScope.addMessage('found ' + invites.length + ' invites');
       });
     };
+    
+    function selectedInviteIds() {
+      return _($rootScope.inviters).flatten('invites').filter('selected').pluck('id').value();
+    }
+    
+    function removeSelectedInvites() {
+      var retainedInviters = [];
+      $rootScope.inviters.forEach(function(inviter) {
+        var retainedInvites = [];
+        inviter.invites.forEach(function(invite) {
+          if (!invite.selected) {
+            retainedInvites.push(invite);
+          }
+        });
+        inviter.invites = retainedInvites;
+        if (retainedInvites.length > 0) {
+          retainedInviters.push(inviter);
+        }
+      });
+      $rootScope.inviters = retainedInviters;
+    }
+    
+    $rootScope.authorizeInvites = function() {
+      var ids = selectedInviteIds();
+      if (ids.length > 0) {
+        $http.post('rest/invites/authorize', ids).success(function(totalAuthorized) {
+          removeSelectedInvites();
+          setAllSelected(false);
+          $rootScope.addMessage('authorized ' + totalAuthorized + ' invites');
+        });
+      }
+    }
+    
+    $rootScope.deleteInvites = function() {
+      var ids = selectedInviteIds();
+      if (ids.length > 0) {
+        $http.post('rest/invites/delete', ids).success(function(totalDeleted) {
+          removeSelectedInvites();
+          setAllSelected(false);
+          $rootScope.addMessage('deleted ' + totalDeleted + ' invites');
+        });
+      }
+    }
   })
   .config(function($provide, $httpProvider) {
     // Set up global loading indicator behavior

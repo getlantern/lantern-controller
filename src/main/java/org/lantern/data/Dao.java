@@ -1274,6 +1274,24 @@ public class Dao extends DAOBase {
         }
         return result;
     }
+    
+    public int deletePendingInvites(final String[] ids) {
+        return new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                int totalDeleted = 0;
+                for (String id : ids) {
+                    Invite invite = ofy.find(Invite.class, id);
+                    if (invite != null && invite.getStatus() != Status.authorized) {
+                        ofy.delete(invite);
+                        totalDeleted += 1;
+                    }
+                }
+                ofy.getTxn().commit();
+                return totalDeleted;
+            }
+        }.run();
+    }
 
     //XXX: review who's calling this and for what; the memcache copy is not
     // maintained nearly well enough for most uses.

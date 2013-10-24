@@ -127,8 +127,8 @@
       </tr>
     </table>
     <div>
-      <button class="btn" ng-click="approve()">Approve</button>
-      <button class="btn" ng-click="delete()">Delete</button>
+      <button class="btn" ng-click="authorizeInvites()" ng-disabled="!anySelected">Authorize</button>
+      <button class="btn" ng-click="deleteInvites()" ng-disabled="!anySelected">Delete</button>
     </div>
     
     <ul id="messages" class="list-unstyled" ng-show="messages.length > 0">

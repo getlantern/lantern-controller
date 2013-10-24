@@ -9,7 +9,11 @@ import java.util.logging.Logger;
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
+import org.lantern.data.TrustRelationship;
 import org.littleshoot.util.ThreadUtils;
+
+import com.google.appengine.api.datastore.QueryResultIterable;
+import com.googlecode.objectify.Objectify;
 
 
 /**
@@ -21,20 +25,31 @@ public class FallbackProxyLauncher {
     private static final transient Logger log =
         Logger.getLogger(FallbackProxyLauncher.class.getName());
 
-    public static void authorizeInvites(String[] ids) {
+    public static int authorizeInvites(String[] ids) {
+        int totalAuthorized = 0;
+        
         for (String id : ids) {
             String[] parsed = Invite.parseId(id);
-            authorizeInvite(parsed[0], parsed[1]);
+            if (authorizeInvite(parsed[0], parsed[1])) {
+                totalAuthorized += 1;
+            }
         }
+        
+        return totalAuthorized;
     }
-
+    
     /**
      * Process invite authorization.
      *
      * Handle an invite once it has been authorized, or we have determined it
      * doesn't need authorization.
+     * 
+     * // TODO: authorizeInvite probably should check that we're only authorizing
+     * // invites that still exist and are in the queued state.  
+     * 
+     * @return true if invite was newly authorized
      */
-    public static void authorizeInvite(final String inviterEmail,
+    public static boolean authorizeInvite(final String inviterEmail,
                                        final String invitedEmail) {
 
         final Dao dao = new Dao();
@@ -48,7 +63,7 @@ public class FallbackProxyLauncher {
         if (fpuid == null) {
             log.warning("Old invite; we'll process this when the user gets"
                         + " a fallbackProxyUserId");
-            return;
+            return true;
         }
 
         String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
@@ -70,6 +85,8 @@ public class FallbackProxyLauncher {
                             invitedEmail,
                             installerLocation);
         }
+        
+        return true;
     }
 
     public static void onFallbackProxyUp(final String fallbackProxyUserId,

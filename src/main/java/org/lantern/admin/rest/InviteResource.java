@@ -74,10 +74,17 @@ public class InviteResource {
     }
 
     @POST
-    @Path("/approve")
+    @Path("/authorize")
     @Consumes(MediaType.APPLICATION_JSON)
-    public void approve(String[] ids) {
-        FallbackProxyLauncher.authorizeInvites(ids);
+    public int authorize(String[] ids) {
+        return FallbackProxyLauncher.authorizeInvites(ids);
+    }
+    
+    @POST
+    @Path("/delete")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public int delete(String[] ids) {
+        return new Dao().deletePendingInvites(ids);
     }
 
     public static class User {
