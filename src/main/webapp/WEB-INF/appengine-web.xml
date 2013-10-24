@@ -3,7 +3,7 @@
     <application>pantsctrl</application>
     <version>210</version>
     <threadsafe>true</threadsafe>
-    <precompilation-enabled>false</precompilation-enabled>
+    <!--<precompilation-enabled>false</precompilation-enabled>-->
     
     <!-- Configure java.util.logging -->
     <system-properties>

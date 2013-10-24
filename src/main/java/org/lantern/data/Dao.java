@@ -1354,9 +1354,11 @@ public class Dao extends DAOBase {
     /**
      * Find or create the instance and set its installerLocation.
      */
-    public void setInstallerLocation(final String userId,
-                                     final String instanceId,
-                                     final String installerLocation) {
+    public void registerFallbackProxy(final String userId,
+                                      final String instanceId,
+                                      final String installerLocation,
+                                      final String ip,
+                                      final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
                 LanternInstance instance = findLanternInstance(ofy,
@@ -1371,8 +1373,29 @@ public class Dao extends DAOBase {
                     instance = new LanternInstance(instanceId,
                                                    getUserKey(userId));
                 }
+                instance.setFallbackProxy(true);
                 instance.setInstallerLocation(installerLocation);
+                instance.setListenHostAndPort(ip + ":" + port);
                 ofy.put(instance);
+
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setFallbackProxyUserId(userId);
+                String old = user.getFallbackForNewInvitees();
+                // We don't set it unconditionally because a user may have
+                // more than one proxy running and nothing guarantees that
+                // this is the one to which we're currently directing new
+                // invitees.
+                //
+                // For example, if installer wrappers are rebuilt in the
+                // fallback proxies, they will report themselves as running
+                // again, in whatever order.
+                if (StringUtils.isBlank(old)
+                    || old.equals(
+                        LanternControllerConstants.FALLBACK_PROXY_LAUNCHING)) {
+                    user.setFallbackForNewInvitees(instanceId);
+                }
+                ofy.put(user);
+
                 ofy.getTxn().commit();
                 return null;
             }
@@ -1466,36 +1489,5 @@ public class Dao extends DAOBase {
         log.info("Incremented " + userId + "'s fallbackSerialNumber to "
                  + ret);
         return ret;
-    }
-
-    /**
-     * @return: a list of the instanceIds of the fallbacks.
-     */
-    public Collection<String> demoteUserAndMarkFallbacksShutDown(
-            final String userId) {
-        RetryingTransaction<Collection<String>> txn
-            = new RetryingTransaction<Collection<String>>() {
-            protected Collection<String> run(Objectify ofy) {
-                List<String> result = new ArrayList<String>();
-                Query<LanternInstance> q = ofy.query(LanternInstance.class)
-                                              .ancestor(getUserKey(userId))
-                                              .filter("isFallbackProxy", true);
-                for (LanternInstance instance : q) {
-                    instance.setFallbackProxyShutdown(true);
-                    ofy.put(instance);
-                    result.add(instance.getId());
-                }
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setFallbackProxyUserId(null);
-                ofy.put(user);
-                ofy.getTxn().commit();
-                return result;
-            }
-        };
-        Collection<String> instanceIds = txn.run();
-        if (txn.failed()) {
-            log.severe("Transaction failed!");
-        }
-        return instanceIds;
     }
 }

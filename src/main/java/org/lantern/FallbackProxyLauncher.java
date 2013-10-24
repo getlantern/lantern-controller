@@ -89,13 +89,17 @@ public class FallbackProxyLauncher {
         return true;
     }
 
-    public static void onFallbackProxyUp(final String fallbackProxyUserId,
-                                         final String instanceId,
-                                         final String installerLocation) {
+    public static void onFallbackProxyUp(String fallbackProxyUserId,
+                                         String instanceId,
+                                         String installerLocation,
+                                         String ip,
+                                         String port) {
         final Dao dao = new Dao();
-        dao.setInstallerLocation(fallbackProxyUserId,
-                                 instanceId,
-                                 installerLocation);
+        dao.registerFallbackProxy(fallbackProxyUserId,
+                                  instanceId,
+                                  installerLocation,
+                                  ip,
+                                  port);
         final Collection<Invite> invites =
             dao.setFallbackAndGetAuthorizedInvites(
                     fallbackProxyUserId, instanceId);
@@ -105,19 +109,6 @@ public class FallbackProxyLauncher {
             sendInviteEmail(invite.getInviter(),
                             invite.getInvitee(),
                             installerLocation);
-        }
-    }
-
-    public static void demoteUserAndShutDownFallbacks(String userId) {
-        Collection<String> instanceIds
-            = new Dao().demoteUserAndMarkFallbacksShutDown(userId);
-        for (String instanceId : instanceIds) {
-            Map<String, Object> map = new HashMap<String, Object>();
-            /* This is not in LanternConstants because it's not handled by the
-             * client, but by a Python bot.  (salt/cloudmaster/cloudmaster.py)
-             */
-            map.put("shutdown-fp", instanceId);
-            new SQSUtil().send(map);
         }
     }
 
