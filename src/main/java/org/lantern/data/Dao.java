@@ -1435,35 +1435,4 @@ public class Dao extends DAOBase {
                  + ret);
         return ret;
     }
-
-    /**
-     * @return: a list of the instanceIds of the fallbacks.
-     */
-    public Collection<String> demoteUserAndMarkFallbacksShutDown(
-            final String userId) {
-        RetryingTransaction<Collection<String>> txn
-            = new RetryingTransaction<Collection<String>>() {
-            protected Collection<String> run(Objectify ofy) {
-                List<String> result = new ArrayList<String>();
-                Query<LanternInstance> q = ofy.query(LanternInstance.class)
-                                              .ancestor(getUserKey(userId))
-                                              .filter("isFallbackProxy", true);
-                for (LanternInstance instance : q) {
-                    instance.setFallbackProxyShutdown(true);
-                    ofy.put(instance);
-                    result.add(instance.getId());
-                }
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setFallbackProxyUserId(null);
-                ofy.put(user);
-                ofy.getTxn().commit();
-                return result;
-            }
-        };
-        Collection<String> instanceIds = txn.run();
-        if (txn.failed()) {
-            log.severe("Transaction failed!");
-        }
-        return instanceIds;
-    }
 }

@@ -33,21 +33,17 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<p>Set the number of invites we'll direct to a proxy before we launch a new one.</p>
 <form method="POST" action="/admin/post/setMaxInvitesPerProxy">
 <input type="text" name="n" value="100">
 <button type="submit" name="set" value="true">Set max invites per proxy</button><br/>
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<p>Promote someone so we'll run fallback proxies as them when they invite someone.</p>
 <form method="POST" action="/admin/post/promoteFallbackProxyUser">
 <input type="text" name="user" value="user@example.com">
 <button type="submit" name="set" value="true">Promote Fallback User</button><br/>
-<%= AdminServlet.getCsrfTag() %>
-</form>
-
-<form method="POST" action="/admin/post/demoteUserAndShutDownFallbacks">
-<input type="text" name="user" value="user@example.com">
-<button type="submit" name="set" value="true">Demote user and shut down fallbacks</button><br/>
 <%= AdminServlet.getCsrfTag() %>
 </form>
 

@@ -174,30 +174,6 @@ public class AdminServlet extends HttpServlet {
                 + " next time they invite someone.");
     }
 
-    public void demoteUserAndShutDownFallbacks(
-            final HttpServletRequest request,
-            final HttpServletResponse response,
-            String[] pathComponents) {
-        String userId = request.getParameter("user").trim();
-        Dao dao = new Dao();
-        if (dao.findUser(userId) == null) {
-            LanternControllerUtils.populateOKResponse(
-                    response,
-                    "no such user: " + userId);
-            return;
-        }
-        if (!isFallbackProxyUser(dao, userId)) {
-            LanternControllerUtils.populateOKResponse(
-                    response,
-                    userId + " is not a fallback proxy user.");
-            return;
-        }
-        FallbackProxyLauncher.demoteUserAndShutDownFallbacks(userId);
-        LanternControllerUtils.populateOKResponse(
-                response,
-                "No fallbacks will run as " + userId + " anymore.");
-    }
-
     private boolean isFallbackProxyUser(Dao dao, String userId) {
         return userId.equals(dao.findUser(userId).getFallbackProxyUserId());
     }
