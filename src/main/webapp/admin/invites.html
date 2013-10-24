@@ -94,7 +94,8 @@
     <table class="table">
       <tr>
         <th class="checkbox-column" title="Select/Deselect all">
-          <input type="checkbox" ng-click="toggleAllSelected()" ng-checked="allSelected">
+          <input type="checkbox" ng-click="toggleAllSelected()" ng-checked="allSelected"
+                 ng-disabled="!inviters || inviters.length == 0">
         </th>
         <th>Inviter/Invitee(s)</th>
         <th>Has fallback</th>
