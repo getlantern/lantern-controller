@@ -1306,13 +1306,6 @@ public class Dao extends DAOBase {
                                       final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
-                // Backwards compatibility: it is the case as of this writing
-                // that we have proxies running as users but we haven't that
-                // fact recorded in the corresponding LanternUser table.
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setFallbackProxyUserId(userId);
-                user.setFallbackForNewInvitees(instanceId);
-                ofy.put(user);
                 LanternInstance instance = findLanternInstance(ofy,
                                                                userId,
                                                                instanceId);
@@ -1329,6 +1322,25 @@ public class Dao extends DAOBase {
                 instance.setInstallerLocation(installerLocation);
                 instance.setListenHostAndPort(ip + ":" + port);
                 ofy.put(instance);
+
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setFallbackProxyUserId(userId);
+                String old = user.getFallbackForNewInvitees();
+                // We don't set it unconditionally because a user may have
+                // more than one proxy running and nothing guarantees that
+                // this is the one to which we're currently directing new
+                // invitees.
+                //
+                // For example, if installer wrappers are rebuilt in the
+                // fallback proxies, they will report themselves as running
+                // again, in whatever order.
+                if (StringUtils.isBlank(old)
+                    || old.equals(
+                        LanternControllerConstants.FALLBACK_PROXY_LAUNCHING)) {
+                    user.setFallbackForNewInvitees(instanceId);
+                }
+                ofy.put(user);
+
                 ofy.getTxn().commit();
                 return null;
             }
