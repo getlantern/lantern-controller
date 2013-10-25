@@ -51,6 +51,7 @@ public class FallbackProxyLauncher {
      */
     public static boolean authorizeInvite(final String inviterEmail,
                                        final String invitedEmail) {
+        log.info(String.format("Authorizing invite from %1$s to %2$s", inviterEmail, invitedEmail));
 
         final Dao dao = new Dao();
 
