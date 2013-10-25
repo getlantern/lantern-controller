@@ -197,25 +197,6 @@ public class AdminServlet extends HttpServlet {
 
     }
 
-    public void approvePendingInvite(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
-        String inviterEmail = request.getParameter("inviter");
-        String invitedEmail = request.getParameter("invitee");
-        String cursor = request.getParameter("cursor");
-
-        log.info("Approving pending invite from " + inviterEmail + " to " + invitedEmail);
-        FallbackProxyLauncher.authorizeInvite(inviterEmail, invitedEmail);
-
-        log.info("Redirecting");
-        try {
-            response.sendRedirect("/admin/pendingInvites.jsp?cursor=" + cursor);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        log.info("Done");
-    }
-
     public static void setSecret(final String secret) {
         AdminServlet.secret = secret;
     }

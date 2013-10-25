@@ -166,7 +166,7 @@
 </filter>
 <filter-mapping>
    <filter-name>CSRF Protection</filter-name>
-   <url-pattern>/admin/*</url-pattern>
+   <url-pattern>/admin/rest/*</url-pattern>
 </filter-mapping>
 
 

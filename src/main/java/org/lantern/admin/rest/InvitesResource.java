@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
@@ -29,9 +28,7 @@ import org.lantern.data.PMF;
 
 @Path("/invites")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class InviteResource {
-    private final static Logger LOG = Logger.getLogger("InviteResource");
-
+public class InvitesResource {
     @GET
     @Path("/pending")
     @Produces(MediaType.APPLICATION_JSON)
@@ -61,10 +58,15 @@ public class InviteResource {
             }
             List<InviteWithUsers> result = new ArrayList<InviteWithUsers>();
             for (Invite invite : invites) {
-                result.add(new InviteWithUsers(invite,
-                        lanternUsersById.get(invite.getInviter()),
-                        invite.getInvitee(),
-                        lanternUsersById.get(invite.getInvitee())));
+                LanternUser inviter = lanternUsersById.get(invite.getInviter());
+                LanternUser invitee = lanternUsersById.get(invite.getInvitee());
+                if (invitee == null) {
+                    // Only include invitations for people who aren't already
+                    // Lantern users
+                    result.add(new InviteWithUsers(invite,
+                            inviter,
+                            invite.getInvitee()));
+                }
             }
             return result;
         } catch (Exception e) {
@@ -79,7 +81,7 @@ public class InviteResource {
     public int authorize(String[] ids) {
         return FallbackProxyLauncher.authorizeInvites(ids);
     }
-    
+
     @POST
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -134,12 +136,11 @@ public class InviteResource {
         private User invitee;
 
         public InviteWithUsers(Invite invite, LanternUser inviter,
-                String inviteeId, LanternUser invitee) {
+                String inviteeId) {
             super();
             this.id = invite.getId();
             this.inviter = new User(inviter);
-            this.invitee = invitee != null ?
-                    new User(invitee) : new User(inviteeId);
+            this.invitee = new User(inviteeId);
         }
 
         public String getId() {

@@ -19,7 +19,7 @@ public class LanternAdminApplication extends Application {
     private Set<Class<?>> resources = new HashSet<Class<?>>();
 
     public LanternAdminApplication() {
-        resources.add(InviteResource.class);
+        resources.add(InvitesResource.class);
         resources.add(LanternVersionResource.class);
 
         // register Jackson ObjectMapper resolver
