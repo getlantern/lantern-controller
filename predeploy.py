@@ -4,10 +4,17 @@ import base64
 import os.path
 import re
 import shutil
+import string
 import sys
 from subprocess import call
 
 here = os.path.dirname(sys.argv[0])
+# Alphabet from which csrf secret will be generated.
+# We use only garden variety characters, so our secret won't need be quoted or
+# otherwise mangled.
+# (See http://stackoverflow.com/a/7233959 )
+secret_alphabet = string.ascii_letters + string.digits
+secret_length = 72
 
 shutil.copyfile(os.path.join(here,
                              '..',
@@ -16,7 +23,13 @@ shutil.copyfile(os.path.join(here,
                              'org.lantern.secrets.properties'),
                 os.path.join(here, 'src', 'main', 'resources', 'org', 'lantern', 'secrets'))
 
-secret = base64.b64encode(os.urandom(64))
+def get_random_char():
+    # Chars at the end of the alphabet have a slightly lower probability of
+    # being picked, but we're not using this to encode a stream, so that's OK.
+    return secret_alphabet[ord(os.urandom(1)) % len(secret_alphabet)]
+
+secret = ''.join(get_random_char() for _ in xrange(secret_length))
+
 file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
      'w').write("secret=%s\n" % secret)
 
