@@ -13,6 +13,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringUtils;
 import org.lantern.AdminServlet;
 import org.lantern.SecurityUtils;
 
@@ -43,8 +44,11 @@ public class CSRFProtectionFilter implements Filter {
         String method = req.getMethod();
         if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
             String tokenReceived = req.getHeader("X-XSRF-TOKEN");
-            tokenExpected = String.format("\"%1$s\"", tokenExpected);
-            if (SecurityUtils.constantTimeEquals(tokenExpected, tokenReceived)) {
+            String tokenReceivedWithoutQuotes = StringUtils.strip(tokenReceived, "\"");
+            // don't short circuit the second string comparison to prevent timing attacks
+            boolean matches = SecurityUtils.constantTimeEquals(tokenExpected, tokenReceived);
+            boolean matchesWithoutQuotes = SecurityUtils.constantTimeEquals(tokenExpected, tokenReceivedWithoutQuotes);
+            if (matches || matchesWithoutQuotes) {
                 log.info("CSRF tokens match");
             } else {
                 log.info(String.format("Got bad CSRF token: %1$s\nExpected: %2$s",
