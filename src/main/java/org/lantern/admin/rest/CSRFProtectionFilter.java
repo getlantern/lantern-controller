@@ -17,6 +17,11 @@ import org.apache.commons.lang.StringUtils;
 import org.lantern.AdminServlet;
 import org.lantern.SecurityUtils;
 
+/**
+ * This filter makes sure that the admin/rest APIs have a CSRF token available
+ * and that operations on these APIs that manipulate data (everything but GET
+ * and HEAD) always check the CSRF token before processing the operation.
+ */
 public class CSRFProtectionFilter implements Filter {
     private static final transient Logger log = Logger
             .getLogger(CSRFProtectionFilter.class.getName());
