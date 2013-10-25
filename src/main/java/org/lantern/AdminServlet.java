@@ -65,6 +65,8 @@ public class AdminServlet extends HttpServlet {
         try {
             mac = Mac.getInstance("HmacSHA256");
             mac.init(keySpec);
+            // TODO: include timestamp and nonce?
+            // https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Encrypted_Token_Pattern
             byte[] result = mac.doFinal(user.getEmail().getBytes());
 
             return Base64.encodeBase64String(result);
@@ -85,10 +87,14 @@ public class AdminServlet extends HttpServlet {
 
         addCSPHeader(request, response);
 
-        String csrfToken = getCsrfToken();
-        if (!SecurityUtils.constantTimeEquals(csrfToken, request.getParameter("csrfToken"))) {
+        String tokenExpected = getCsrfToken();
+        String tokenReceived = request.getParameter("csrfToken");
+        if (!SecurityUtils.constantTimeEquals(tokenExpected, tokenReceived)) {
+            log.info(String.format("invalid csrf token: %1$s", tokenReceived));
             return;
         }
+        // TODO check token in header too?
+        // https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Double_Submit_Cookies
 
         String path = request.getPathInfo();
         String[] pathComponents = StringUtils.split(path, "/");
