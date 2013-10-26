@@ -1406,6 +1406,7 @@ public class Dao extends DAOBase {
                 instance.setFallbackProxy(true);
                 instance.setInstallerLocation(installerLocation);
                 instance.setListenHostAndPort(ip + ":" + port);
+                instance.setUser(userId);
                 ofy.put(instance);
 
                 LanternUser user = ofy.find(LanternUser.class, userId);
