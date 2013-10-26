@@ -1,5 +1,8 @@
 package org.lantern.data;
 
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 import javax.persistence.Id;
 
 import com.googlecode.objectify.Key;
@@ -14,8 +17,11 @@ import com.googlecode.objectify.annotation.Parent;
  *    being processed more than once, and in particular
  *  - to avoid sending the corresponding invite e-mail more than once.
  */
+@PersistenceCapable
 public class Invite {
 
+    // use both jdo and objectify. wild west, cowpoke.
+    @PrimaryKey
     @Id
     // Determined by both inviter and invitee; see makeId.
     private String id;
@@ -26,8 +32,10 @@ public class Invite {
     // fallback-balancing scheme was deployed) this points to the inviter.
     private Key<LanternUser> inviterKey;
 
+    @Persistent
     private String inviter;
 
+    @Persistent
     private String invitee;
 
     // Status transitions only ever advance monotonically in the order in which
@@ -45,6 +53,7 @@ public class Invite {
         sent
     }
 
+    @Persistent
     private Status status = Status.queued;
 
     private long lastAttempt;
@@ -61,6 +70,29 @@ public class Invite {
 
     public static String makeId(String inviterEmail, String inviteeEmail) {
         return inviterEmail + "\1" + inviteeEmail;
+    }
+    
+    public static String[] parseId(String id) {
+        return id.split("\1");
+    }
+
+    public boolean shouldSend() {
+        switch (status) {
+        case queued:
+            return false;
+        case authorized:
+            return true;
+        case sent:
+            return false;
+        case sending:
+            long now = System.currentTimeMillis();
+            return now - lastAttempt > 60 * 1000;
+        }
+        return false;
+    }
+    
+    public String getId() {
+        return id;
     }
 
     public String getInviter() {

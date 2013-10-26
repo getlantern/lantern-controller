@@ -21,27 +21,50 @@ public class FallbackProxyLauncher {
     private static final transient Logger log =
         Logger.getLogger(FallbackProxyLauncher.class.getName());
 
+    public static int authorizeInvites(String[] ids) {
+        int totalAuthorized = 0;
+        
+        for (String id : ids) {
+            String[] parsed = Invite.parseId(id);
+            if (authorizeInvite(parsed[0], parsed[1])) {
+                totalAuthorized += 1;
+            }
+        }
+        
+        return totalAuthorized;
+    }
+    
     /**
      * Process invite authorization.
      *
      * Handle an invite once it has been authorized, or we have determined it
      * doesn't need authorization.
+     * 
+     * @return true if invite was newly authorized
      */
-    public static void authorizeInvite(final String inviterName,
-                                       final String inviterEmail,
+    public static boolean authorizeInvite(final String inviterEmail,
                                        final String invitedEmail) {
+        log.info(String.format("Authorizing invite from %1$s to %2$s", inviterEmail, invitedEmail));
 
         final Dao dao = new Dao();
 
-        dao.setInviteStatus(inviterEmail,
-                            invitedEmail,
-                            Invite.Status.authorized);
+        // TODO: for performance, we may want to do this immediately but queue
+        // everything after this.
+        boolean statusUpdated = dao.setInviteStatus(inviterEmail,
+                                                    invitedEmail,
+                                                    Invite.Status.queued,
+                                                    Invite.Status.authorized);
+        
+        if (!statusUpdated) {
+            log.info("Declining to authorize invite that is not currently queued");
+            return false;
+        }
 
         String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
         if (fpuid == null) {
             log.warning("Old invite; we'll process this when the user gets"
                         + " a fallbackProxyUserId");
-            return;
+            return true;
         }
 
         String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
@@ -59,11 +82,12 @@ public class FallbackProxyLauncher {
             if (installerLocation == null) {
                 throw new RuntimeException("Proxy without installerLocation?");
             }
-            sendInviteEmail(inviterName,
-                            inviterEmail,
+            sendInviteEmail(inviterEmail,
                             invitedEmail,
                             installerLocation);
         }
+        
+        return true;
     }
 
     public static void onFallbackProxyUp(String fallbackProxyUserId,
@@ -82,26 +106,8 @@ public class FallbackProxyLauncher {
                     fallbackProxyUserId, instanceId);
         incrementFallbackInvites(fallbackProxyUserId,
                                  invites.size());
-        // We will probably have several invites by the same user.  For each
-        // inviter, we need their name, which won't change.  So let's cache
-        // these to avoid hitting the datastore multiple times for each inviter.
-        Map<String, String> nameCache = new HashMap<String, String>();
         for (Invite invite : invites) {
-            String inviterEmail = invite.getInviter();
-            String inviterName = nameCache.get(inviterEmail);
-            if (inviterName == null) {
-                inviterName = dao.findUser(inviterEmail).getName();
-                if (inviterName == null) {
-                    // Mandrill does this too; we're only doing it here to
-                    // avoid looking the LanternUser up again, since AFAIK
-                    // Java HashMaps won't let me tell a missing key from one
-                    // assigned the value null.
-                    inviterName = inviterEmail;
-                }
-                nameCache.put(inviterEmail, inviterName);
-            }
-            sendInviteEmail(inviterName,
-                            inviterEmail,
+            sendInviteEmail(invite.getInviter(),
                             invite.getInvitee(),
                             installerLocation);
         }
@@ -171,12 +177,12 @@ public class FallbackProxyLauncher {
      *
      * 'Unpack' the parameters into the format MandrillEmailer expects.
      */
-    private static void sendInviteEmail(final String inviterName,
-                                        final String inviterEmail,
+    private static void sendInviteEmail(final String inviterEmail,
                                         final String invitedEmail,
                                         final String installerLocation) {
         final Dao dao = new Dao();
-        if (!dao.shouldSendInvite(inviterEmail, invitedEmail)) {
+        LanternUser inviter = dao.prepareToSendInvite(inviterEmail, invitedEmail);
+        if (inviter == null) {
             log.info("Not re-sending an invite");
             return;
         }
@@ -191,7 +197,7 @@ public class FallbackProxyLauncher {
         LanternUser user = dao.findUser(invitedEmail);
 
         try {
-            MandrillEmailer.sendInvite(inviterName, inviterEmail, invitedEmail,
+            MandrillEmailer.sendInvite(inviter.getName(), inviterEmail, invitedEmail,
                 baseUrl + "macos_" + version + ".dmg",
                 baseUrl + "windows_" + version + ".exe",
                 baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());

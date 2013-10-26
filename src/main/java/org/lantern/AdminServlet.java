@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
-import org.lantern.data.LanternUser;
+import org.lantern.FallbackProxyLauncher;
 
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
@@ -66,6 +66,8 @@ public class AdminServlet extends HttpServlet {
         try {
             mac = Mac.getInstance("HmacSHA256");
             mac.init(keySpec);
+            // TODO: include timestamp and nonce?
+            // https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Encrypted_Token_Pattern
             byte[] result = mac.doFinal(user.getEmail().getBytes());
 
             return Base64.encodeBase64String(result);
@@ -86,10 +88,14 @@ public class AdminServlet extends HttpServlet {
 
         addCSPHeader(request, response);
 
-        String csrfToken = getCsrfToken();
-        if (!SecurityUtils.constantTimeEquals(csrfToken, request.getParameter("csrfToken"))) {
+        String tokenExpected = getCsrfToken();
+        String tokenReceived = request.getParameter("csrfToken");
+        if (!SecurityUtils.constantTimeEquals(tokenExpected, tokenReceived)) {
+            log.info(String.format("invalid csrf token: %1$s", tokenReceived));
             return;
         }
+        // TODO check token in header too?
+        // https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Double_Submit_Cookies
 
         String path = request.getPathInfo();
         String[] pathComponents = StringUtils.split(path, "/");
@@ -189,35 +195,6 @@ public class AdminServlet extends HttpServlet {
 
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
 
-    }
-
-    public void approvePendingInvite(final HttpServletRequest request,
-            final HttpServletResponse response, String[] pathComponents) {
-
-        String inviterEmail = request.getParameter("inviter");
-        String invitedEmail = request.getParameter("invitee");
-        String cursor = request.getParameter("cursor");
-
-        log.info("Approving pending invite from " + inviterEmail + " to " + invitedEmail);
-        Dao dao = new Dao();
-
-        LanternUser inviter = dao.getUser(inviterEmail);
-
-        String inviterName = inviter.getName();
-        if (StringUtils.isBlank(inviterName)) {
-            inviterName = inviterEmail;
-        }
-
-        FallbackProxyLauncher.authorizeInvite(
-                inviterName, inviterEmail, invitedEmail);
-
-        log.info("Redirecting");
-        try {
-            response.sendRedirect("/admin/pendingInvites.jsp?cursor=" + cursor);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        log.info("Done");
     }
 
     public static void setSecret(final String secret) {

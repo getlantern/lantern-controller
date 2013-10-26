@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -27,7 +26,6 @@ import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.googlecode.objectify.Key;
-import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -91,7 +89,8 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
-
+        ObjectifyService.register(LanternVersion.class);
+        
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
         ArrayList<String> timedCounters = new ArrayList<String>();
@@ -168,6 +167,31 @@ public class Dao extends DAOBase {
             log.warning("Too much contention; giving up!");
         }
     }
+
+    public void createOrUpdateLanternVersion(final LanternVersion lanternVersion) {
+
+        Boolean result = new RetryingTransaction<Boolean>() {
+            @Override
+            protected Boolean run(Objectify ofy) {
+                Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, lanternVersion.getId());
+                LanternVersion toSave = ofy.find(key);
+                if (toSave == null) {
+                    toSave = lanternVersion;
+                } else {
+                    toSave = toSave.merge(lanternVersion);
+                }
+                ofy.put(toSave);
+                ofy.getTxn().commit();
+                log.info("Transaction successful.");
+                return true;
+            }
+        }.run();
+
+        if (result == null) {
+            log.warning("Too much contention; giving up!");
+        }
+    }
+
 
     /**
      * @return a list of the counters that should be incremented as a
@@ -416,8 +440,7 @@ public class Dao extends DAOBase {
 
         for (Invite invite : invites) {
             if (invite.getStatus() == Invite.Status.authorized) {
-                FallbackProxyLauncher.authorizeInvite(user.getName(),
-                                                      userId,
+                FallbackProxyLauncher.authorizeInvite(userId,
                                                       invite.getInvitee());
             }
         }
@@ -568,59 +591,59 @@ public class Dao extends DAOBase {
      * initializing lantern-controller
      */
     public void createInitialUser(final String email) {
-//        final Objectify ofy = ofy(); final LanternUser user = new
-//        LanternUser(email); user.setDegree(1); user.setEverSignedIn(true);
-//        user.setInvites(5); user.setSponsor("adamfisk@gmail.com");
-//        ofy.put(user); log.info("Finished adding invite...");
-
+        if (true) {
+            log.info("Flip the condition above if you really mean to run this.");
+        } else {
+            final Objectify ofy = ofy();
+            final LanternUser user = new LanternUser("lanternfriend@gmail.com");
+            user.setDegree(1);
+            user.setEverSignedIn(true);
+            user.setSponsor("lanternfriend@gmail.com");
+            ofy.put(user);
+            log.info("createInitialUser succeeded.");
+        }
     }
 
-    public boolean shouldSendInvite(final String inviterEmail,
-                                    final String inviteeEmail) {
-        boolean status = new RetryingTransaction<Boolean>() {
+    /**
+     * This method prepares to send the invite identified by the given inviteId.
+     * Depending on various checks, the invite may or may not actually need to
+     * be sent.  If it doesn't need to be sent, this method returns null.
+     * .
+     * 
+     * @param inviteId
+     * @return the inviter from which to send (or null if it shouldn't be sent)
+     */
+    public LanternUser prepareToSendInvite(final String inviterEmail, final String inviteeEmail) {
+        boolean shouldSend = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
                 final Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
-                long now = System.currentTimeMillis();
+                boolean shouldSend = invite.shouldSend();
+                if (shouldSend) {
+                    invite.setStatus(Status.sending);
+                    invite.setLastAttempt(System.currentTimeMillis());
+                    ofy.put(invite);
 
-                if (invite.getStatus() == Status.sent) {
-                    return false;
-                } else if (invite.getStatus() == Status.sending) {
-                    // we will only attempt to send an email once every minute,
-                    // so that concurrent attempts don't send multiple emails.
-                    if (now - invite.getLastAttempt() > 60 * 1000) {
-                        invite.setLastAttempt(now);
-                        ofy.put(invite);
-                        ofy.getTxn().commit();
-                        return true;
+                    final LanternUser inviter = ofy.find(LanternUser.class,
+                            invite.getInviter());
+                    if (inviter == null) {
+                        log.severe("Finalizing invites of nonexistent user?");
+                        shouldSend = false;
                     } else {
-                        return false;
+                        ofy.getTxn().commit();
+                        log.info("Transaction successful.");
                     }
                 }
-
-                // we have never tried sending an invite
-
-                invite.setStatus(Status.sending);
-                invite.setLastAttempt(now);
-                ofy.put(invite);
-
-                final LanternUser inviter = ofy.find(LanternUser.class,
-                        inviterEmail);
-                if (inviter == null) {
-                    log.severe("Finalizing invites of nonexistent user?");
-                    return false;
-                }
-                ofy.getTxn().commit();
-                log.info("Transaction successful.");
-                return true;
+                
+                return shouldSend;
             }
         }.run();
 
-        createInviteeUser(inviterEmail, inviteeEmail);
-        return status;
+        LanternUser inviter = createInviteeUser(inviterEmail, inviteeEmail);
+        return shouldSend ? inviter : null;
     }
 
-    private boolean createInviteeUser(final String inviterEmail,
+    private LanternUser createInviteeUser(final String inviterEmail,
             final String inviteeEmail) {
 
         // get the inviter outside the loop because we don't care
@@ -628,10 +651,9 @@ public class Dao extends DAOBase {
         final Objectify ofy = ofy();
         final LanternUser inviter = ofy.find(LanternUser.class, inviterEmail);
 
-        Boolean result = new RetryingTransaction<Boolean>() {
+        new RetryingTransaction<Void>() {
             @Override
-            public Boolean run(Objectify ofy) {
-
+            public Void run(Objectify ofy) {
                 LanternUser invitee = ofy.find(LanternUser.class, inviteeEmail);
                 if (invitee == null) {
                     log.info("Adding invitee to database");
@@ -640,21 +662,17 @@ public class Dao extends DAOBase {
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
                     ofy.put(invitee);
+                    ofy.getTxn().commit();
+                    log.info("Successfully committed attempt to add invitee.");
                 } else {
                     log.info("Invitee exists, nothing to do here.");
-                    return true;
                 }
-                ofy.getTxn().commit();
-                log.info("Successfully committed attempt to add invitee.");
-                return true;
+                
+                return null;
             }
         }.run();
 
-        if (result == null) {
-            return false;
-        } else {
-            return result;
-        }
+        return inviter;
     }
 
     public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,
@@ -1205,29 +1223,59 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void setInviteStatus(final String inviterEmail,
+    public boolean setInviteStatus(final String inviterEmail,
+            final String inviteeEmail,
+            final Invite.Status toStatus) {
+        return setInviteStatus(inviterEmail, inviteeEmail, null, toStatus);
+    }
+    
+    /**
+     * <p>
+     * Set the status of the invite identified by the <code>inviterEmail</code>
+     * and <code>inviteeEmail</code> to the given <code>toStatus</code> if its
+     * current status either equals the given <code>fromStatus</code> or if the
+     * given <code>fromStatus</code> is null.
+     * </p>
+     * 
+     * <p>
+     * If the invite no longer exists, the status isn't updated (obviously).
+     * </p>
+     * 
+     * @param inviterEmail
+     * @param inviteeEmail
+     * @param fromStatus
+     * @param toStatus
+     * @return true if the status was updated, false otherwise
+     */
+    public boolean setInviteStatus(final String inviterEmail,
                                 final String inviteeEmail,
-                                final Invite.Status status) {
-        RetryingTransaction<Void> tx = new RetryingTransaction<Void>() {
+                                final Invite.Status fromStatus,
+                                final Invite.Status toStatus) {
+        RetryingTransaction<Boolean> tx = new RetryingTransaction<Boolean>() {
             @Override
-            protected Void run(Objectify ofy) {
+            protected Boolean run(Objectify ofy) {
                 Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
-                invite.setStatus(status);
-                ofy.put(invite);
-                ofy.getTxn().commit();
-                return null;
+                if (invite != null) {
+                    if (fromStatus == null || fromStatus == invite.getStatus()) {
+                        invite.setStatus(toStatus);
+                        ofy.put(invite);
+                        ofy.getTxn().commit();
+                        return true;
+                    }
+                }
+                return false;
             }
-
         };
         String desc = "Invite from " + inviterEmail
                       + " to " + inviteeEmail
-                      + ": setting status to " + status;
-        tx.run();
+                      + ": setting status to " + toStatus;
+        boolean statusUpdated = tx.run();
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
             log.info(desc + ": OK");
         }
+        return statusUpdated;
     }
 
     public PendingInvites getPendingInvites(String cursorStr) {
@@ -1256,6 +1304,33 @@ public class Dao extends DAOBase {
         }
         return result;
     }
+    
+    public int deletePendingInvites(final String[] ids) {
+        return new RetryingTransaction<Integer>() {
+            @Override
+            protected Integer run(Objectify ofy) {
+                int totalDeleted = 0;
+                for (String id : ids) {
+                    String[] parsedId = Invite.parseId(id);
+                    Invite invite = getInvite(ofy, parsedId[0], parsedId[1]);
+                    if (invite != null) {
+                        if (invite.getStatus() == Status.queued) {
+                            ofy.delete(invite);
+                            totalDeleted += 1;
+                        } else {
+                            log.info(String
+                                    .format("Refusing to delete invite %1$s in status %2$s",
+                                            id, invite.getStatus()));
+                        }
+                    } else {
+                        log.info(String.format("Unable to find invite: %1$s", id));
+                    }
+                }
+                ofy.getTxn().commit();
+                return totalDeleted;
+            }
+        }.run();
+    }
 
     //XXX: review who's calling this and for what; the memcache copy is not
     // maintained nearly well enough for most uses.
@@ -1273,6 +1348,16 @@ public class Dao extends DAOBase {
 
     public LanternUser findUser(String email) {
         return ofy().find(LanternUser.class, email);
+    }
+    
+    public List<LanternUser> findUsersByIds(Collection<String> ids) {
+        if (ids == null || ids.size() == 0) {
+            return Collections.EMPTY_LIST;
+        } else {
+            return ofy().query(LanternUser.class)
+                    .filter("id IN", ids)
+                    .list();
+        }
     }
 
     public LanternInstance findLanternInstance(String userId, String instanceId) {

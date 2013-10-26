@@ -97,10 +97,7 @@ public class XmppAvailableServlet extends HttpServlet {
             if (dao.areInvitesPaused()) {
                 log.info("Invites are paused, so not sending invite");
             } else {
-                String inviterName = LanternControllerUtils.getProperty(doc,
-                        LanternConstants.INVITER_NAME);
-                FallbackProxyLauncher.authorizeInvite(inviterName,
-                                                      userId,
+                FallbackProxyLauncher.authorizeInvite(userId,
                                                       invitedEmail);
             }
             return;

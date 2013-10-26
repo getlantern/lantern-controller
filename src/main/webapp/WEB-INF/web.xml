@@ -103,6 +103,31 @@
     <load-on-startup>1</load-on-startup>
   </servlet>
   
+  <servlet>
+    <servlet-name>Jersey REST Service</servlet-name>
+    <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+    <init-param>
+      <param-name>com.sun.jersey.config.feature.DisableWADL</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <!--
+    Please try to declare your resource classes statically in your Application implementation as
+    follows in order to minimize the startup time of your application.
+    -->
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>org.lantern.admin.rest.LanternAdminApplication</param-value>
+    </init-param>
+    <init-param>
+        <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+        <param-value>true</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Jersey REST Service</servlet-name>
+    <url-pattern>/admin/rest/*</url-pattern>
+  </servlet-mapping>
   <servlet-mapping>
     <servlet-name>RemoteApiServlet</servlet-name>
     <url-pattern>/remote_api</url-pattern>
@@ -121,8 +146,12 @@
     <auth-constraint>
       <role-name>admin</role-name>
     </auth-constraint>
+    <user-data-constraint>
+      <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+    </user-data-constraint>
   </security-constraint>
-
+  
+  
 <filter>
    <filter-name>Content Security Policy</filter-name>
    <filter-class>org.lantern.CSPFilter</filter-class>
@@ -131,6 +160,15 @@
    <filter-name>Content Security Policy</filter-name>
    <url-pattern>/admin/*</url-pattern>
 </filter-mapping>
+<filter>
+   <filter-name>CSRF Protection</filter-name>
+   <filter-class>org.lantern.admin.rest.CSRFProtectionFilter</filter-class>
+</filter>
+<filter-mapping>
+   <filter-name>CSRF Protection</filter-name>
+   <url-pattern>/admin/rest/*</url-pattern>
+</filter-mapping>
+
 
  <servlet>
   <servlet-name>SystemServiceServlet</servlet-name>
@@ -144,4 +182,5 @@
   <servlet-name>SystemServiceServlet</servlet-name>
   <url-pattern>/_ah/spi/*</url-pattern>
  </servlet-mapping>
+ 
 </web-app>

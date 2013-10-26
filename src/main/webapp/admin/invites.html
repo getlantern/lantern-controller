@@ -1,0 +1,145 @@
+<!doctype html>
+<html ng-app="InvitesApp">
+  <head>
+    <meta charset="utf-8">
+    <script src="/bower_components/angular/angular.js"></script>
+    <script src="/bower_components/lodash/dist/lodash.min.js"></script>
+    <script src="/bower_components/angular-lodash/angular-lodash.js"></script>
+    <script src="invites.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <style>
+      body {
+        padding: 30px;
+      }
+      header {
+        margin-bottom: 30px;
+      }
+      td {
+        vertical-align: middle !important;
+      }
+      .checkbox-column {
+        width: 40px;
+      }
+      .indented {
+        padding-left: 50px !important;
+      }
+      input[type=checkbox], label.checkbox {
+        cursor: pointer;
+      }
+      .inviter td {
+        padding-bottom: 0 !important;
+      }
+      .invite td {
+        border-color: #fff !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+      .invite label.checkbox {
+        font-weight: normal;
+      }
+      
+      .input-group {
+        max-width: 700px;
+      }
+      
+      #messages {
+          background-color: #000000;
+          color: #00FF00;
+          border-color: #333333;
+          margin-top: 30px;
+          padding: 15px;
+          border-radius: 7px;
+      }
+      
+      #messages li.error {
+          color: #FF0000;
+      }
+      
+      #busy-overlay {
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        width: 100%;
+        height: 100%;
+        background-color: #000000;
+        z-index: 5000;
+        opacity: 0.6;
+      }
+      
+      #busy-overlay img {
+        width: 32px;
+        height: 32px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -16px;
+        margin-top: -16px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        Pending Invites
+      </h1>
+      <form ng-submit="search()">
+        <div class="input-group">
+          <input type="text" class="form-control" ng-model="where" autofocus
+                 placeholder="click 'query' to query all invites, or enter a filter like inviter == 'lanternfriend@gmail.com'">
+          <span class="input-group-btn">
+            <input type="submit" class="btn" value="query">
+          </span>
+        </div>
+      </form>
+    </header>
+    <table class="table">
+      <tr>
+        <th class="checkbox-column" title="Select/Deselect all">
+          <input type="checkbox" ng-click="toggleAllSelected()" ng-checked="allSelected"
+                 ng-disabled="!inviters || inviters.length == 0">
+        </th>
+        <th>Inviter/Invitee(s)</th>
+        <th>Has fallback</th>
+        <th>Degree</th>
+        <th>Countries</th>
+        <th>Sponsor</th>
+      </tr>
+      <tr ng-repeat-start="inviter in inviters" class="inviter">
+        <td></td>
+        <td>
+          <label class="checkbox">
+            <input type="checkbox" ng-click="toggleAllForInviter(inviter)" ng-checked="inviter.allSelected">
+            {{inviter.id}}
+          </label>
+        </td>
+        <td>{{inviter.hasFallback}}</td>
+        <td>{{inviter.degree}}</td>
+        <td>{{inviter.countries|json}}</td>
+        <td>{{inviter.sponsor}}</td>
+      </tr>
+      <tr ng-repeat="invite in inviter.invites" class="invite" ng-repeat-end>
+        <td></td>
+        <td class="indented" colspan="4">
+          <label class="checkbox">
+            <input type="checkbox" ng-checked="invite.selected" ng-click="toggleInviteSelected(invite, inviter)">
+            {{invite.invitee.id}}
+          </label>
+        </td>
+      </tr>
+    </table>
+    <div>
+      <button class="btn" ng-click="authorizeInvites()" ng-disabled="!anySelected">Authorize</button>
+      <button class="btn" ng-click="deleteInvites()" ng-disabled="!anySelected">Delete</button>
+    </div>
+    
+    <ul id="messages" class="list-unstyled" ng-show="messages.length > 0">
+        <li ng-repeat="message in messages" class="{{ message.type }}">
+            {{ message.date | date:"MM/dd/yyyy hh:mm a" }} -> {{ message.text }}
+        </li>
+    </ul>
+    
+    <div id="busy-overlay" ng-show="busy">
+       <img src="/img/ajax-loader.gif">
+    </div>
+  </body>
+</html>
