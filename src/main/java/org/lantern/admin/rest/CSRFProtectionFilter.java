@@ -43,8 +43,8 @@ public class CSRFProtectionFilter implements Filter {
         HttpServletResponse resp = (HttpServletResponse) response;
         String tokenExpected = AdminServlet.getCsrfToken();
         Cookie cookie = new Cookie("XSRF-TOKEN", tokenExpected);
-        cookie.setMaxAge(-1); // session cookie - expires when browser closes
         cookie.setPath("/admin");
+        cookie.setMaxAge(-1); // session cookie - expires when browser closes
         boolean isProductionController =
                         SystemProperty.environment.value() ==
                             SystemProperty.Environment.Value.Production;
