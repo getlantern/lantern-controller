@@ -15,7 +15,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.lantern.AdminServlet;
+import org.lantern.LanternConstants;
 import org.lantern.SecurityUtils;
+
+import com.google.appengine.api.utils.SystemProperty;
 
 /**
  * This filter makes sure that the admin/rest APIs have a CSRF token available
@@ -40,11 +43,12 @@ public class CSRFProtectionFilter implements Filter {
         HttpServletResponse resp = (HttpServletResponse) response;
         String tokenExpected = AdminServlet.getCsrfToken();
         Cookie cookie = new Cookie("XSRF-TOKEN", tokenExpected);
-        cookie.setPath("/admin");
         cookie.setMaxAge(-1); // session cookie - expires when browser closes
-        if (false) { // TODO: actually check for whether we're running in production here
-            cookie.setSecure(true);
-        }
+        boolean isProductionController =
+                        SystemProperty.environment.value() ==
+                            SystemProperty.Environment.Value.Production;
+        cookie.setPath("/admin");
+        cookie.setSecure(isProductionController);
         resp.addCookie(cookie);
         String method = req.getMethod();
         if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
@@ -56,8 +60,8 @@ public class CSRFProtectionFilter implements Filter {
             if (matches || matchesWithoutQuotes) {
                 log.info("CSRF tokens match");
             } else {
-                log.info(String.format("Got bad CSRF token: %1$s\nExpected: %2$s",
-                        tokenReceived, tokenExpected)); // TODO: don't log tokenExpected
+                log.info(String.format("Got bad CSRF token: %1$s",
+                                        tokenReceived));
                 cookie.setValue("invalid token");
                 cookie.setMaxAge(0); // delete the cookie
                 resp.setStatus(403);
