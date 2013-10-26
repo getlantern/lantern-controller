@@ -1223,29 +1223,59 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void setInviteStatus(final String inviterEmail,
+    public boolean setInviteStatus(final String inviterEmail,
+            final String inviteeEmail,
+            final Invite.Status toStatus) {
+        return setInviteStatus(inviterEmail, inviteeEmail, null, toStatus);
+    }
+    
+    /**
+     * <p>
+     * Set the status of the invite identified by the <code>inviterEmail</code>
+     * and <code>inviteeEmail</code> to the given <code>toStatus</code> if its
+     * current status either equals the given <code>fromStatus</code> or if the
+     * given <code>fromStatus</code> is null.
+     * </p>
+     * 
+     * <p>
+     * If the invite no longer exists, the status isn't updated (obviously).
+     * </p>
+     * 
+     * @param inviterEmail
+     * @param inviteeEmail
+     * @param fromStatus
+     * @param toStatus
+     * @return true if the status was updated, false otherwise
+     */
+    public boolean setInviteStatus(final String inviterEmail,
                                 final String inviteeEmail,
-                                final Invite.Status status) {
-        RetryingTransaction<Void> tx = new RetryingTransaction<Void>() {
+                                final Invite.Status fromStatus,
+                                final Invite.Status toStatus) {
+        RetryingTransaction<Boolean> tx = new RetryingTransaction<Boolean>() {
             @Override
-            protected Void run(Objectify ofy) {
+            protected Boolean run(Objectify ofy) {
                 Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
-                invite.setStatus(status);
-                ofy.put(invite);
-                ofy.getTxn().commit();
-                return null;
+                if (invite != null) {
+                    if (fromStatus == null || fromStatus == invite.getStatus()) {
+                        invite.setStatus(toStatus);
+                        ofy.put(invite);
+                        ofy.getTxn().commit();
+                        return true;
+                    }
+                }
+                return false;
             }
-
         };
         String desc = "Invite from " + inviterEmail
                       + " to " + inviteeEmail
-                      + ": setting status to " + status;
-        tx.run();
+                      + ": setting status to " + toStatus;
+        boolean statusUpdated = tx.run();
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
             log.info(desc + ": OK");
         }
+        return statusUpdated;
     }
 
     public PendingInvites getPendingInvites(String cursorStr) {

@@ -60,12 +60,13 @@ public class InvitesResource {
             for (Invite invite : invites) {
                 LanternUser inviter = lanternUsersById.get(invite.getInviter());
                 LanternUser invitee = lanternUsersById.get(invite.getInvitee());
-                if (invitee == null) {
+                if (invitee == null || !invitee.isEverSignedIn()) {
                     // Only include invitations for people who aren't already
                     // Lantern users
                     result.add(new InviteWithUsers(invite,
                             inviter,
-                            invite.getInvitee()));
+                            invite.getInvitee(),
+                            invitee));
                 }
             }
             return result;
@@ -136,11 +137,12 @@ public class InvitesResource {
         private User invitee;
 
         public InviteWithUsers(Invite invite, LanternUser inviter,
-                String inviteeId) {
+                String inviteeId, LanternUser invitee) {
             super();
             this.id = invite.getId();
             this.inviter = new User(inviter);
-            this.invitee = new User(inviteeId);
+            this.invitee = invitee != null ?
+                    new User(invitee) : new User(inviteeId);
         }
 
         public String getId() {

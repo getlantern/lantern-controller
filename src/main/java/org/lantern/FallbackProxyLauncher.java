@@ -9,11 +9,7 @@ import java.util.logging.Logger;
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
-import org.lantern.data.TrustRelationship;
 import org.littleshoot.util.ThreadUtils;
-
-import com.google.appengine.api.datastore.QueryResultIterable;
-import com.googlecode.objectify.Objectify;
 
 
 /**
@@ -44,9 +40,6 @@ public class FallbackProxyLauncher {
      * Handle an invite once it has been authorized, or we have determined it
      * doesn't need authorization.
      * 
-     * // TODO: authorizeInvite probably should check that we're only authorizing
-     * // invites that still exist and are in the queued state.  
-     * 
      * @return true if invite was newly authorized
      */
     public static boolean authorizeInvite(final String inviterEmail,
@@ -56,9 +49,15 @@ public class FallbackProxyLauncher {
         final Dao dao = new Dao();
 
         // TODO do this immediately but queue everything after this
-        dao.setInviteStatus(inviterEmail,
-                            invitedEmail,
-                            Invite.Status.authorized);
+        boolean statusUpdated = dao.setInviteStatus(inviterEmail,
+                                                    invitedEmail,
+                                                    Invite.Status.queued,
+                                                    Invite.Status.authorized);
+        
+        if (!statusUpdated) {
+            log.info("Declining to authorize invite that is not currently queued");
+            return false;
+        }
 
         String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
         if (fpuid == null) {
