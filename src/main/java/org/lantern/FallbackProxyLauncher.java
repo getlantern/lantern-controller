@@ -48,7 +48,8 @@ public class FallbackProxyLauncher {
 
         final Dao dao = new Dao();
 
-        // TODO do this immediately but queue everything after this
+        // TODO: for performance, we may want to do this immediately but queue
+        // everything after this.
         boolean statusUpdated = dao.setInviteStatus(inviterEmail,
                                                     invitedEmail,
                                                     Invite.Status.queued,
