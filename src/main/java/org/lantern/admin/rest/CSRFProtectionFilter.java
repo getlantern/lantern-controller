@@ -42,32 +42,36 @@ public class CSRFProtectionFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
         String tokenExpected = AdminServlet.getCsrfToken();
-        Cookie cookie = new Cookie("XSRF-TOKEN", tokenExpected);
+        // guilty until proven innocent
+        Cookie cookie = new Cookie("XSRF-TOKEN", "invalid");
+        cookie.setMaxAge(0); // delete the cookie
         cookie.setPath("/admin");
-        cookie.setMaxAge(-1); // session cookie - expires when browser closes
-        boolean isProductionController =
-                        SystemProperty.environment.value() ==
-                            SystemProperty.Environment.Value.Production;
-        cookie.setSecure(isProductionController);
+        boolean runningOnGAE = SystemProperty.environment.value() == SystemProperty.Environment.Value.Production;
+        cookie.setSecure(runningOnGAE);
         resp.addCookie(cookie);
         String method = req.getMethod();
         if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("HEAD")) {
+            final String origin = req.getHeader("Origin");
+            if (runningOnGAE
+                    && !StringUtils.equalsIgnoreCase(origin,
+                            LanternConstants.BASE_URL)) { // change if hitting a test controller
+                log.warning(String.format("Invalid Origin: %1$s", origin));
+                resp.setStatus(403);
+                return;
+            }
             String tokenReceived = req.getHeader("X-XSRF-TOKEN");
             String tokenReceivedWithoutQuotes = StringUtils.strip(tokenReceived, "\"");
             // don't short circuit the second string comparison to prevent timing attacks
             boolean matches = SecurityUtils.constantTimeEquals(tokenExpected, tokenReceived);
             boolean matchesWithoutQuotes = SecurityUtils.constantTimeEquals(tokenExpected, tokenReceivedWithoutQuotes);
-            if (matches || matchesWithoutQuotes) {
-                log.info("CSRF tokens match");
-            } else {
-                log.info(String.format("Got bad CSRF token: %1$s",
-                                        tokenReceived));
-                cookie.setValue("invalid token");
-                cookie.setMaxAge(0); // delete the cookie
+            if (!matches && !matchesWithoutQuotes) {
+                log.warning(String.format("Got bad CSRF token: %1$s", tokenReceived));
                 resp.setStatus(403);
                 return;
             }
         }
+        cookie.setMaxAge(-1); // session cookie - expires when browser closes
+        cookie.setValue(tokenExpected);
         chain.doFilter(request, response);
     }
 
