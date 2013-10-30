@@ -65,8 +65,9 @@ public class AdminServlet extends HttpServlet {
         try {
             mac = Mac.getInstance("HmacSHA256");
             mac.init(keySpec);
-            // TODO: include timestamp and nonce?
             // https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet#Encrypted_Token_Pattern
+            // not including timestamp and nonce because https-only admin pages prevents replay attacks
+            // https://github.com/getlantern/lantern/issues/1077#issuecomment-27430617
             byte[] result = mac.doFinal(user.getEmail().getBytes());
 
             return Base64.encodeBase64String(result);
