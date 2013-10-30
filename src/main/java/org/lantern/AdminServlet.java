@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
-import org.lantern.FallbackProxyLauncher;
 
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
