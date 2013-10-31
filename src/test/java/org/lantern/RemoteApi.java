@@ -53,11 +53,6 @@ public class RemoteApi {
 
         try {
             final Dao dao = new Dao();
-            List<Integer> ret = dao.XXXRetrofitFallbackProxyUsers();
-            System.out.println("Already up to date: " + ret.get(0));
-            System.out.println("Not ready to update: " + ret.get(1));
-            System.out.println("Newly updated: " + ret.get(2));
-            //dao.forgetEveryoneSignedIn();
             /* Trigger your hacks here.*/
             //dao.createInitialUser("insertmyaccount@getlantern.org");
         } finally {
