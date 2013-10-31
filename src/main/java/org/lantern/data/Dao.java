@@ -1502,7 +1502,7 @@ public class Dao extends DAOBase {
     // Transitional.
     public List<Integer> XXXRetrofitFallbackProxyUsers() {
         Objectify ofy = ofy();
-        Query<LanternUser> users = ofy.query(LanternUser.class);
+        Query<LanternUser> users = ofy.query(LanternUser.class).filter("fallbackProxy", null);
         int newlyUpdated = 0;
         int notReady = 0;
         int alreadyUpToDate = 0;
@@ -1531,8 +1531,11 @@ public class Dao extends DAOBase {
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 String fpUserId = user.getFallbackProxyUserId();
                 if (fpUserId == null) {
-                    // Use a different ofy here because the sponsor is not in
-                    // the same ancestor group.
+                    if (user.getSponsor() == null) {
+                        // Broken beyond repair!
+                        log.info("Skipping user with null sponsor: " + userId);
+                        return false;
+                    }
                     LanternUser sponsor = ofy.find(LanternUser.class,
                                                    user.getSponsor());
                     fpUserId = sponsor.getFallbackProxyUserId();
