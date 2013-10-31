@@ -23,15 +23,11 @@ To bring this project and its submodules into Eclipse, just do the following:
 
 ## Deployment
 
-Lantern-controller requires some secrets to be put in place before it can run.
-See (or just run) `./predeploy.py` (which requires the too-many-secrets repo to
-be cloned alongside lantern-controller) to get secrets in place.
+To deploy a new version,
+ - clone the too-many-secrets repo alongside this one, and
+ - run `./deploy.py [<controller-id> [<bump-version? (y/n)> [<set-version-as-default? (y/n)>]]]`.
 
-To deploy a new version, just run `./deploy.bash`. You'll be
-prompted for whether you want to increment the version, and if you do
-then you may also want to update the default serving version in the app engine
-console.
-
+You'll be prompted for any arguments you don't provide in the command line.
 
 ## Admin Pages
 
@@ -39,7 +35,7 @@ Lantern Controller makes the following admin pages available for various
 management tasks:
 
 - `https://<appid>.appspot.com/admin/index.jsp` - misc. global state
-- `https://<appid>.appspot.com/admin/pendingInvites.jsp` - approve
+- `https://<appid>.appspot.com/admin/invites.html` - approve
   pending invites
 
 

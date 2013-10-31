@@ -23,43 +23,50 @@ file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),
 filename = os.path.join(here, 'src', 'main', 'webapp', 'WEB-INF', 'appengine-web.xml')
 contents = file(filename).read()
 
-name = raw_input("Name of appengine app? (leave blank for 'lanternctrl') ").strip()
-if len(name) == 0:
+def get_arg_or_ask(index, prompt):
+    if len(sys.argv) > index:
+        return sys.argv[index]
+    else:
+        return raw_input(prompt)
+
+name = get_arg_or_ask(1, "Name of appengine app? (leave blank for 'lanternctrl') ").strip()
+if not name:
     name = "lanternctrl"
     print "Defaulting name to '%s'" % (name)
-    
+
 contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
-                name,
-                contents,
-                1,
-                re.MULTILINE)
-    
-if raw_input("Shall I bump version? (y/N) ").lower().startswith('y'):
+                  name,
+                  contents,
+                  1,
+                  re.MULTILINE)
+
+bump = get_arg_or_ask(2, "Shall I bump version? (y/N) ").lower().startswith('y')
+if bump:
     contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
                     (lambda s: str(int(s.group(0)) + 1)),
                     contents,
                     1,
                     re.MULTILINE)
-    
-    file(filename, 'w').write(contents)                    
-    if name == "lanternctrl":
-        assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
-        assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
-        assert call("git push origin master", shell=True) == 0, "Could not push new version"
-
     print "Version bumped!"
 else:
     print "OK, version left alone."
-    file(filename, 'w').write(contents)
 
-if raw_input("Should this be the default version? (y/N) ").lower().startswith('y'):
-    setdefault=True
+file(filename, 'w').write(contents)
+
+if bump and name == "lanternctrl":
+    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
+    assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
+    assert call("git push origin master", shell=True) == 0, "Could not push new version"
+
+setdefault = (get_arg_or_ask(3, "Should this be the default version? (y/N) ")
+              .lower().startswith('y'))
+
+if setdefault:
     print "OK, we'll set this to be the default version"
 else:
-    setdefault=False
     print "OK, not setting the default version."
 
-print "Ready to deploy!"
+print "Deploying..."
 
 assert call("mvn clean install", shell=True) == 0, "Could not run clean install"
 assert call("mvn appengine:enhance -Dmaven.test.skip=true", shell=True) == 0, "Could not enhance"
