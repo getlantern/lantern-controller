@@ -56,7 +56,7 @@ password=<your google password (Strongly recommend using app-specific password)>
 controller=<name of your controller>
 ```
 
- 6. `mvn exec:java -Dexec.mainClass="org.lantern.RemoteApi" -Dexec.classpathScope="test"`
+ 6. `./call-remote-api.bash`
  7. Revert `Dao.java`
  8. Revert `RemoteApi.java`
  9. Open /admin/index.jsp of your app in a browser

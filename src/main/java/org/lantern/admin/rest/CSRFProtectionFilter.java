@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.lantern.AdminServlet;
-import org.lantern.LanternConstants;
+import org.lantern.LanternControllerConstants;
 import org.lantern.SecurityUtils;
 
 import com.google.appengine.api.utils.SystemProperty;
@@ -54,7 +54,7 @@ public class CSRFProtectionFilter implements Filter {
             final String origin = req.getHeader("Origin");
             if (runningOnGAE
                     && !StringUtils.equalsIgnoreCase(origin,
-                            LanternConstants.BASE_URL)) { // change if hitting a test controller
+                            LanternControllerConstants.BASE_URL)) {
                 log.warning(String.format("Invalid Origin: %1$s", origin));
                 resp.setStatus(403);
                 return;
