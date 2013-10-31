@@ -66,6 +66,14 @@ public class LanternUser implements Serializable {
     private String fallbackProxyUserId;
 
     /**
+     * The fallback proxy we believe this user is using.
+     *
+     * A user may actually be using different fallback proxies from different
+     * installations of Lantern, but any of them is good for our purposes.
+     */
+    private Key<LanternInstance> fallbackProxy;
+
+    /**
      * instanceId of the fallback proxy to use for new invitees.
      *
      * null if we have never launched a fallback proxy to run as this user.
@@ -256,5 +264,13 @@ public class LanternUser implements Serializable {
     public int incrementFallbackSerialNumber() {
         fallbackSerialNumber += 1;
         return fallbackSerialNumber;
+    }
+
+    public Key<LanternInstance> getFallbackProxy() {
+        return fallbackProxy;
+    }
+
+    public void setFallbackProxy(Key<LanternInstance> fallbackProxy) {
+        this.fallbackProxy = fallbackProxy;
     }
 }

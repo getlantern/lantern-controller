@@ -56,8 +56,6 @@ public class Invite {
     @Persistent
     private Status status = Status.queued;
 
-    private long lastAttempt;
-
     public Invite() {
     };
 
@@ -76,21 +74,6 @@ public class Invite {
         return id.split("\1");
     }
 
-    public boolean shouldSend() {
-        switch (status) {
-        case queued:
-            return false;
-        case authorized:
-            return true;
-        case sent:
-            return false;
-        case sending:
-            long now = System.currentTimeMillis();
-            return now - lastAttempt > 60 * 1000;
-        }
-        return false;
-    }
-    
     public String getId() {
         return id;
     }
@@ -110,13 +93,4 @@ public class Invite {
     public void setStatus(Status status) {
         this.status = status;
     }
-
-    public long getLastAttempt() {
-        return lastAttempt;
-    }
-
-    public void setLastAttempt(long lastAttempt) {
-        this.lastAttempt = lastAttempt;
-    }
-
 }
