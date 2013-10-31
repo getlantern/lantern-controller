@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.google.appengine.api.taskqueue.Queue;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
@@ -43,15 +47,15 @@ public class FallbackProxyLauncher {
      * @return true if invite was newly authorized
      */
     public static boolean authorizeInvite(final String inviterEmail,
-                                       final String invitedEmail) {
-        log.info(String.format("Authorizing invite from %1$s to %2$s", inviterEmail, invitedEmail));
+                                       final String inviteeEmail) {
+        log.info(String.format("Authorizing invite from %1$s to %2$s", inviterEmail, inviteeEmail));
 
         final Dao dao = new Dao();
 
         // TODO: for performance, we may want to do this immediately but queue
         // everything after this.
         boolean statusUpdated = dao.setInviteStatus(inviterEmail,
-                                                    invitedEmail,
+                                                    inviteeEmail,
                                                     Invite.Status.queued,
                                                     Invite.Status.authorized);
         
@@ -59,14 +63,18 @@ public class FallbackProxyLauncher {
             log.info("Declining to authorize invite that is not currently queued");
             return false;
         }
+        return processAuthorizedInvite(inviterEmail, inviteeEmail);
+    }
 
+    public static boolean processAuthorizedInvite(String inviterEmail,
+                                                  String inviteeEmail) {
+        final Dao dao = new Dao();
         String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
         if (fpuid == null) {
             log.warning("Old invite; we'll process this when the user gets"
                         + " a fallbackProxyUserId");
             return true;
         }
-
         String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
         if (instanceId == null) {
             log.info("Launching first proxy for " + fpuid);
@@ -77,16 +85,11 @@ public class FallbackProxyLauncher {
         } else if (incrementFallbackInvites(fpuid, 1)) {
             log.info("Proxy is full; launching a new one.");
         } else {
-            String installerLocation =
-                  dao.findLanternInstance(fpuid, instanceId).getInstallerLocation();
-            if (installerLocation == null) {
-                throw new RuntimeException("Proxy without installerLocation?");
-            }
-            sendInviteEmail(inviterEmail,
-                            invitedEmail,
-                            installerLocation);
+            dispatchInvite(inviterEmail,
+                           inviteeEmail,
+                           fpuid,
+                           instanceId);
         }
-        
         return true;
     }
 
@@ -107,9 +110,10 @@ public class FallbackProxyLauncher {
         incrementFallbackInvites(fallbackProxyUserId,
                                  invites.size());
         for (Invite invite : invites) {
-            sendInviteEmail(invite.getInviter(),
-                            invite.getInvitee(),
-                            installerLocation);
+            dispatchInvite(invite.getInviter(),
+                           invite.getInvitee(),
+                           fallbackProxyUserId,
+                           instanceId);
         }
     }
 
@@ -173,39 +177,70 @@ public class FallbackProxyLauncher {
     }
 
     /**
+     * Perform updates necessary when an invite is good to go, and send the
+     * invite email.
+     *
+     * Only a race condition could abort an invite at this point.
+     */
+    private static void dispatchInvite(String inviterEmail,
+                                       String inviteeEmail,
+                                       String fallbackProxyUserId,
+                                       String instanceId) {
+        final Dao dao = new Dao();
+        if (!dao.setInviteStatus(inviterEmail,
+                                 inviteeEmail,
+                                 Invite.Status.authorized,
+                                 Invite.Status.sending)) {
+            log.severe("Bad invite state.");
+            return;
+        }
+        LanternUser inviter = dao.findUser(inviterEmail);
+        LanternUser invitee = dao.createInvitee(inviter,
+                                                inviteeEmail,
+                                                fallbackProxyUserId,
+                                                instanceId);
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/send_invite_task")
+               .param("inviterName", "" + inviter.getName()) // handle null
+               .param("inviterEmail", inviterEmail)
+               .param("inviteeEmail", inviteeEmail)
+               .param("installerLocation",
+                      dao.findLanternInstance(fallbackProxyUserId, instanceId)
+                         .getInstallerLocation())
+               .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
+
+    }
+
+    /**
      * Ask MandrillEmailer to send an invite e-mail.
      *
      * 'Unpack' the parameters into the format MandrillEmailer expects.
      */
-    private static void sendInviteEmail(final String inviterEmail,
-                                        final String invitedEmail,
-                                        final String installerLocation) {
-        final Dao dao = new Dao();
-        LanternUser inviter = dao.prepareToSendInvite(inviterEmail, invitedEmail);
-        if (inviter == null) {
-            log.info("Not re-sending an invite");
-            return;
-        }
+    public static boolean sendInviteEmail(String inviterName,
+                                          String inviterEmail,
+                                          String inviteeEmail,
+                                          String installerLocation,
+                                          boolean everSignedIn) {
         final String[] parts = installerLocation.split(",");
         assert parts.length == 2;
         final String folder = parts[0];
         final String version = parts[1];
         final String baseUrl =
             "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
-
-        //check if the invitee is already a user
-        LanternUser user = dao.findUser(invitedEmail);
-
         try {
-            MandrillEmailer.sendInvite(inviter.getName(), inviterEmail, invitedEmail,
+            MandrillEmailer.sendInvite(
+                inviterName,
+                inviterEmail,
+                inviteeEmail,
                 baseUrl + "macos_" + version + ".dmg",
                 baseUrl + "windows_" + version + ".exe",
-                baseUrl + "unix_" + version + ".sh", user.isEverSignedIn());
-            dao.setInviteStatus(inviterEmail,
-                                invitedEmail,
-                                Invite.Status.sent);
+                baseUrl + "unix_" + version + ".sh",
+                everSignedIn);
+            return true;
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
         }
+        return false;
     }
 }
