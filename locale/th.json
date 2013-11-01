@@ -2,6 +2,8 @@
     "NOTE_HEADER_FROM_DEVS": "A note from the Lantern developers:",
     "NOTE_BODY_FROM_DEVS": "<i>As one of our first beta testers, your usage and feedback at this early stage can make a huge contribution. Donʼt hesitate to get in touch, and please consider <b><a href=\"https://github.com/getlantern/lantern/wiki/Get-Involved\">Getting Involved</a></b>. Thank you, and to equal internet access the world over!</i>",
     "INVITED_HEADER": "Lantern Beta Invitation",
+    "UPDATE_HEADER": "New Lantern Version Available",
+    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "MINVER_UBUNTU": "Ubuntu 12.04+",
     "PROMPT_HEADER_NEED": "Need an uncensored connection?",
     "LANTERN_BLURB": "Lantern connects people all over the world together in a social network for sharing internet connections that <i>keeps out censors</i>. Download now to give or get access to the open internet and help defeat censorship all over the world!",

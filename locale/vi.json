@@ -2,6 +2,8 @@
     "NOTE_HEADER_FROM_DEVS": "Lời nhắn nhủ từ những nhà phát triển Lantern:",
     "NOTE_BODY_FROM_DEVS": "<i>Vì đây là phiên bản phát hành thử nghiệm, nên những trải nghiệm cũng như những ý kiến phản hồi từ phía bạn khi sử dụng chương trình sẽ là nguồn động lực cũng như sự trợ giúp lớn lao mà chúng tôi nhận được. Xin đừng ngại cũng như e dè khi muốn liên hệ với chúng tôi, xin bạn hãy vui lòng truy cập <b><a href=\"https://github.com/getlantern/lantern/wiki/Get-Involved\">Trang Tham Gia Vào Dự Án</a></b>. Xin cảm ơn bạn rất nhiều, hãy cùng chia sẻ thông tin về Lantern cho nhiều người khác vì một Internet không bị kiểm duyệt nhé!</i>",
     "INVITED_HEADER": "Gửi lời mời sử dụng Lantern bản thử nghiệm",
+    "UPDATE_HEADER": "New Lantern Version Available",
+    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "MINVER_UBUNTU": "Ubuntu 12.04+",
     "PROMPT_HEADER_NEED": "Bạn cần có một kết nối không bị kiểm duyệt?",
     "LANTERN_BLURB": "Lantern kết nối mọi người trên toàn thế giới lại với nhau trong một mạng xã hội nhằm chia sẻ các kết nối internet với mục tiêu <i> thoát khỏi tình trạng kiểm duyệt</i>. Hãy tải về ngay bây giờ để có thể truy cập vì một thế giới internet tự do trên toàn cầu!",
