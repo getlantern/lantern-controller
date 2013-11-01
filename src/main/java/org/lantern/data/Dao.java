@@ -320,11 +320,12 @@ public class Dao extends DAOBase {
     }
 
     /**
-     * Update fallbackProxyUserId if we got a non-default
+     * Update fallbackProxyUserId and fallbackProxy if we got a non-default
      * fallbackProxyHostAndPort.
      */
     public void processFallbackProxyHostAndPort(final String userId,
                                                 final String hostAndPort) {
+        log.info("Processing host:port for " + userId);
         if (StringUtils.isBlank(hostAndPort)) {
             log.info("No hostAndPort.");
             return;
@@ -341,13 +342,6 @@ public class Dao extends DAOBase {
             @Override
             protected Boolean run(Objectify txnOfy) {
                 LanternUser user = txnOfy.find(LanternUser.class, userId);
-
-                if (userId.equals(user.getFallbackProxyUserId())) {
-                    // Once we know a user has a fallback proxy running as them,
-                    // that takes precedence over what proxy are they using.
-                    log.info("User is its own proxy; we never override that.");
-                    return false;
-                }
 
                 // The only point of the transaction is to protect the read
                 // and write of the user entry, and to make sure that we only
@@ -381,20 +375,34 @@ public class Dao extends DAOBase {
                     return false;
                 }
 
-                String oldId = user.getFallbackProxyUserId();
-                String newId = instance.getUser();
-
-                if (newId.equals(oldId)) {
-                    log.info("fallbackProxyUserId unchanged.");
-                    return false;
+                String oldFpuid = user.getFallbackProxyUserId();
+                String newFpuid = instance.getUser();
+                boolean fpUserChanged = !newFpuid.equals(oldFpuid)
+                                        // If a user is their own fallback
+                                        // user, we don't override that.
+                                        && !userId.equals(oldFpuid);
+                if (fpUserChanged) {
+                    user.setFallbackProxyUserId(newFpuid);
+                    log.info("Set " + userId + "'s fallbackProxyUserId to "
+                             + newFpuid + " (was " + oldFpuid + ")");
                 }
 
-                user.setFallbackProxyUserId(newId);
-                txnOfy.put(user);
-                txnOfy.getTxn().commit();
-                log.info("Set " + userId + "'s fallbackProxyUserId to "
-                         + newId + " (was " + oldId + ")");
-                return oldId == null;
+                Key<LanternInstance> oldFpKey = user.getFallbackProxy();
+                Key<LanternInstance> newFpKey
+                    = getInstanceKey(newFpuid, instance.getId());
+                boolean fpChanged = !newFpKey.equals(oldFpKey);
+                if (fpChanged) {
+                    user.setFallbackProxy(newFpKey);
+                    log.info("Set " + userId + "'s fallbackProxy to "
+                             + newFpKey + " (was " + oldFpKey + ")");
+                }
+
+                if (fpUserChanged || fpChanged) {
+                    txnOfy.put(user);
+                    txnOfy.getTxn().commit();
+                }
+
+                return fpUserChanged;
             }
         }.run();
 
@@ -414,6 +422,7 @@ public class Dao extends DAOBase {
      * Invites or users without fallbackProxyUserId.
      */
     private void updateInvitesToFallbackBalancingScheme(final String userId) {
+        log.info("Updating " + userId + "'s invites.");
         Objectify ofy = ofy();
         Key<LanternUser> userKey = new Key<LanternUser>(
                                         LanternUser.class, userId);
@@ -426,22 +435,24 @@ public class Dao extends DAOBase {
             return;
         }
         List<Invite> invites = ofy.query(Invite.class)
-                                  .ancestor(userKey)
+                                  .filter("inviter", userId)
                                   .list();
+        log.info("Got " + invites.size() + " invites from " + userId
+                 + " to update.");
         for (Invite invite : invites) {
             ofy.delete(invite);
             Invite newInvite = new Invite(userId,
                                           invite.getInvitee(),
                                           fpuid);
             newInvite.setStatus(invite.getStatus());
-            newInvite.setLastAttempt(invite.getLastAttempt());
             ofy.put(newInvite);
         }
 
         for (Invite invite : invites) {
             if (invite.getStatus() == Invite.Status.authorized) {
-                FallbackProxyLauncher.authorizeInvite(userId,
-                                                      invite.getInvitee());
+                log.info("Thawing invite to " + invite.getInvitee());
+                FallbackProxyLauncher.processAuthorizedInvite(
+                        userId, invite.getInvitee());
             }
         }
     }
@@ -604,75 +615,41 @@ public class Dao extends DAOBase {
         }
     }
 
-    /**
-     * This method prepares to send the invite identified by the given inviteId.
-     * Depending on various checks, the invite may or may not actually need to
-     * be sent.  If it doesn't need to be sent, this method returns null.
-     * .
-     * 
-     * @param inviteId
-     * @return the inviter from which to send (or null if it shouldn't be sent)
-     */
-    public LanternUser prepareToSendInvite(final String inviterEmail, final String inviteeEmail) {
-        boolean shouldSend = new RetryingTransaction<Boolean>() {
-            @Override
-            public Boolean run(Objectify ofy) {
-                final Invite invite = getInvite(ofy, inviterEmail, inviteeEmail);
-                boolean shouldSend = invite.shouldSend();
-                if (shouldSend) {
-                    invite.setStatus(Status.sending);
-                    invite.setLastAttempt(System.currentTimeMillis());
-                    ofy.put(invite);
-
-                    final LanternUser inviter = ofy.find(LanternUser.class,
-                            invite.getInviter());
-                    if (inviter == null) {
-                        log.severe("Finalizing invites of nonexistent user?");
-                        shouldSend = false;
-                    } else {
-                        ofy.getTxn().commit();
-                        log.info("Transaction successful.");
-                    }
-                }
-                
-                return shouldSend;
-            }
-        }.run();
-
-        LanternUser inviter = createInviteeUser(inviterEmail, inviteeEmail);
-        return shouldSend ? inviter : null;
-    }
-
-    private LanternUser createInviteeUser(final String inviterEmail,
-            final String inviteeEmail) {
-
-        // get the inviter outside the loop because we don't care
-        // about concurrent modifications
+    public LanternUser createInvitee(final LanternUser inviter,
+                                     final String inviteeEmail,
+                                     final String fallbackProxyUserId,
+                                     final String fallbackInstanceId) {
         final Objectify ofy = ofy();
-        final LanternUser inviter = ofy.find(LanternUser.class, inviterEmail);
-
-        new RetryingTransaction<Void>() {
+        RetryingTransaction<LanternUser> txn
+            = new RetryingTransaction<LanternUser>() {
             @Override
-            public Void run(Objectify ofy) {
-                LanternUser invitee = ofy.find(LanternUser.class, inviteeEmail);
+            public LanternUser run(Objectify ofy) {
+                LanternUser invitee = ofy.find(LanternUser.class,
+                                               inviteeEmail);
                 if (invitee == null) {
                     log.info("Adding invitee to database");
                     invitee = new LanternUser(inviteeEmail);
-
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
+                    invitee.setFallbackProxyUserId(fallbackProxyUserId);
+                    invitee.setFallbackProxy(
+                            getInstanceKey(fallbackProxyUserId,
+                                           fallbackInstanceId));
                     ofy.put(invitee);
                     ofy.getTxn().commit();
                     log.info("Successfully committed attempt to add invitee.");
                 } else {
                     log.info("Invitee exists, nothing to do here.");
                 }
-                
-                return null;
+                return invitee;
             }
-        }.run();
-
-        return inviter;
+        };
+        LanternUser invitee = txn.run();
+        if (txn.failed()) {
+            throw new RuntimeException(
+                    "Transaction failed trying to create " + inviteeEmail);
+        }
+        return invitee;
     }
 
     public boolean alreadyInvitedBy(Objectify ofy, final String inviterEmail,

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
@@ -52,7 +53,6 @@ public class RemoteApi {
 
         try {
             final Dao dao = new Dao();
-            //dao.forgetEveryoneSignedIn();
             /* Trigger your hacks here.*/
             //dao.createInitialUser("insertmyaccount@getlantern.org");
         } finally {

@@ -162,11 +162,8 @@
       <url-pattern>/persist/*</url-pattern>
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
-<<<<<<< Updated upstream
-=======
       <url-pattern>/send_invite_task</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
->>>>>>> Stashed changes
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
