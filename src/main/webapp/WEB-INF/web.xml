@@ -76,6 +76,26 @@
   </servlet-mapping>
   
   <servlet>
+    <servlet-name>sendInviteTask</servlet-name>
+    <servlet-class>org.lantern.SendInviteTask</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>sendInviteTask</servlet-name>
+    <url-pattern>/send_invite_task</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>sendUpdateTask</servlet-name>
+    <servlet-class>org.lantern.SendUpdateTask</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>sendUpdateTask</servlet-name>
+    <url-pattern>/send_update_task</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>subscribed</servlet-name>
     <servlet-class>org.lantern.XmppSubscribedServlet</servlet-class>
   </servlet>
@@ -142,6 +162,11 @@
       <url-pattern>/persist/*</url-pattern>
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
+<<<<<<< Updated upstream
+=======
+      <url-pattern>/send_invite_task</url-pattern>
+      <url-pattern>/send_update_task</url-pattern>
+>>>>>>> Stashed changes
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>

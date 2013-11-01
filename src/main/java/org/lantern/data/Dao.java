@@ -1360,11 +1360,15 @@ public class Dao extends DAOBase {
         }
     }
 
-    public LanternInstance findLanternInstance(String userId, String instanceId) {
-        return findLanternInstance(ofy(), userId, instanceId);
+    public LanternInstance findInstance(Key<LanternInstance> key) {
+        return ofy().find(key);
     }
 
-    private LanternInstance findLanternInstance(
+    public LanternInstance findInstance(String userId, String instanceId) {
+        return findInstance(ofy(), userId, instanceId);
+    }
+
+    private LanternInstance findInstance(
             Objectify ofy,
             String userId,
             String instanceId) {
@@ -1391,9 +1395,9 @@ public class Dao extends DAOBase {
                                       final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
-                LanternInstance instance = findLanternInstance(ofy,
-                                                               userId,
-                                                               instanceId);
+                LanternInstance instance = findInstance(ofy,
+                                                        userId,
+                                                        instanceId);
                 if (instance == null) {
                     // This may happen if we receive the fallback-proxy-up SQS
                     // notification before the first Available presence from
@@ -1454,9 +1458,9 @@ public class Dao extends DAOBase {
                                               .equals(instanceId)) {
                     return null;
                 }
-                LanternInstance instance = findLanternInstance(ofy,
-                                                               userId,
-                                                               instanceId);
+                LanternInstance instance = findInstance(ofy,
+                                                        userId,
+                                                        instanceId);
                 instance.incrementNumberOfInvitesForFallback(increment);
                 ofy.put(instance);
                 ofy.getTxn().commit();
@@ -1489,8 +1493,9 @@ public class Dao extends DAOBase {
                          + " to fallback proxy " + instanceId);
                 user.setInstallerLocation(null);
                 ofy.put(user);
-                LanternInstance instance = findLanternInstance(
-                        ofy, userId, instanceId);
+                LanternInstance instance = findInstance(ofy,
+                                                        userId,
+                                                        instanceId);
                 instance.setInstallerLocation(insloc);
                 ofy.put(instance);
                 ofy.getTxn().commit();

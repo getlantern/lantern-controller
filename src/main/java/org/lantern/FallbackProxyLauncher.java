@@ -6,6 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+<<<<<<< Updated upstream
+=======
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
+>>>>>>> Stashed changes
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
@@ -186,6 +192,7 @@ public class FallbackProxyLauncher {
             log.info("Not re-sending an invite");
             return;
         }
+<<<<<<< Updated upstream
         final String[] parts = installerLocation.split(",");
         assert parts.length == 2;
         final String folder = parts[0];
@@ -207,5 +214,23 @@ public class FallbackProxyLauncher {
         } catch (final IOException e) {
             log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
         }
+=======
+        LanternUser inviter = dao.findUser(inviterEmail);
+        LanternUser invitee = dao.createInvitee(inviter,
+                                                inviteeEmail,
+                                                fallbackProxyUserId,
+                                                instanceId);
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/send_invite_task")
+               .param("inviterName", "" + inviter.getName()) // handle null
+               .param("inviterEmail", inviterEmail)
+               .param("inviteeEmail", inviteeEmail)
+               .param("installerLocation",
+                      dao.findInstance(fallbackProxyUserId, instanceId)
+                         .getInstallerLocation())
+               .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
+
+>>>>>>> Stashed changes
     }
 }

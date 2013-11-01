@@ -17,11 +17,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.lantern.data.Dao;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
+
+import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
+
 
 public class AdminServlet extends HttpServlet {
     private static final long serialVersionUID = -2328208258840617005L;
@@ -195,6 +200,55 @@ public class AdminServlet extends HttpServlet {
 
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
 
+    }
+
+    public void sendUpdateEmail(HttpServletRequest request,
+                                       HttpServletResponse response,
+                                       String[] pathComponents) {
+        String version = request.getParameter("version").trim();
+        if (StringUtils.isBlank(version)) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "Need a non-blank 'version' field.");
+            return;
+        }
+        String to = request.getParameter("to").trim();
+        if (StringUtils.isBlank(to)) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "Need a non-blank 'send to' field.");
+            return;
+        }
+        if ("EVERYONE, AND I MEAN IT!".equals(to)) {
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "Now I would send " + version + " to everyone.");
+        } else {
+            String error = enqueueUpdateEmail(to, version);
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    error == null ? "Sent update email to " + to
+                                  : error);
+        }
+    }
+
+    private String enqueueUpdateEmail(String toEmail, String version) {
+        log.info("Enqueuing update notification to " + toEmail);
+        Dao dao = new Dao();
+        LanternUser user = dao.findUser(toEmail);
+        if (user == null) {
+            return "Unknown user: " + toEmail;
+        }
+        String installerLocation
+            = dao.findInstance(
+                    user.getFallbackProxy()).getInstallerLocation();
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/send_update_task")
+               .param("toEmail", toEmail)
+               .param("version", version)
+               .param("installerLocation", installerLocation));
+        return null;
     }
 
     public static void setSecret(final String secret) {

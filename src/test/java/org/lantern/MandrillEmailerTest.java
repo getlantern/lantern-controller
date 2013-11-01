@@ -15,16 +15,10 @@ import org.junit.Test;
 public class MandrillEmailerTest {
 
     private final String inviterName = "";
-
     private final String inviterEmail = "";
-
     private final String invitedEmail = "";
-
-    private final String osxInstallerUrl = "";
-
-    private final String winInstallerUrl = "";
-
-    private final String linuxInstallerUrl = "";
+    private final String installerLocation = "";
+    private final boolean isAlreadyUser = false;
 
     @Test
     public void test() throws Exception {
@@ -33,9 +27,11 @@ public class MandrillEmailerTest {
             // Ignore the test
             return;
         }
-        final String payload = MandrillEmailer.mandrillSendEmailJson(inviterName,
-            inviterEmail, invitedEmail, osxInstallerUrl, winInstallerUrl,
-            linuxInstallerUrl, false);
+        final String payload = MandrillEmailer.inviteJson(inviterName,
+                                                          inviterEmail,
+                                                          invitedEmail,
+                                                          installerLocation,
+                                                          false);
         final HttpPost post = new HttpPost(
             LanternControllerConstants.MANDRILL_API_SEND_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));

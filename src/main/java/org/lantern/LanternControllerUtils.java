@@ -27,6 +27,7 @@ import org.xml.sax.SAXException;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.Presence;
 
+
 /**
  * Utility methods for the controller.
  */
