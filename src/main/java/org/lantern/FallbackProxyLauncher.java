@@ -205,7 +205,7 @@ public class FallbackProxyLauncher {
                .param("inviterEmail", inviterEmail)
                .param("inviteeEmail", inviteeEmail)
                .param("installerLocation",
-                      dao.findLanternInstance(fallbackProxyUserId, instanceId)
+                      dao.findInstance(fallbackProxyUserId, instanceId)
                          .getInstallerLocation())
                .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
 

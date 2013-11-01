@@ -203,8 +203,8 @@ public class AdminServlet extends HttpServlet {
     }
 
     public void sendUpdateEmail(HttpServletRequest request,
-                                       HttpServletResponse response,
-                                       String[] pathComponents) {
+                                HttpServletResponse response,
+                                String[] pathComponents) {
         String version = request.getParameter("version").trim();
         if (StringUtils.isBlank(version)) {
             LanternControllerUtils.populateOKResponse(
@@ -219,12 +219,31 @@ public class AdminServlet extends HttpServlet {
                     "Need a non-blank 'send to' field.");
             return;
         }
+        Dao dao = new Dao();
         if ("EVERYONE, AND I MEAN IT!".equals(to)) {
-            LanternControllerUtils.populateOKResponse(
-                    response,
-                    "Now I would send " + version + " to everyone.");
+            log.info("Sending to all users.");
+            boolean anyErrors = false;
+            //XXX: use cursors to limit memory footprint.
+            for (LanternUser user : dao.getAllUsers()) {
+                String error = enqueueUpdateEmail(user, version);
+                if (error != null) {
+                    log.warning("Error processing " + user.getId()
+                                + ": " + error);
+                    anyErrors = true;
+                }
+            }
+            if (anyErrors) {
+                LanternControllerUtils.populateOKResponse(
+                        response,
+                        "Sending completed, with errors (see logs.)");
+            } else {
+                LanternControllerUtils.populateOKResponse(
+                        response,
+                        "Sending completed, all apparently OK.");
+            }
         } else {
-            String error = enqueueUpdateEmail(to, version);
+            log.info("Sending only to " + to);
+            String error = enqueueUpdateEmail(dao.findUser(to), version);
             LanternControllerUtils.populateOKResponse(
                     response,
                     error == null ? "Sent update email to " + to
@@ -232,12 +251,11 @@ public class AdminServlet extends HttpServlet {
         }
     }
 
-    private String enqueueUpdateEmail(String toEmail, String version) {
-        log.info("Enqueuing update notification to " + toEmail);
+    private String enqueueUpdateEmail(LanternUser user, String version) {
+        log.info("Enqueuing update notification to " + user);
         Dao dao = new Dao();
-        LanternUser user = dao.findUser(toEmail);
         if (user == null) {
-            return "Unknown user: " + toEmail;
+            return "Unknown user";
         }
         String installerLocation
             = dao.findInstance(
@@ -245,7 +263,7 @@ public class AdminServlet extends HttpServlet {
         QueueFactory.getDefaultQueue().add(
             TaskOptions.Builder
                .withUrl("/send_update_task")
-               .param("toEmail", toEmail)
+               .param("toEmail", user.getId())
                .param("version", version)
                .param("installerLocation", installerLocation));
         return null;
