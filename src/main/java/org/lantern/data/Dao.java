@@ -126,10 +126,8 @@ public class Dao extends DAOBase {
         new ShardedCounterManager().initCounters(timedCounters, counters);
     }
 
-    public Collection<LanternUser> getAllUsers() {
-        final Objectify ofy = ObjectifyService.begin();
-        final Query<LanternUser> users = ofy.query(LanternUser.class);
-        return users.list();
+    public Iterable<LanternUser> getAllUsers() {
+        return ofy().query(LanternUser.class);
     }
 
     public void setInstanceAvailable(final String userId,

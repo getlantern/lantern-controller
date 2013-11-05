@@ -41,8 +41,7 @@ public class ReportData {
         uncensored.put("empty", empty);
         try {
             final Dao dao = new Dao();
-            final Collection<LanternUser> users = dao.getAllUsers();
-            for (final LanternUser user : users) {
+            for (final LanternUser user : dao.getAllUsers()) {
                 final Set<String> ccs = user.getCountryCodes();
                 if (ccs.isEmpty()) {
                     empty.incrementAndGet();
