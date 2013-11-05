@@ -168,8 +168,28 @@ public class LanternControllerUtils {
      */
     public static void populateOKResponse(HttpServletResponse response,
                                           String text) {
+        populateHTTPResponse(response, HttpServletResponse.SC_OK, text);
+    }
+
+    /**
+     * Populate 'response' as a plain text 400 - Bad Request error response
+     * with the given text.
+     *
+     * Also, turn any exceptions into `RuntimeException`s so we don't need
+     * declare them in the calling method.
+     */
+    public static void populateErrorResponse(HttpServletResponse response,
+                                             String text) {
+        populateHTTPResponse(response,
+                             HttpServletResponse.SC_BAD_REQUEST,
+                             text);
+    }
+
+    private static void populateHTTPResponse(HttpServletResponse response,
+                                             int status_code,
+                                             String text) {
         response.setContentType("text/plain");
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.setStatus(status_code);
         byte[] content;
         try {
             content = text.getBytes("UTF-8");
