@@ -35,7 +35,7 @@ public class SendInviteTask extends HttpServlet {
                 inviterEmail,
                 inviteeEmail,
                 request.getParameter("installerLocation"),
-                request.getParameter("inviteeEverSignedIn").equals("true"));
+                "true".equals(request.getParameter("inviteeEverSignedIn")));
             new Dao().setInviteStatus(inviterEmail,
                                       inviteeEmail,
                                       Invite.Status.sent);
