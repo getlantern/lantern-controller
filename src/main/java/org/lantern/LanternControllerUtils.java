@@ -168,7 +168,7 @@ public class LanternControllerUtils {
      */
     public static void populateOKResponse(HttpServletResponse response,
                                           String text) {
-        populateHTTPResponse(response, HttpServletResponse.SC_OK, text);
+        populateHttpResponse(response, HttpServletResponse.SC_OK, text);
     }
 
     /**
@@ -180,12 +180,12 @@ public class LanternControllerUtils {
      */
     public static void populateErrorResponse(HttpServletResponse response,
                                              String text) {
-        populateHTTPResponse(response,
+        populateHttpResponse(response,
                              HttpServletResponse.SC_BAD_REQUEST,
                              text);
     }
 
-    private static void populateHTTPResponse(HttpServletResponse response,
+    private static void populateHttpResponse(HttpServletResponse response,
                                              int status_code,
                                              String text) {
         response.setContentType("text/plain");
