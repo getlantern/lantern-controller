@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 
@@ -206,41 +205,9 @@ public class FallbackProxyLauncher {
                .param("inviterEmail", inviterEmail)
                .param("inviteeEmail", inviteeEmail)
                .param("installerLocation",
-                      dao.findLanternInstance(fallbackProxyUserId, instanceId)
+                      dao.findInstance(fallbackProxyUserId, instanceId)
                          .getInstallerLocation())
                .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
 
-    }
-
-    /**
-     * Ask MandrillEmailer to send an invite e-mail.
-     *
-     * 'Unpack' the parameters into the format MandrillEmailer expects.
-     */
-    public static boolean sendInviteEmail(String inviterName,
-                                          String inviterEmail,
-                                          String inviteeEmail,
-                                          String installerLocation,
-                                          boolean everSignedIn) {
-        final String[] parts = installerLocation.split(",");
-        assert parts.length == 2;
-        final String folder = parts[0];
-        final String version = parts[1];
-        final String baseUrl =
-            "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
-        try {
-            MandrillEmailer.sendInvite(
-                inviterName,
-                inviterEmail,
-                inviteeEmail,
-                baseUrl + "macos_" + version + ".dmg",
-                baseUrl + "windows_" + version + ".exe",
-                baseUrl + "unix_" + version + ".sh",
-                everSignedIn);
-            return true;
-        } catch (final IOException e) {
-            log.warning("Could not send e-mail!\n"+ThreadUtils.dumpStack(e));
-        }
-        return false;
     }
 }

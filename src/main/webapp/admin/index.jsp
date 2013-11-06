@@ -21,6 +21,7 @@ Lantern Controller Admin
 <br/>
 <br/>
 
+<h2>Pause/unpause invites</h2>
 <form method="POST" action="/admin/post/setInvitesPaused">
 
 <% Dao dao = new Dao();
@@ -33,6 +34,10 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<br/>
+<br/>
+
+<h2>Set max invites per proxy</h2>
 <p>Set the number of invites we'll direct to a proxy before we launch a new one.</p>
 <form method="POST" action="/admin/post/setMaxInvitesPerProxy">
 <input type="text" name="n" value="100">
@@ -40,10 +45,29 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<br/>
+<br/>
+
+<h2>Promote Fallback User</h2>
 <p>Promote someone so we'll run fallback proxies as them when they invite someone.</p>
 <form method="POST" action="/admin/post/promoteFallbackProxyUser">
 <input type="text" name="user" value="user@example.com">
 <button type="submit" name="set" value="true">Promote Fallback User</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+
+<br/>
+<br/>
+
+<h2>Send version update email</h2>
+<p>Send an email to notify users that a new Lantern version is up for download.</p>
+<p>The version number will only be used for display purposes.  The invite e-mails always point to the latest Lantern version.</p>
+<p>Provide the e-mail address of a Lantern user in the "Send to" textbox if you just want to send a test email.</p>
+<p>If you really want to email everyone, enter "<b>EVERYONE, AND I MEAN IT!</b>" in the "Send to" textbox.</p>
+<form method="POST" action="/admin/post/sendUpdateEmail">
+Version: <input type="text" name="version" value="v1.0.0-beta7">
+Send to: <input type="text" name="to" value="test@getlantern.org">
+<button type="submit" name="set" value="true">Send version update email</button><br/>
 <%= AdminServlet.getCsrfTag() %>
 </form>
 

@@ -1,5 +1,7 @@
 package org.lantern;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.google.appengine.api.utils.SystemProperty;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -11,7 +13,6 @@ public class LanternControllerConstants {
 
     static final String MANDRILL_API_BASE_URL = "https://mandrillapp.com/api/1.0/";
     static final String MANDRILL_API_SEND_URL = MANDRILL_API_BASE_URL + "messages/send.json";
-    static final String INVITE_EMAIL_SUBJECT = "Lantern Invitation";
     static final String INVITE_EMAIL_FROM_ADDRESS = "invite@getlantern.org";
     static final String INVITE_EMAIL_FROM_SUFFIX = " via Lantern";
     static final String INVITE_EMAIL_BCC_ADDRESS = "lantern-invites@googlegroups.com";
@@ -23,7 +24,7 @@ public class LanternControllerConstants {
     private static String awsSecretKey;
     private static String mailChimpApiKey;
 
-    public final static VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
+    public static final VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
 
     public static final String BASE_URL = String.format("https://%1$s.appspot.com", SystemProperty.applicationId.get());
     static {

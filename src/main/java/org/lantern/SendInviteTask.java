@@ -1,5 +1,6 @@
 package org.lantern;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -28,19 +29,21 @@ public class SendInviteTask extends HttpServlet {
         if ("null".equals(inviterName)) {
             inviterName = null;
         }
-        if (FallbackProxyLauncher.sendInviteEmail(
+        try {
+            MandrillEmailer.sendInvite(
                 inviterName,
                 inviterEmail,
                 inviteeEmail,
                 request.getParameter("installerLocation"),
-                request.getParameter("inviteeEverSignedIn").equals("true"))) {
+                "true".equals(request.getParameter("inviteeEverSignedIn")));
             new Dao().setInviteStatus(inviterEmail,
                                       inviteeEmail,
                                       Invite.Status.sent);
             LanternControllerUtils.populateOKResponse(response, "OK");
             log.info("Invite task reported success.");
-        } else {
-            throw new RuntimeException("Couldn't send " + description + "!");
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't send " + description
+                                       + ":" + e);
         }
     }
 }

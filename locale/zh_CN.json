@@ -2,6 +2,8 @@
     "NOTE_HEADER_FROM_DEVS": "Lantern开发人员的信函：",
     "NOTE_BODY_FROM_DEVS": "作为我们最初的测试版用户，在这个初步阶段，你的使用及反馈将会给我们巨大的贡献。若想和我们联络，请不要犹豫，并考虑<b><a href=\"https://github.com/getlantern/lantern/wiki/Get-Involved\">Getting Involved</a></b>。 谢谢你，让我们一起让全世界拥有完整的网络连接！",
     "INVITED_HEADER": "Lantern测试版邀请",
+    "UPDATE_HEADER": "New Lantern Version Available",
+    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "MINVER_UBUNTU": "Ubuntu 12.04+",
     "PROMPT_HEADER_NEED": "需要一个不受审查的网络连接？",
     "LANTERN_BLURB": "Lantern通过一个社交网络让全世界的人们连接在一起，分享互联网信息，让审查失效。现在下载，以获取或给予开放的互联网，帮助在全世界范围内打败信息审查！",

@@ -86,6 +86,16 @@
   </servlet-mapping>
 
   <servlet>
+    <servlet-name>sendUpdateTask</servlet-name>
+    <servlet-class>org.lantern.SendUpdateTask</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>sendUpdateTask</servlet-name>
+    <url-pattern>/send_update_task</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>subscribed</servlet-name>
     <servlet-class>org.lantern.XmppSubscribedServlet</servlet-class>
   </servlet>
@@ -153,6 +163,7 @@
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
       <url-pattern>/send_invite_task</url-pattern>
+      <url-pattern>/send_update_task</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>

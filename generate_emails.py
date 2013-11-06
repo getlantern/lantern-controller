@@ -6,6 +6,7 @@ from collections import namedtuple
 from jinja2 import Environment, FileSystemLoader
 from json import load
 from os.path import join
+import os
 from premailer import transform
 from subprocess import call
 
@@ -51,10 +52,11 @@ for lang in LANGS:
 env = Environment(loader=FileSystemLoader(BASE_DIR))
 env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code][key]
 
-TMPL_FILENAMES = [
-    'invite-notification.tmpl',
-    ]
-templates = [env.get_template(i) for i in TMPL_FILENAMES]
+tmpl_filenames = [filename
+                  for filename in os.listdir(BASE_DIR)
+                  if filename.endswith('.tmpl')]
+
+templates = [env.get_template(i) for i in tmpl_filenames]
 
 rendered = [i.render(
     COMPILED_CSS=COMPILED_CSS,
@@ -66,7 +68,7 @@ transformed = [transform(i).replace('%7C', '|') for i in rendered]
 # us, but this breaks Mailchimp merge variables inside hrefs
 # e.g. <a href="mailto:*|INVITER_EMAIL|*">...</a>
 
-for (filename, content) in zip(TMPL_FILENAMES, transformed):
+for (filename, content) in zip(tmpl_filenames, transformed):
     opath = join(BASE_DIR, filename.replace('.tmpl', '.html'))
     with open(opath, mode='w', encoding='utf-8') as fp:
         print('* Writing "%s"...' % opath)

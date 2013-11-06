@@ -17,11 +17,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.lantern.data.Dao;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
+
+import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
+
 
 public class AdminServlet extends HttpServlet {
     private static final long serialVersionUID = -2328208258840617005L;
@@ -147,37 +152,42 @@ public class AdminServlet extends HttpServlet {
             final HttpServletRequest request,
             final HttpServletResponse response,
             String[] pathComponents) {
-        Dao dao = new Dao();
-        int n = Integer.parseInt(request.getParameter("n"));
-        dao.setMaxInvitesPerProxy(n);
-        LanternControllerUtils.populateOKResponse(
-                response,
-                "Set invites per proxy to: " + n);
+        try {
+            Dao dao = new Dao();
+            int n = Integer.parseInt(checkAndTrim(request, "n"));
+            dao.setMaxInvitesPerProxy(n);
+            LanternControllerUtils.populateOKResponse(
+                    response,
+                    "Set invites per proxy to: " + n);
+        } catch (IllegalArgumentException e) {
+            LanternControllerUtils.populateErrorResponse(
+                    response, e.getMessage());
+        }
     }
 
     public void promoteFallbackProxyUser(
             final HttpServletRequest request,
             final HttpServletResponse response,
             String[] pathComponents) {
-        String userId = request.getParameter("user").trim();
-        Dao dao = new Dao();
-        if (dao.findUser(userId) == null) {
+        try {
+            String userId = checkAndTrim(request, "user");
+            Dao dao = new Dao();
+            if (dao.findUser(userId) == null) {
+                throw new IllegalArgumentException("no such user: " + userId);
+            }
+            if (isFallbackProxyUser(dao, userId)) {
+                throw new IllegalArgumentException(
+                        userId + " is already a fallback proxy user.");
+            }
+            dao.makeFallbackProxyUser(userId);
             LanternControllerUtils.populateOKResponse(
                     response,
-                    "no such user: " + userId);
-            return;
+                    "A proxy will run as " + userId
+                    + " next time they invite someone.");
+        } catch (IllegalArgumentException e) {
+            LanternControllerUtils.populateErrorResponse(
+                    response, e.getMessage());
         }
-        if (isFallbackProxyUser(dao, userId)) {
-            LanternControllerUtils.populateOKResponse(
-                    response,
-                    userId + " is already a fallback proxy user.");
-            return;
-        }
-        dao.makeFallbackProxyUser(userId);
-        LanternControllerUtils.populateOKResponse(
-                response,
-                "A proxy will run as " + userId
-                + " next time they invite someone.");
     }
 
     private boolean isFallbackProxyUser(Dao dao, String userId) {
@@ -197,7 +207,70 @@ public class AdminServlet extends HttpServlet {
 
     }
 
+    public void sendUpdateEmail(HttpServletRequest request,
+                                HttpServletResponse response,
+                                String[] pathComponents) {
+        try {
+            String version = checkAndTrim(request, "version");
+            String to = checkAndTrim(request, "to");
+            Dao dao = new Dao();
+            if ("EVERYONE, AND I MEAN IT!".equals(to)) {
+                log.info("Sending to all users.");
+                for (LanternUser user : dao.getAllUsers()) {
+                    enqueueUpdateEmail(user, version);
+                }
+                LanternControllerUtils.populateOKResponse(
+                        response,
+                        "Sending completed, all apparently OK.");
+            } else {
+                log.info("Sending only to " + to);
+                enqueueUpdateEmail(dao.findUser(to), version);
+                LanternControllerUtils.populateOKResponse(
+                    response,
+                    "Sent update email to " + to);
+            }
+        } catch (IllegalArgumentException e) {
+            LanternControllerUtils.populateErrorResponse(
+                    response, e.getMessage());
+        }
+    }
+
+    private String enqueueUpdateEmail(LanternUser user, String version) {
+        log.info("Enqueuing update notification to " + user);
+        Dao dao = new Dao();
+        if (user == null) {
+            throw new IllegalArgumentException("Unknown user");
+        }
+        String installerLocation
+            = dao.findInstance(
+                    user.getFallbackProxy()).getInstallerLocation();
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/send_update_task")
+               .param("toEmail", user.getId())
+               .param("version", version)
+               .param("installerLocation", installerLocation));
+        return null;
+    }
+
     public static void setSecret(final String secret) {
         AdminServlet.secret = secret;
+    }
+
+    /**
+     * Check that the request parameter is not blank, and return its value
+     * trimmed.
+     *
+     * @throws IllegalArgumentException if the value is null or empty.
+     */
+    private static String checkAndTrim(HttpServletRequest request,
+                                       String param)
+            throws IllegalArgumentException{
+        String raw = request.getParameter(param);
+        if (StringUtils.isBlank(raw)) {
+            throw new IllegalArgumentException(
+                    "Parameter can't be null or empty: " + param);
+        }
+        return raw.trim();
     }
 }

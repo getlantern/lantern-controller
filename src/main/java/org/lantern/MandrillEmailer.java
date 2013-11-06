@@ -39,114 +39,160 @@ public class MandrillEmailer {
         Logger.getLogger(MandrillEmailer.class.getName());
 
     /**
-     * Sends a Lantern invite e-mail using the Mandrill API.
+     * Send an invite e-mail.
      *
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite.
-     * @param osxInstallerUrl The URL of the OS X installer.
-     * @param winInstallerUrl The URL of the Windows installer.
-     * @param linuxInstallerUrl The URL of the Ubuntu installer.
+     * @param inviteeEmail The email of the person to invite.
+     * @param installerLocation The location where the installers can be found.
      * @param isAlreadyUser We send a different email if the user has ever logged in
+     *
+     * @see populateInstallerUrls for the format of installerLocation.
+     *
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
-    public static void sendInvite(final String inviterName,
-        final String inviterEmail, final String invitedEmail,
-        final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl, boolean isAlreadyUser)
-        throws IOException {
-        log.info("Sending invite to "+invitedEmail);
-        if (StringUtils.isBlank(invitedEmail)) {
+    public static void sendInvite(String inviterName,
+                                  String inviterEmail,
+                                  String inviteeEmail,
+                                  String installerLocation,
+                                  boolean isAlreadyUser)
+            throws IOException {
+        log.info("Sending invite to "+inviteeEmail);
+        sendEmail(inviteJson(inviterName,
+                             inviterEmail,
+                             inviteeEmail,
+                             installerLocation,
+                             isAlreadyUser));
+    }
+
+    // Factored out and made public for testing.
+    public static String inviteJson(String inviterName,
+                                    String inviterEmail,
+                                    String inviteeEmail,
+                                    String installerLocation,
+                                    boolean isAlreadyUser)
+            throws IOException {
+        if (StringUtils.isBlank(inviteeEmail)) {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
         }
-        final String json =
-            mandrillSendEmailJson(inviterName, inviterEmail, invitedEmail,
-                osxInstallerUrl, winInstallerUrl, linuxInstallerUrl,
-                isAlreadyUser);
-        sendEmail(json);
+        String template
+            = isAlreadyUser ? "friend-notification" : "invite-notification";
+        String inviterNameOrEmail
+            = StringUtils.isBlank(inviterName) ? inviterEmail : inviterName;
+        String fromName
+            = inviterNameOrEmail
+              + LanternControllerConstants.INVITE_EMAIL_FROM_SUFFIX;
+        Map<String, String> m = new HashMap<String,String>();
+        m.put("INVITER_EMAIL", inviterEmail);
+        m.put("INVITER_NAME", inviterNameOrEmail);
+        populateInstallerUrls(m, installerLocation);
+        return jsonToSendEmail(
+                      template,
+                      "Lantern Invitation",
+                      fromName,
+                      LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS,
+                      inviteeEmail,
+                      inviterEmail,
+                      LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS,
+                      m);
     }
 
     /**
-     * Creates JSON compatible with the Mandrill API. Public for testing.
-     * See https://mandrillapp.com/api/docs/messages.html#method=send
+     * Send a notification update e-mail.
      *
-     * @param inviterName The name of the person doing the inviting.
-     * @param inviterEmail The email of the person doing the inviting.
-     * @param invitedEmail The email of the person to invite.
-     * @param osxInstallerUrl The URL of the OS X installer.
-     * @param winInstallerUrl The URL of the Windows installer.
-     * @param linuxInstallerUrl The URL of the Ubuntu installer.
-     * @param isAlreadyUser
-     * @return The generated JSON to send to Mandrill.
-     * @throws IOException If there's an error generating the JSON.
+     * @param toEmail The email to which the e-mail should be sent.
+     * @param version The version string to display in the e-mail.
+     * @param installerLocation The location where the installers can be found.
+     *
+     * @see populateInstallerUrls for the format of installerLocation.
+     *
+     * @throws IOException If there's any error accessing Mandrill, generating
+     * the JSON, etc.
      */
-    public static String mandrillSendEmailJson(final String inviterName,
-        final String inviterEmail, final String invitedEmail,
-        final String osxInstallerUrl, final String winInstallerUrl,
-        final String linuxInstallerUrl, boolean isAlreadyUser)
-        throws IOException {
-        final ObjectMapper mapper = new ObjectMapper();
+    public static void sendVersionUpdate(String toEmail,
+                                         String version,
+                                         String installerLocation)
+            throws IOException {
+        log.info("Sending version update notification to " + toEmail);
+        Map<String, String> m = new HashMap<String,String>();
+        m.put("VERSION", version);
+        populateInstallerUrls(m, installerLocation);
+        sendEmail(jsonToSendEmail("update-notification",
+                                  "Lantern Update Available",
+                                  null,
+                                  null,
+                                  toEmail,
+                                  null,
+                                  null,
+                                  m));
+    }
+
+    private static void populateInstallerUrls(Map<String, String> m,
+                                              String installerLocation) {
+        final String[] parts = installerLocation.split(",");
+        assert parts.length == 2;
+        final String folder = parts[0];
+        final String version = parts[1];
+        final String baseUrl =
+            "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
+        m.put("INSTALLER_URL_DEB", baseUrl + "unix_" + version + ".sh");
+        m.put("INSTALLER_URL_DMG", baseUrl + "macos_" + version + ".dmg");
+        m.put("INSTALLER_URL_EXE", baseUrl + "windows_" + version + ".exe");
+    }
+
+    private static String jsonToSendEmail(String template,
+                                          String subject,
+                                          String fromName,
+                                          String fromEmail,
+                                          String toEmail,
+                                          String replyTo,
+                                          String bcc,
+                                          Map<String, String> vars)
+            throws IOException {
         final Map<String, Object> data = new HashMap<String, Object>();
+        final Map<String, Object> msg = new HashMap<String, Object>();
+        msg.put("subject", subject);
+        msg.put("from_email", fromEmail == null
+                              ? LanternControllerConstants.ADMIN_EMAIL
+                              : fromEmail);
+        msg.put("from_name", fromName == null ? "Lantern Team" : fromName);
         String mandrillApiKey = LanternControllerConstants.getMandrillApiKey();
         if (mandrillApiKey == null || mandrillApiKey.equals("secret")) {
             throw new RuntimeException("Please correct your secrets file to include the Mandrill API key");
         }
         data.put("key", mandrillApiKey);
 
-        final Map<String, Object> msg = new HashMap<String, Object>();
-        final String inviterNameOrEmail = StringUtils.isBlank(inviterName) ? inviterEmail : inviterName;
+        if (replyTo != null) {
+            Map<String, String> headers = new HashMap<String, String>();
+            headers.put("Reply-To", replyTo);
+            msg.put("headers", headers);
+        }
 
-        msg.put("subject", LanternControllerConstants.INVITE_EMAIL_SUBJECT);
-        msg.put("from_email", LanternControllerConstants.INVITE_EMAIL_FROM_ADDRESS);
-        msg.put("from_name", inviterNameOrEmail+LanternControllerConstants.INVITE_EMAIL_FROM_SUFFIX);
         final Map<String, String> to = new HashMap<String, String>();
-        //XXX: Temporary hack to tightly control what installers testers get.
-        to.put("email", invitedEmail);
+        to.put("email", toEmail);
         msg.put("to", Arrays.asList(to));
-
-        final Map<String, String> headers = new HashMap<String, String>();
-        headers.put("Reply-To", inviterEmail);
-        msg.put("headers", headers);
-
         msg.put("track_opens", false);
         msg.put("track_clicks", false);
         msg.put("auto_text", true);
         msg.put("url_strip_qs", true);
         msg.put("preserve_recipients", false);
-        msg.put("bcc_address", LanternControllerConstants.INVITE_EMAIL_BCC_ADDRESS);
-
-        String templateName;
-        if (isAlreadyUser) {
-            templateName = "friend-notification";
-        } else {
-            templateName = "invite-notification";
+        if (bcc != null) {
+            msg.put("bcc_address", bcc);
         }
-        //TODO: get language from client
-        //String body = getTemplate(templateName, "en_US");
-        
-        final String body = readFile("email/invite-notification.html");
 
+        //TODO: get language from client
+        final String body = readFile("email/" + template + ".html");
         if (body == null) {
-            throw new RuntimeException("Could not find template invite-notification");
+            throw new RuntimeException("Could not find template " + template);
         }
 
         msg.put("html", body);
-
-        final List<Map<String, String>> mergeVars =
-            new ArrayList<Map<String,String>>();
-        mergeVars.add(mergeVar("INVITER_EMAIL", inviterEmail));
-        mergeVars.add(mergeVar("INVITER_NAME", inviterNameOrEmail));
-        mergeVars.add(mergeVar("INSTALLER_URL_DMG", osxInstallerUrl));
-        mergeVars.add(mergeVar("INSTALLER_URL_EXE", winInstallerUrl));
-        mergeVars.add(mergeVar("INSTALLER_URL_DEB", linuxInstallerUrl));
-
-        msg.put("global_merge_vars", mergeVars);
-
+        msg.put("global_merge_vars", mergeVarsFromMap(vars));
         data.put("message", msg);
         try {
-            return mapper.writeValueAsString(data);
+            return new ObjectMapper().writeValueAsString(data);
         } catch (final JsonGenerationException e) {
             throw new IOException("Could not generate JSON", e);
         } catch (final JsonMappingException e) {
@@ -154,53 +200,6 @@ public class MandrillEmailer {
         } catch (final IOException e) {
             throw e;
         }
-    }
-
-
-    private static String getTemplate(final String name, 
-            String preferredLanguage) {
-        String filename = name + ".html.tmpl";
-        String template = readFile(filename);
-        String languageJson = readFile(name + "-body.json");
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new MrBeanModule());
-        String content;
-        try {
-            @SuppressWarnings("unchecked")
-            final Map<String, String> data = 
-                mapper.readValue(languageJson, Map.class);
-            //first, preferred language (if available)
-
-            String preferredData = data.get(preferredLanguage);
-            if (StringUtils.isBlank(preferredData)) {
-                preferredLanguage = "en_US";
-                content = data.get(preferredLanguage);
-                if (content == null) {
-                    throw new RuntimeException("Expected at least English");
-                }
-            } else {
-                content = preferredData;
-            }
-
-            //TODO: sort these in some sensible way
-            for (Entry<String, String> entry : data.entrySet()) {
-                String language = entry.getKey();
-                if (language.equals (preferredLanguage)) {
-                    continue;
-                }
-                content += entry.getValue();
-            }
-        } catch (final JsonParseException e) {
-            throw new RuntimeException(e);
-        } catch (final JsonMappingException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        String result = template.replace("{content}", content);
-        return result;
-
     }
 
     private static String readFile(final String filename) {
@@ -256,9 +255,6 @@ public class MandrillEmailer {
         } catch (IOException e) {
             log.warning("Error fetching mandrill:\n"+ThreadUtils.dumpStack());
         }
-        //final Queue queue = QueueFactory.getDefaultQueue();
-        //queue.add(withPayload(task));
-        //task.run();
     }
 
     private static Map<String, String> mergeVar(final String key, final String val) {
@@ -266,6 +262,15 @@ public class MandrillEmailer {
         map.put("name", key);
         map.put("content", val);
         return map;
+    }
+
+    private static List<Map<String, String>> mergeVarsFromMap(
+            Map<String, String> map) {
+        List<Map<String, String>> mv = new ArrayList<Map<String, String>>();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            mv.add(mergeVar(entry.getKey(), entry.getValue()));
+        }
+        return mv;
     }
 
     public static void addEmailToUsersList(final String email,
