@@ -159,7 +159,7 @@ public class AdminServlet extends HttpServlet {
             LanternControllerUtils.populateOKResponse(
                     response,
                     "Set invites per proxy to: " + n);
-        } catch (IllegalArgumentException e) {
+        } catch (IOException e) {
             LanternControllerUtils.populateErrorResponse(
                     response, e.getMessage());
         }
@@ -173,10 +173,10 @@ public class AdminServlet extends HttpServlet {
             String userId = checkAndTrim(request, "user");
             Dao dao = new Dao();
             if (dao.findUser(userId) == null) {
-                throw new IllegalArgumentException("no such user: " + userId);
+                throw new IOException("no such user: " + userId);
             }
             if (isFallbackProxyUser(dao, userId)) {
-                throw new IllegalArgumentException(
+                throw new IOException(
                         userId + " is already a fallback proxy user.");
             }
             dao.makeFallbackProxyUser(userId);
@@ -184,7 +184,7 @@ public class AdminServlet extends HttpServlet {
                     response,
                     "A proxy will run as " + userId
                     + " next time they invite someone.");
-        } catch (IllegalArgumentException e) {
+        } catch (IOException e) {
             LanternControllerUtils.populateErrorResponse(
                     response, e.getMessage());
         }
@@ -229,17 +229,18 @@ public class AdminServlet extends HttpServlet {
                     response,
                     "Sent update email to " + to);
             }
-        } catch (IllegalArgumentException e) {
+        } catch (IOException e) {
             LanternControllerUtils.populateErrorResponse(
                     response, e.getMessage());
         }
     }
 
-    private String enqueueUpdateEmail(LanternUser user, String version) {
+    private String enqueueUpdateEmail(LanternUser user, String version)
+            throws IOException {
         log.info("Enqueuing update notification to " + user);
         Dao dao = new Dao();
         if (user == null) {
-            throw new IllegalArgumentException("Unknown user");
+            throw new IOException("Unknown user");
         }
         String installerLocation
             = dao.findInstance(
@@ -261,14 +262,14 @@ public class AdminServlet extends HttpServlet {
      * Check that the request parameter is not blank, and return its value
      * trimmed.
      *
-     * @throws IllegalArgumentException if the value is null or empty.
+     * @throws IOException if the value is null or empty.
      */
     private static String checkAndTrim(HttpServletRequest request,
                                        String param)
-            throws IllegalArgumentException{
+            throws IOException{
         String raw = request.getParameter(param);
         if (StringUtils.isBlank(raw)) {
-            throw new IllegalArgumentException(
+            throw new IOException(
                     "Parameter can't be null or empty: " + param);
         }
         return raw.trim();
