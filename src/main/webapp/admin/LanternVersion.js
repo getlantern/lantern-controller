@@ -1,20 +1,51 @@
 'use strict';
+
 angular.module('LanternVersion', [])
-  .controller('MainCtrl', function ($http, $scope) {
-    
-    $scope.submit = function () {
-      $http.put('rest/LanternVersion/' + $scope.dummyVersion.id, $scope.dummyVersion);
-    };
-    $scope.dummyVersion = {
-      id: '1.0.0-RC1',
-      gitSha: 'a1b2c3',
-      releaseDate: '2013-10-15T17:58:27.004+0000',
-      infoUrl: 'https://github.com/getlantern/lantern/releases/1.0.0-RC1',
-      installerUrls: {
-        osx: 'https://s3.amazonaws.com/lantern/lantern-1.0.0-RC1.dmg',
-        windows: 'https://s3.amazonaws.com/lantern/lantern-1.0.0-RC1.exe',
-        ubuntu32: 'https://s3.amazonaws.com/lantern/lantern-1.0.0-RC1-32bit.deb',
-        ubuntu64: 'https://s3.amazonaws.com/lantern/lantern-1.0.0-RC1-64bit.deb'
+  .constant('ENDPOINT_LATEST', 'rest/LanternVersion/latest')
+  .constant('KEY_LATEST', 'latest') // must match data.LanternVersion.SINGLETON_KEY XXX DRY
+  .run(function ($http, $rootScope, ENDPOINT_LATEST, KEY_LATEST) {
+    $rootScope.latest = {};
+
+    $http.get(ENDPOINT_LATEST).then(
+      function onSuccess(response) {
+        if (response.data.releaseDate) {
+          response.data.releaseDate = response.data.releaseDate.substring(0, 10);
+        }
+        $rootScope.latest = response.data;
+      },
+      function onFailure(data) {
+        $rootScope.error = data;
       }
+    );
+    $rootScope.submit = function () {
+      $rootScope.latest.key = KEY_LATEST;
+      $http.put(ENDPOINT_LATEST, $rootScope.latest);
     };
+  })
+  .config(function($provide, $httpProvider) {
+    // Set up global loading indicator behavior
+    // See http://stackoverflow.com/questions/11956827/angularjs-intercept-all-http-json-responses
+    $provide.factory('myHttpInterceptor', function ($q, $rootScope) {
+      return {
+        request: function(config) {
+          $rootScope.error = null;
+          $rootScope.busy = true;
+          return config || $q.when(config);
+        },
+        requestError: function(rejection) {
+          $rootScope.busy = false;
+          return $q.reject(rejection);
+        },
+        response: function(response) {
+          $rootScope.busy = false;
+          return response || $q.when(response);
+        },
+        responseError: function(rejection) {
+          $rootScope.error = rejection.data;
+          $rootScope.busy = false;
+          return $q.reject(rejection);
+        }
+      }
+    });
+    $httpProvider.interceptors.push('myHttpInterceptor');
   });

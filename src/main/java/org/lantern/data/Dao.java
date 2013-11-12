@@ -26,6 +26,7 @@ import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.googlecode.objectify.Key;
+import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -166,30 +167,18 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void createOrUpdateLanternVersion(final LanternVersion lanternVersion) {
-
-        Boolean result = new RetryingTransaction<Boolean>() {
-            @Override
-            protected Boolean run(Objectify ofy) {
-                Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, lanternVersion.getId());
-                LanternVersion toSave = ofy.find(key);
-                if (toSave == null) {
-                    toSave = lanternVersion;
-                } else {
-                    toSave = toSave.merge(lanternVersion);
-                }
-                ofy.put(toSave);
-                ofy.getTxn().commit();
-                log.info("Transaction successful.");
-                return true;
-            }
-        }.run();
-
-        if (result == null) {
-            log.warning("Too much contention; giving up!");
-        }
+    /**
+     * @throws NotFoundException Shouldn't happen in production because
+     * we'll make sure to populate this before it's called.
+     */
+    public LanternVersion getLatestLanternVersion() throws NotFoundException {
+        Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, LanternVersion.SINGLETON_KEY);
+        return ofy().get(key);
     }
 
+    public void setLatestLanternVersion(final LanternVersion lanternVersion) {
+        ofy().put(lanternVersion);
+    }
 
     /**
      * @return a list of the counters that should be incremented as a
