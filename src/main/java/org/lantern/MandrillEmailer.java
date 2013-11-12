@@ -125,7 +125,7 @@ public class MandrillEmailer {
                                   null,
                                   toEmail,
                                   null,
-                                  null,
+                                  "updates@getlantern.org",
                                   m));
     }
 
