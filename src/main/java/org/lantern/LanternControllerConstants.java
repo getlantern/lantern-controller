@@ -44,6 +44,7 @@ public class LanternControllerConstants {
     public static final long UPDATE_TIME_MILLIS = 60 * 1000;
 
     public static final int MAX_USERS = 100;
+    public static final String TEAM_EMAIL = "team@getlantern.org";
     public static final String ADMIN_EMAIL = "admin@getlantern.org";
     public static final String NOTIFY_ON_MAX_USERS = "admin@getlantern.org";
     public static final String MAILCHIMP_LIST_ID = "cdc1af284e";

@@ -155,7 +155,7 @@ public class MandrillEmailer {
         final Map<String, Object> msg = new HashMap<String, Object>();
         msg.put("subject", subject);
         msg.put("from_email", fromEmail == null
-                              ? LanternControllerConstants.ADMIN_EMAIL
+                              ? LanternControllerConstants.TEAM_EMAIL
                               : fromEmail);
         msg.put("from_name", fromName == null ? "Lantern Team" : fromName);
         String mandrillApiKey = LanternControllerConstants.getMandrillApiKey();
