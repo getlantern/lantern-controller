@@ -44,10 +44,11 @@ public class CSRFProtectionFilter implements Filter {
             FilterChain chain) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         String method = req.getMethod();
+        boolean runningOnGAE = SystemProperty.environment.value() == SystemProperty.Environment.Value.Production;
         Matcher matcher = SAFE_METHODS.matcher(method);
         boolean requestAuthorized = true;
         String tokenExpected = AdminServlet.getCsrfToken();
-        if (!matcher.matches()) {
+        if (runningOnGAE && !matcher.matches()) {
             // belt... (http://blog.chromium.org/2010/01/security-in-depth-new-security-features.html)
             final String origin = req.getHeader("Origin");
             if (!StringUtils.equalsIgnoreCase(origin,
@@ -71,7 +72,6 @@ public class CSRFProtectionFilter implements Filter {
         if (requestAuthorized) {
             Cookie cookie = new Cookie("XSRF-TOKEN", tokenExpected);
             cookie.setPath("/admin");
-            boolean runningOnGAE = SystemProperty.environment.value() == SystemProperty.Environment.Value.Production;
             cookie.setSecure(runningOnGAE);
             resp.addCookie(cookie);
             chain.doFilter(request, response);
