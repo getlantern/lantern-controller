@@ -22,6 +22,7 @@ import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
+import org.lantern.data.SemanticVersion;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -128,12 +129,26 @@ public class XmppAvailableServlet extends HttpServlet {
                 name, mode, resource, hostAndPort, fallbackHostAndPort,
                 isFallbackProxy);
 
+        handleVersionUpdate(doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(from, language);
+    }
+
+    private void handleVersionUpdate(Document doc, Map<String, Object> responseJson) {
+        int major = Integer.parseInt(LanternControllerUtils.getProperty(doc, "version.major"));
+        int minor = Integer.parseInt(LanternControllerUtils.getProperty(doc, "version.minor"));
+        int patch = Integer.parseInt(LanternControllerUtils.getProperty(doc, "version.patch"));
+        String tag = LanternControllerUtils.getProperty(doc, "version.tag");
+        SemanticVersion clientVersion = new SemanticVersion(major, minor, patch, tag);
+        Dao dao = new Dao();
+        SemanticVersion latestVersion = dao.getLatestLanternVersion().getSemanticVersion();
+        if (clientVersion.compareTo(latestVersion) < 0) {
+            responseJson.put(LanternConstants.UPDATE_KEY, true);
+        }
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
@@ -270,6 +285,7 @@ public class XmppAvailableServlet extends HttpServlet {
         return isInvite;
     }
 
+    
     private void sendUpdateTime(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
         log.info("Sending client the next update time.");
