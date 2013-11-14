@@ -145,6 +145,9 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void handleVersionUpdate(String userId, Document doc, Map<String, Object> responseJson) {
         String s = LanternControllerUtils.getProperty(doc, LanternConstants.UPDATE_KEY);
+        if (StringUtils.isBlank(s)) {
+            return;
+        }
         SemanticVersion clientVersion = SemanticVersion.from(s);
         Dao dao = new Dao();
         LanternVersion latestVersion = dao.getLatestLanternVersion();
