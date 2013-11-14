@@ -15,16 +15,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
+import org.lantern.data.LanternVersion;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
+import org.lantern.data.SemanticVersion;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.xmpp.JID;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
@@ -128,12 +134,26 @@ public class XmppAvailableServlet extends HttpServlet {
                 name, mode, resource, hostAndPort, fallbackHostAndPort,
                 isFallbackProxy);
 
+        handleVersionUpdate(userId, doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(from, language);
+    }
+
+    private void handleVersionUpdate(String userId, Document doc, Map<String, Object> responseJson) {
+        String s = LanternControllerUtils.getProperty(doc, LanternConstants.UPDATE_KEY);
+        SemanticVersion clientVersion = SemanticVersion.from(s);
+        Dao dao = new Dao();
+        LanternVersion latestVersion = dao.getLatestLanternVersion();
+        if (clientVersion.compareTo(latestVersion.getSemanticVersion()) < 0) {
+            responseJson.put(LanternConstants.UPDATE_KEY, latestVersion.getId());
+            String date = DateFormatUtils.format(latestVersion.getReleaseDate(), "yyyy-MM-dd");
+            responseJson.put(LanternConstants.UPDATE_RELEASE_DATE_KEY, date);
+            responseJson.put(LanternConstants.UPDATE_URL_KEY, latestVersion.getInfoUrl());
+        }
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
@@ -270,6 +290,7 @@ public class XmppAvailableServlet extends HttpServlet {
         return isInvite;
     }
 
+    
     private void sendUpdateTime(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
         log.info("Sending client the next update time.");
