@@ -80,7 +80,9 @@ angular.module('InvitesApp', [])
         
         setAllSelected(false);
         $rootScope.addMessage('found ' + invites.length + ' invites');
-      });
+      }).error(function() {
+        $rootScope.inviters = [];
+      })
     };
     
     function selectedInviteIds() {
