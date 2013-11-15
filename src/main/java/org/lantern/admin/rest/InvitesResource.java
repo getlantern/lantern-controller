@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
@@ -29,11 +30,15 @@ import org.lantern.data.PMF;
 @Path("/invites")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InvitesResource {
+    private static final transient Logger LOGGER = Logger
+            .getLogger(InvitesResource.class.getName());
+    
     @GET
     @Path("/pending")
     @Produces(MediaType.APPLICATION_JSON)
     public Collection<InviteWithUsers> query(@QueryParam("where") String where,
             @QueryParam("ordering") String ordering) {
+        LOGGER.info("Where: " + where);
         try {
             final PersistenceManager mgr = PMF.get().getPersistenceManager();
             final Query query = mgr.newQuery(Invite.class);
