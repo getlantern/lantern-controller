@@ -125,6 +125,9 @@ angular.module('InvitesApp', [])
         });
       }
     }
+    
+    // Search immediately
+    $rootScope.search();
   })
   .config(function($provide, $httpProvider) {
     // Set up global loading indicator behavior
