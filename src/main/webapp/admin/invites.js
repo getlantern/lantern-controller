@@ -56,7 +56,6 @@ angular.module('InvitesApp', [])
       if ($rootScope.where) {
         url = url + "?where=" + encodeURIComponent($rootScope.where);
       }
-      console.log(url);
       // Fetch the invites
       $http.get(url).success(function(invites) {
         // Organize them into a tree grouped by inviters
