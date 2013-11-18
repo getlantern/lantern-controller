@@ -570,15 +570,22 @@ public class Dao extends DAOBase {
                     return false;
                 }
 
-                inviter.setRefreshToken(refreshToken);
-                ofy.put(inviter);
+                // XXX: We don't really need a refresh token for new inviters
+                // unless we want to make them fallbackProxyUsers in the
+                // future.
+                if (refreshToken != null) {
+                    inviter.setRefreshToken(refreshToken);
+                    ofy.put(inviter);
+                }
 
                 String fpuid = inviter.getFallbackProxyUserId();
-                // TRANSITION: if we don't have a fallbackProxyUserId for the
-                // inviter yet, let this be handled like an old invite.
-                String parentId = fpuid == null ? inviterId : fpuid;
 
-                Invite invite = new Invite(inviterId, inviteeEmail, parentId);
+                if (fpuid == null) {
+                    throw new RuntimeException(
+                            "This should never be true anymore!");
+                }
+
+                Invite invite = new Invite(inviterId, inviteeEmail, fpuid);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
