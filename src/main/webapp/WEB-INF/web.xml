@@ -122,7 +122,16 @@
     <servlet-class>org.lantern.AdminServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  
+
+  <servlet>
+      <servlet-name>mailhandler</servlet-name>
+      <servlet-class>org.lantern.MailHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+      <servlet-name>mailhandler</servlet-name>
+      <url-pattern>/_ah/mail/*</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>Jersey REST Service</servlet-name>
     <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
@@ -164,6 +173,7 @@
       <url-pattern>/admin/*</url-pattern>
       <url-pattern>/send_invite_task</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
+      <url-pattern>/_ah/mail/*</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
