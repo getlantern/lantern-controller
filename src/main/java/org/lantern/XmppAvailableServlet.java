@@ -25,7 +25,6 @@ import org.lantern.data.LanternUser;
 import org.lantern.data.LanternVersion;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
-import org.lantern.data.SemanticVersion;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 

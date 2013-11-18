@@ -5,6 +5,8 @@ import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
+import org.lantern.SemanticVersion;
+
 
 public class LanternVersion {
     private final static transient Logger LOG = Logger
