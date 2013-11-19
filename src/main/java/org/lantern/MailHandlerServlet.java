@@ -33,8 +33,24 @@ public class MailHandlerServlet extends HttpServlet {
 
     private final transient Logger log = Logger.getLogger(getClass().getName());
 
-    private static final Pattern ATTACHED_EMAIL_PATTERN
-        = Pattern.compile("<(\\S+@\\S+\\.\\S+)>");
+    private static final Pattern ATTACHED_EMAIL_PATTERN;
+
+    static {
+        String validOuter = "a-zA-Z0-9_";
+        String validInner = validOuter + ".+-";
+        String vo = "[" + validOuter + "]";
+        String vi = "[" + validInner + "]";
+        String delimiter = "[^" + validOuter + "]";
+        ATTACHED_EMAIL_PATTERN = Pattern.compile(
+                delimiter  // whitespace, <, ", : in a 'mailto:'
+                //      user
+                + "(" + vo + vi + "*"
+                //        @    example
+                      + "@" + vi + "+"
+                //         .    com
+                      + "\\." + vo + "+)"
+                + delimiter);
+    }
 
     private static String pathInfoFromUsername(String username) {
         return "/" + username + "@" + SystemProperty.applicationId.get()
