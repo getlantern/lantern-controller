@@ -10,7 +10,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.mail.Address;
-import javax.mail.Header;
 import javax.mail.internet.InternetAddress;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeBodyPart;
@@ -20,8 +19,6 @@ import javax.mail.Session;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.google.appengine.api.utils.SystemProperty;
 
