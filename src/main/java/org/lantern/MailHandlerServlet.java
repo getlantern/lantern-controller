@@ -93,12 +93,13 @@ public class MailHandlerServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
         log.info("Got " + senders.size() + " senders.");
+        Dao dao = new Dao();
         for (String sender : senders) {
             if (shouldIgnore(sender)) {
                 log.info("Ignoring " + sender);
             } else {
                 log.info("Adding invite to " + sender);
-                new Dao().addInvite(INVITER, sender, null);
+                dao.addInvite(INVITER, sender, null);
             }
         }
     }
