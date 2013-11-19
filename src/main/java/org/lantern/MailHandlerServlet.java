@@ -37,6 +37,14 @@ public class MailHandlerServlet extends HttpServlet {
     /** The inviter for all invites triggered by this servlet. */
     private static final String INVITER = "invite@getlantern.org";
 
+    /**
+     * Ignore emails matching these patterns.
+     *
+     * For example, we get a message from noreply@getlantern.org when we're added
+     * to the invite mailing list.
+     */
+    private static final String[] IGNORE = {".*@getlantern.org"};
+
     @Override
     public void doPost(final HttpServletRequest req,
                        final HttpServletResponse res)
@@ -66,8 +74,18 @@ public class MailHandlerServlet extends HttpServlet {
             if (StringUtils.isBlank(senderEmail)) {
                 log.severe("Message from no sender? " + senderEmail);
             } else {
-                log.info("Adding invite to " + senderEmail);
-                dao.addInvite(INVITER, senderEmail, null);
+                boolean ignore = false;
+                for (String ignorePattern : IGNORE) {
+                    if (senderEmail.matches(ignorePattern)) {
+                        log.info("Ignoring email from " + senderEmail);
+                        ignore = true;
+                        break;
+                    }
+                }
+                if (!ignore) {
+                    log.info("Adding invite to " + senderEmail);
+                    dao.addInvite(INVITER, senderEmail, null);
+                }
             }
         }
     }
