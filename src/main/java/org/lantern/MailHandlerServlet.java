@@ -83,7 +83,9 @@ public class MailHandlerServlet extends HttpServlet {
      * For example, we get a message from noreply@getlantern.org when we're added
      * to the invite mailing list.
      */
-    private static final String[] IGNORE = {".*@getlantern.org"};
+    private static final String[] IGNORE = {".*@getlantern.org",
+                                            ".*@googlegroups.com",
+                                            ".*@.*\\.appspotmail.com"};
 
     @Override
     public void doPost(final HttpServletRequest req,
