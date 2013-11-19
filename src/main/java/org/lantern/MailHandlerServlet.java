@@ -2,10 +2,12 @@ package org.lantern;
 
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.mail.Address;
 import javax.mail.Header;
@@ -32,7 +34,7 @@ public class MailHandlerServlet extends HttpServlet {
     private final transient Logger log = Logger.getLogger(getClass().getName());
 
     private static final Pattern ATTACHED_EMAIL_PATTERN
-        = Pattern.compile("<(.+@.+\\..+)>");
+        = Pattern.compile("<(\\S+@\\S+\\.\\S+)>");
 
     private static String pathInfoFromUsername(String username) {
         return "/" + username + "@" + SystemProperty.applicationId.get()
@@ -71,7 +73,7 @@ public class MailHandlerServlet extends HttpServlet {
     public void doPost(final HttpServletRequest req,
                        final HttpServletResponse res)
             throws IOException {
-        String sender;
+        Set<String> senders = new HashSet<String>();
         try {
             MimeMessage msg = new MimeMessage(
                                 Session.getDefaultInstance(new Properties(), null),
@@ -79,10 +81,10 @@ public class MailHandlerServlet extends HttpServlet {
             String path = req.getPathInfo();
             if (DIRECT_PATHINFO.equals(path)) {
                 log.info("Just using sender's email.");
-                sender = extractSenderFromDirectEmail(msg);
+                extractSendersFromDirectEmail(msg, senders);
             } else if (FORWARD_PATHINFO.equals(path)) {
                 log.info("Searching for email in forwarded content.");
-                sender = extractSenderFromForwardedEmail(msg);
+                extractSendersFromForwardedEmail(msg, senders);
             } else {
                 log.severe("Received email at unknown address: " + path);
                 return;
@@ -90,40 +92,55 @@ public class MailHandlerServlet extends HttpServlet {
         } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
-        if (StringUtils.isEmpty(sender)) {
-            log.severe("Ignoring message with no sender: " + sender);
-            return;
-        }
-        if (shouldIgnore(sender)) {
-            log.info("Ignoring " + sender);
-            return;
-        } else {
-            log.info("Adding invite to " + sender);
-            new Dao().addInvite(INVITER, sender, null);
+        log.info("Got " + senders.size() + " senders.");
+        for (String sender : senders) {
+            if (shouldIgnore(sender)) {
+                log.info("Ignoring " + sender);
+            } else {
+                log.info("Adding invite to " + sender);
+                new Dao().addInvite(INVITER, sender, null);
+            }
         }
     }
 
-    private String extractSenderFromForwardedEmail(MimeMessage msg)
+    private void extractSendersFromForwardedEmail(MimeMessage msg, Set<String> accum)
             throws MessagingException, IOException {
-        MimeMultipart mmp = (MimeMultipart)msg.getContent();
-        MimeBodyPart bp = (MimeBodyPart)mmp.getBodyPart(0);
-        String content = (String)bp.getContent();
-        Matcher m = ATTACHED_EMAIL_PATTERN.matcher(content);
-        if (!m.find()) {
-            throw new RuntimeException("Couldn't find an email in " + content);
-        }
-        return m.group(1);
+        extractSendersFromMultipart((MimeMultipart)msg.getContent(), accum);
     }
 
-    private String extractSenderFromDirectEmail(MimeMessage msg)
+    private void extractSendersFromMultipart(MimeMultipart mp, Set<String> accum)
+            throws MessagingException, IOException {
+        for (int i=0; i < mp.getCount(); i++) {
+            MimeBodyPart bp = (MimeBodyPart)mp.getBodyPart(i);
+            String type = bp.getContentType();
+            if (type.startsWith("multipart/alternative")) {
+                extractSendersFromMultipart((MimeMultipart)bp.getContent(), accum);
+            } else if (type.startsWith("text/")) {
+                extractSendersFromText((String)bp.getContent(), accum);
+            } else if (type.startsWith("application/pgp-signature")) {
+                // Ignore.
+            } else {
+                log.warning("Unknown type: " + type);
+            }
+        }
+    }
+
+    private void extractSendersFromText(String text, Set<String> accum) {
+        Matcher m = ATTACHED_EMAIL_PATTERN.matcher(text);
+        while (m.find()) {
+            accum.add(m.group(1));
+        }
+    }
+
+    private void extractSendersFromDirectEmail(MimeMessage msg, Set<String> accum)
             throws MessagingException {
         Address[] from = msg.getFrom();
         if (from.length != 1) {
-            throw new RuntimeException(
-                    "I don't know what to do with messages with "
-                    + from.length + " senders.");
+            log.warning("Got " + from.length + " direct senders.");
         }
-        return ((InternetAddress) from[0]).getAddress();
+        for (int i=0; i < from.length ; i++) {
+            accum.add(((InternetAddress) from[i]).getAddress());
+        }
     }
 
     private boolean shouldIgnore(String sender) {
