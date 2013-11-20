@@ -35,18 +35,10 @@ public class MailHandlerServlet extends HttpServlet {
     static {
         String validOuter = "a-zA-Z0-9_";
         String validInner = validOuter + ".+-";
-        String vo = "[" + validOuter + "]";
-        String vi = "[" + validInner + "]";
-        String delimiter = "[^" + validOuter + "]";
+        String outerClass = "[" + validOuter + "]";
+        String innerClass = "[" + validInner + "]";
         ATTACHED_EMAIL_PATTERN = Pattern.compile(
-                delimiter  // whitespace, <, ", : in a 'mailto:'
-                //      user
-                + "(" + vo + vi + "*"
-                //        @    example
-                      + "@" + vi + "+"
-                //         .    com
-                      + "\\." + vo + "+)"
-                + delimiter);
+                "oi*@i+\\.o+".replace("o", outerClass).replace("i", innerClass));
     }
 
     private static String pathInfoFromUsername(String username) {
@@ -141,10 +133,14 @@ public class MailHandlerServlet extends HttpServlet {
         }
     }
 
-    private void extractSendersFromText(String text, Set<String> accum) {
+    /**
+     * Made public and static to simplify testing (and it's not using instance
+     * state after all.)
+     */
+    public static void extractSendersFromText(String text, Set<String> accum) {
         Matcher m = ATTACHED_EMAIL_PATTERN.matcher(text);
         while (m.find()) {
-            accum.add(m.group(1));
+            accum.add(m.group());
         }
     }
 
