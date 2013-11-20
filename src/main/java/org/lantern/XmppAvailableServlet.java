@@ -133,7 +133,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 name, mode, resource, hostAndPort, fallbackHostAndPort,
                 isFallbackProxy);
 
-        handleVersionUpdate(userId, doc, responseJson);
+        handleVersionUpdate(doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
@@ -142,7 +142,7 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.signedIn(from, language);
     }
 
-    private void handleVersionUpdate(String userId, Document doc, Map<String, Object> responseJson) {
+    private void handleVersionUpdate(Document doc, Map<String, Object> responseJson) {
         String s = LanternControllerUtils.getProperty(doc, LanternConstants.UPDATE_KEY);
         if (StringUtils.isBlank(s)) {
             return;
@@ -151,11 +151,20 @@ public class XmppAvailableServlet extends HttpServlet {
         Dao dao = new Dao();
         LanternVersion latestVersion = dao.getLatestLanternVersion();
         if (clientVersion.compareTo(latestVersion.getSemanticVersion()) < 0) {
-            responseJson.put(LanternConstants.UPDATE_KEY, latestVersion.getId());
-            String date = DateFormatUtils.format(latestVersion.getReleaseDate(), "yyyy-MM-dd");
-            responseJson.put(LanternConstants.UPDATE_RELEASE_DATE_KEY, date);
-            responseJson.put(LanternConstants.UPDATE_URL_KEY, latestVersion.getInfoUrl());
+            addVersion(latestVersion, responseJson);
         }
+    }
+
+    private void addVersion(LanternVersion version, Map<String, Object> responseJson) {
+        SemanticVersion sv = version.getSemanticVersion();
+        Map<String, Object> versionInfo = new HashMap<String, Object>();
+        versionInfo.put("major", sv.getMajor());
+        versionInfo.put("minor", sv.getMinor());
+        versionInfo.put("patch", sv.getPatch());
+        versionInfo.put("tag", sv.getTag());
+        versionInfo.put("infoUrl", version.getInfoUrl());
+        versionInfo.put("releaseDate", DateFormatUtils.format(version.getReleaseDate(), "yyyy-MM-dd"));
+        responseJson.put(LanternConstants.UPDATE_KEY, versionInfo);
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
