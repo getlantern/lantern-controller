@@ -8,13 +8,19 @@ angular.module('LanternVersion', [])
 
     $http.get(ENDPOINT_LATEST).then(
       function onSuccess(response) {
-        if (response.data.releaseDate) {
-          response.data.releaseDate = response.data.releaseDate.substring(0, 10);
-        }
         $rootScope.latest = response.data;
+        var latest = $rootScope.latest;
+        if (latest.releaseDate && latest.releaseDate.length > 10) {
+          // trim off the time
+          latest.releaseDate = latest.releaseDate.substring(0, 10);
+        }
       },
       function onFailure(data) {
-        $rootScope.error = data;
+        $rootScope.error = 'Initial fetch of current latest version failed. ' +
+          'If the latest version has not yet been populated, this is expected; just ' +
+          'submit this form to populate it and this won\'t happen again. (Check the ' +
+          'js console to view the actual error response.)';
+        console.error('Initial fetch of current latest version failed:', data);
       }
     );
     $rootScope.submit = function () {

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
     <style>
       body { padding: 20px 100px; }
+      #error { margin: 20px; }
     </style>
   </head>
   <body>
@@ -15,10 +16,6 @@
       <div ng-class="{'form-group': true, 'has-error': latestForm.id.$invalid}">
         <label for="id" class="control-label">Version ID</label>
         <input id="id" name="id" class="form-control" type="text" ng-model="latest.id" placeholder="x.y.z-beta2" autofocus required>
-      </div>
-      <div ng-class="{'form-group': true, 'has-error': latestForm.gitSha.$invalid}">
-        <label for="gitSha" class="control-label">Git SHA</label>
-        <input id="gitSha" name="gitSha" class="form-control" type="text" ng-model="latest.gitSha" placeholder="a1b2c3" required>
       </div>
       <div ng-class="{'form-group': true, 'has-error': latestForm.releaseDate.$invalid}">
         <label for="releaseDate" class="control-label">Release Date</label>
@@ -30,10 +27,12 @@
         <input class="form-control" type="url" id="infoUrl" name="infoUrl" ng-model="latest.infoUrl" required
                placeholder="http://get-lantern.tumblr.com/post/xyz/lantern-x-y-z-beta2-just-went-live">
       </div>
+
       <button type="submit" class="btn btn-default" ng-click="submit()" ng-disabled="latestForm.$invalid || busy">
         {{busy && 'Updating...' || 'Update'}}
       </button>
-      <div class="help-block has-error" ng-show="error">Error: {{error | json}}</div>
+
+      <div id="error" class="alert alert-danger" ng-show="error">Error: {{error | json}}</div>
     </form>
   </body>
 </html>
