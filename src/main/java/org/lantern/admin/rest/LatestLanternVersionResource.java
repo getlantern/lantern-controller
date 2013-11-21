@@ -11,24 +11,24 @@ import javax.ws.rs.core.MediaType;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.lantern.data.Dao;
-import org.lantern.data.LanternVersion;
+import org.lantern.data.LatestLanternVersion;
 
 
-@Path("/LanternVersion/latest")
+@Path("/LatestLanternVersion")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LanternVersionResource {
-    private final static Logger LOG = Logger.getLogger("LanternVersionResource");
+public class LatestLanternVersionResource {
+    private final static Logger LOG = Logger.getLogger("LatestLanternVersionResource");
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public LanternVersion read() {
+    public LatestLanternVersion read() {
         Dao dao = new Dao();
         return dao.getLatestLanternVersion();
     }
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public void update(LanternVersion lanternVersion) throws Exception {
+    public void update(LatestLanternVersion lanternVersion) throws Exception {
         Dao dao = new Dao();
         dao.setLatestLanternVersion(lanternVersion);
     }

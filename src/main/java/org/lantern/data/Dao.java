@@ -90,8 +90,8 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
-        ObjectifyService.register(LanternVersion.class);
-        
+        ObjectifyService.register(LatestLanternVersion.class);
+
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
         ArrayList<String> timedCounters = new ArrayList<String>();
@@ -171,12 +171,12 @@ public class Dao extends DAOBase {
      * @throws NotFoundException Shouldn't happen in production because
      * we'll make sure to populate this before it's called.
      */
-    public LanternVersion getLatestLanternVersion() throws NotFoundException {
-        Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, LanternVersion.SINGLETON_KEY);
+    public LatestLanternVersion getLatestLanternVersion() throws NotFoundException {
+        Key<LatestLanternVersion> key = new Key<LatestLanternVersion>(LatestLanternVersion.class, LatestLanternVersion.SINGLETON_KEY);
         return ofy().get(key);
     }
 
-    public void setLatestLanternVersion(final LanternVersion lanternVersion) {
+    public void setLatestLanternVersion(final LatestLanternVersion lanternVersion) {
         ofy().put(lanternVersion);
     }
 
@@ -585,15 +585,14 @@ public class Dao extends DAOBase {
     }
 
     /**
-     * Uncomment the body of this method (and the call in RemoteApi.java) when
-     * initializing lantern-controller
+     * See https://github.com/getlantern/lantern-controller#setting-up-a-test-lantern-controller
      */
     public void createInitialUser(final String email) {
         if (true) {
             log.info("Flip the condition above if you really mean to run this.");
         } else {
             final Objectify ofy = ofy();
-            final LanternUser user = new LanternUser("lanternfriend@gmail.com");
+            final LanternUser user = new LanternUser("_pants@getlantern.org");
             user.setDegree(1);
             user.setEverSignedIn(true);
             user.setSponsor("lanternfriend@gmail.com");

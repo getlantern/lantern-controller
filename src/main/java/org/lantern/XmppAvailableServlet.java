@@ -15,21 +15,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.data.Dao;
-import org.lantern.data.LanternUser;
-import org.lantern.data.LanternVersion;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.xmpp.JID;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
@@ -145,26 +140,35 @@ public class XmppAvailableServlet extends HttpServlet {
     private void handleVersionUpdate(Document doc, Map<String, Object> responseJson) {
         String s = LanternControllerUtils.getProperty(doc, LanternConstants.UPDATE_KEY);
         if (StringUtils.isBlank(s)) {
+            log.info("no version info received, not sending any update info");
             return;
         }
         SemanticVersion clientVersion = SemanticVersion.from(s);
         Dao dao = new Dao();
         LanternVersion latestVersion = dao.getLatestLanternVersion();
-        if (clientVersion.compareTo(latestVersion.getSemanticVersion()) < 0) {
-            addVersion(latestVersion, responseJson);
+        if (clientVersion.compareTo(latestVersion) < 0) {
+            Map<String, Object> map = latestVersion.toMap();
+            String installerUrl = "https://s3.amazonaws.com/lantern/latest";
+            String os = LanternControllerUtils.getProperty(doc, LanternConstants.OS_KEY);
+            if (StringUtils.equalsIgnoreCase(os, "windows")) {
+                installerUrl += ".exe";
+            } else if (StringUtils.equalsIgnoreCase(os, "osx")) {
+                installerUrl += ".dmg";
+            } else if (StringUtils.equalsIgnoreCase(os, "ubuntu")) {
+                String arch = LanternControllerUtils.getProperty(doc, LanternConstants.ARCH_KEY);
+                if (arch.contains("64")) {
+                    installerUrl += "-64.deb";
+                } else {
+                    installerUrl += "-32.deb";
+                }
+            } else {
+                log.info("unexpected os: " + os);
+                return;
+            }
+            map.put("installerUrl", installerUrl);
+            responseJson.put(LanternConstants.UPDATE_KEY, map);
+            log.info(String.format("sending update info: %1$s", map));
         }
-    }
-
-    private void addVersion(LanternVersion version, Map<String, Object> responseJson) {
-        SemanticVersion sv = version.getSemanticVersion();
-        Map<String, Object> versionInfo = new HashMap<String, Object>();
-        versionInfo.put("major", sv.getMajor());
-        versionInfo.put("minor", sv.getMinor());
-        versionInfo.put("patch", sv.getPatch());
-        versionInfo.put("tag", sv.getTag());
-        versionInfo.put("infoUrl", version.getInfoUrl());
-        versionInfo.put("releaseDate", DateFormatUtils.format(version.getReleaseDate(), "yyyy-MM-dd"));
-        responseJson.put(LanternConstants.UPDATE_KEY, versionInfo);
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {

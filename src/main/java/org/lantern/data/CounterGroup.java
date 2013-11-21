@@ -2,11 +2,10 @@ package org.lantern.data;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.logging.Logger;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.NotPersistent;
 import javax.jdo.annotations.PersistenceCapable;
