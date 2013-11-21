@@ -3,6 +3,7 @@ package org.lantern.data;
 import javax.persistence.Id;
 
 import org.lantern.LanternVersion;
+import org.lantern.SemanticVersion;
 
 public class LatestLanternVersion extends LanternVersion {
     public final static String SINGLETON_KEY = "latest";
@@ -22,6 +23,8 @@ public class LatestLanternVersion extends LanternVersion {
 
     public void setId(String id) {
         this.id = id;
+        SemanticVersion sv = SemanticVersion.from(id);
+        become(sv);
     }
 
     public String getKey() {

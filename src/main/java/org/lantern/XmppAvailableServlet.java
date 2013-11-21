@@ -19,6 +19,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
+import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
@@ -144,30 +145,40 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
         SemanticVersion clientVersion = SemanticVersion.from(s);
+        log.info("clientVersion: " + clientVersion.toString());
         Dao dao = new Dao();
         LanternVersion latestVersion = dao.getLatestLanternVersion();
+        log.info("latestVersion: " + latestVersion.toString());
         if (clientVersion.compareTo(latestVersion) < 0) {
+            log.info("clientVersion < latestVersion, sending update notification");
             Map<String, Object> map = latestVersion.toMap();
             String installerUrl = "https://s3.amazonaws.com/lantern/latest";
             String os = LanternControllerUtils.getProperty(doc, LanternConstants.OS_KEY);
-            if (StringUtils.equalsIgnoreCase(os, "windows")) {
+            log.info("os: " + os);
+            if (StringUtils.isBlank(os)) {
+                log.info("blank os, bailing");
+                return;
+            } else if (StringUtils.equalsIgnoreCase(os, "windows")) {
                 installerUrl += ".exe";
             } else if (StringUtils.equalsIgnoreCase(os, "osx")) {
                 installerUrl += ".dmg";
             } else if (StringUtils.equalsIgnoreCase(os, "ubuntu")) {
                 String arch = LanternControllerUtils.getProperty(doc, LanternConstants.ARCH_KEY);
+                log.info("arch: " + arch);
                 if (arch.contains("64")) {
                     installerUrl += "-64.deb";
                 } else {
                     installerUrl += "-32.deb";
                 }
             } else {
-                log.info("unexpected os: " + os);
+                log.info("unexpected os: " + os + ", bailing");
                 return;
             }
+            log.info("sending installerUrl " + installerUrl);
             map.put("installerUrl", installerUrl);
-            responseJson.put(LanternConstants.UPDATE_KEY, map);
-            log.info(String.format("sending update info: %1$s", map));
+            JSONObject o = new JSONObject(map);
+            responseJson.put(LanternConstants.UPDATE_KEY, o);
+            log.info("sending update info: " + o.toJSONString());
         }
     }
 
