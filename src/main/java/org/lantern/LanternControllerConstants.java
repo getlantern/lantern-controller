@@ -19,6 +19,12 @@ public class LanternControllerConstants {
     public static final String DEFAULT_FALLBACK_HOST_AND_PORT;
     public static final String FALLBACK_PROXY_LAUNCHING = "launching";
 
+    /**
+     * The inviter for all invites triggered by an email request.
+     */
+    public static final String EMAIL_REQUEST_INVITER
+        = "invite@getlantern.org";
+
     private static String mandrillApiKey;
     private static String awsAccessKeyId;
     private static String awsSecretKey;

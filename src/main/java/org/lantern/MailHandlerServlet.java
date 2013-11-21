@@ -1,8 +1,10 @@
 package org.lantern;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +22,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.appengine.api.utils.SystemProperty;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 
 import org.lantern.data.Dao;
 
@@ -62,11 +68,6 @@ public class MailHandlerServlet extends HttpServlet {
         = pathInfoFromUsername("forward");
 
     /**
-     * The inviter for all invites triggered by this servlet.
-     */
-    private static final String INVITER = "invite@getlantern.org";
-
-    /**
      * Ignore emails matching these patterns.
      *
      * For example, we get a message from noreply@getlantern.org when we're added
@@ -101,14 +102,29 @@ public class MailHandlerServlet extends HttpServlet {
         }
         log.info("Got " + senders.size() + " senders.");
         Dao dao = new Dao();
+        List<String> batch = new ArrayList<String>(50);
         for (String sender : senders) {
             if (shouldIgnore(sender)) {
                 log.info("Ignoring " + sender);
             } else {
                 log.info("Adding invite to " + sender);
-                dao.addInviteAndApproveIfUnpaused(INVITER, sender, null);
+                batch.add(sender);
+                if (batch.size() == 50) {
+                    enqueueBatch(batch);
+                    batch.clear();
+                }
             }
         }
+        if (!batch.isEmpty()) {
+            enqueueBatch(batch);
+        }
+    }
+
+    private void enqueueBatch(List<String> batch) {
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/invite_requests_task")
+               .param("senders", StringUtils.join(batch, ",")));
     }
 
     private void extractSendersFromForwardedEmail(MimeMessage msg, Set<String> accum)
