@@ -1,13 +1,13 @@
 <!doctype html>
-<html ng-app="LanternVersion">
+<html ng-app="LatestLanternVersion">
   <head>
     <meta charset="utf-8">
     <script src="/bower_components/angular/angular.min.js"></script>
-    <script src="LanternVersion.js"></script>
+    <script src="latest.js"></script>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
     <style>
       body { padding: 20px 100px; }
-      #error { margin: 20px; }
+      .alert { margin: 20px; }
     </style>
   </head>
   <body>
@@ -32,7 +32,8 @@
         {{busy && 'Updating...' || 'Update'}}
       </button>
 
-      <div id="error" class="alert alert-danger" ng-show="error">Error: {{error | json}}</div>
+      <div class="alert alert-danger" ng-show="error">Error: {{error | json}}</div>
+      <div class="alert alert-success" ng-show="success">Saved</div>
     </form>
   </body>
 </html>

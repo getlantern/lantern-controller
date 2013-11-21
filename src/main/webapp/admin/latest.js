@@ -1,9 +1,11 @@
 'use strict';
 
-angular.module('LanternVersion', [])
-  .constant('ENDPOINT_LATEST', 'rest/LanternVersion/latest')
-  .constant('KEY_LATEST', 'latest') // must match data.LanternVersion.SINGLETON_KEY XXX DRY
-  .run(function ($http, $rootScope, ENDPOINT_LATEST, KEY_LATEST) {
+angular.module('LatestLanternVersion', [])
+  // must match the @Path annotation of org.lantern.admin.rest.LatestLanternVersionResource
+  .constant('ENDPOINT_LATEST', 'rest/LatestLanternVersion')
+   // must match org.lantern.data.LatestLanternVersion.SINGLETON_KEY
+  .constant('KEY_LATEST', 'latest')
+  .run(function ($http, $rootScope, $timeout, ENDPOINT_LATEST, KEY_LATEST) {
     $rootScope.latest = {};
 
     $http.get(ENDPOINT_LATEST).then(
@@ -25,9 +27,13 @@ angular.module('LanternVersion', [])
     );
     $rootScope.submit = function () {
       $rootScope.latest.key = KEY_LATEST;
-      $http.put(ENDPOINT_LATEST, $rootScope.latest);
+      $http.put(ENDPOINT_LATEST, $rootScope.latest).success(function () {
+        $rootScope.success = true;
+        $timeout(function () { delete $rootScope.success; }, 2000);
+      });
     };
   })
+  // XXX can we factor this out into a separate module?:
   .config(function($provide, $httpProvider) {
     // Set up global loading indicator behavior
     // See http://stackoverflow.com/questions/11956827/angularjs-intercept-all-http-json-responses
