@@ -1521,4 +1521,36 @@ public class Dao extends DAOBase {
                  + ret);
         return ret;
     }
+
+    /**
+     * RemoteApi script.
+     */
+    private static final boolean MASS_AUTHORIZE_INVITES_ENABLED = true;
+    public void authorizeQueuedInvites() {
+        if (!MASS_AUTHORIZE_INVITES_ENABLED) {
+            log.severe("Edit Dao.java and set MASS_AUTHORIZE_INVITES_ENABLED"
+                       + " to true to trigger this");
+        }
+        Map<String, Boolean> cache = new HashMap<String, Boolean>();
+        for (Invite invite : ofy().query(Invite.class)
+                                  .filter("status", Invite.Status.queued)) {
+            String inviteeId = invite.getInvitee();
+            boolean signedIn;
+            if (cache.containsKey(inviteeId)) {
+                signedIn = cache.get(inviteeId);
+            } else {
+                LanternUser invitee = findUser(inviteeId);
+                signedIn = invitee != null && invitee.isEverSignedIn();
+                cache.put(inviteeId, signedIn);
+            }
+            if (signedIn) {
+                log.info("Ignoring invite to already signed in user "
+                         + inviteeId);
+            } else {
+                FallbackProxyLauncher.authorizeInvite(invite.getInviter(),
+                                                      inviteeId);
+            }
+        }
+        log.info("All done.");
+    }
 }
