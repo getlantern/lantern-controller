@@ -106,14 +106,7 @@ public class MailHandlerServlet extends HttpServlet {
                 log.info("Ignoring " + sender);
             } else {
                 log.info("Adding invite to " + sender);
-                dao.addInvite(INVITER, sender, null);
-                // XXX DRY: we're doing more or less the same in
-                // XmppAvailableServlet.  We should really centralize this
-                // add-invite-and-authorize-right-away-if-invites-not-paused
-                // op somewhere, but I can't think of a good place to put it.
-                if (!dao.areInvitesPaused()) {
-                    FallbackProxyLauncher.authorizeInvite(INVITER, sender);
-                }
+                dao.addInviteAndApproveIfUnpaused(INVITER, sender, null);
             }
         }
     }

@@ -599,8 +599,21 @@ public class Dao extends DAOBase {
             return false;
         }
 
-        return true;
+        return result;
     }
+
+    // XXX: refactor to make a better home for this
+    public void addInviteAndApproveIfUnpaused(
+            String inviterId, String inviteeId, String refreshToken) {
+        if (addInvite(inviterId, inviteeId, refreshToken)) {
+            if (areInvitesPaused()) {
+                log.info("Invite held for approval.");
+            } else {
+                FallbackProxyLauncher.authorizeInvite(inviterId, inviteeId);
+            }
+        }
+    }
+
 
     /**
      * Uncomment the body of this method (and the call in RemoteApi.java) when

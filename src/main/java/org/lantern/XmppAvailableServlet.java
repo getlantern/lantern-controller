@@ -87,19 +87,10 @@ public class XmppAvailableServlet extends HttpServlet {
         
         if (isInvite(doc)) {
             log.info("Got invite in stanza: "+presence.getStanza());
-
             final String invitedEmail =
                     LanternControllerUtils.getProperty(doc,
                         LanternConstants.INVITED_EMAIL);
-
             queueInvite(xmpp, presence, doc, invitedEmail);
-
-            if (dao.areInvitesPaused()) {
-                log.info("Invites are paused, so not sending invite");
-            } else {
-                FallbackProxyLauncher.authorizeInvite(userId,
-                                                      invitedEmail);
-            }
             return;
         }
 
@@ -254,7 +245,8 @@ public class XmppAvailableServlet extends HttpServlet {
 
 
         final Dao dao = new Dao();
-        dao.addInvite(inviterEmail, invitedEmail, refreshToken);
+        dao.addInviteAndApproveIfUnpaused(
+                inviterEmail, invitedEmail, refreshToken);
         inviteSucceeded(xmpp, presence, invitedEmail);
     }
 
