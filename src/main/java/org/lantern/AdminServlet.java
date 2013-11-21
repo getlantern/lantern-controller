@@ -217,7 +217,12 @@ public class AdminServlet extends HttpServlet {
             if ("EVERYONE, AND I MEAN IT!".equals(to)) {
                 log.info("Sending to all users.");
                 for (LanternUser user : dao.getAllUsers()) {
-                    enqueueUpdateEmail(user, version);
+                    if (user.isEverSignedIn()) {
+                        enqueueUpdateEmail(user, version);
+                    } else {
+                        log.info("Not sending to " + user
+                                 + ": never signed in.");
+                    }
                 }
                 LanternControllerUtils.populateOKResponse(
                         response,
