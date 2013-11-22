@@ -77,8 +77,12 @@ public class MandrillEmailer {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
         }
-        String template
-            = isAlreadyUser ? "friend-notification" : "invite-notification";
+        // XXX: Temporarily disabled because there is no such
+        // "friend-notification" template at the time of this writing, and this
+        // was causing send_invite tasks to crash.
+        //String template
+        //    = isAlreadyUser ? "friend-notification" : "invite-notification";
+        String template = "invite-notification";
         String inviterNameOrEmail
             = StringUtils.isBlank(inviterName) ? inviterEmail : inviterName;
         String fromName
