@@ -1,10 +1,9 @@
 package org.lantern;
 
-import java.util.HashMap;
-import java.util.Map;
-import com.google.appengine.api.utils.SystemProperty;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+
+import com.google.appengine.api.utils.SystemProperty;
 
 /**
  * Constants for Lantern.
@@ -29,8 +28,6 @@ public class LanternControllerConstants {
     private static String awsAccessKeyId;
     private static String awsSecretKey;
     private static String mailChimpApiKey;
-
-    public static final VersionNumber LATEST_VERSION = new VersionNumber("0.21.2");
 
     public static final String BASE_URL = String.format("https://%1$s.appspot.com", SystemProperty.applicationId.get());
     static {

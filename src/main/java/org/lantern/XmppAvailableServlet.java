@@ -19,6 +19,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
+import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
@@ -119,12 +120,57 @@ public class XmppAvailableServlet extends HttpServlet {
                 name, mode, resource, hostAndPort, fallbackHostAndPort,
                 isFallbackProxy);
 
+        handleVersionUpdate(doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(from, language);
+    }
+
+    private void handleVersionUpdate(Document doc, Map<String, Object> responseJson) {
+        String s = LanternControllerUtils.getProperty(doc, LanternConstants.UPDATE_KEY);
+        if (StringUtils.isBlank(s)) {
+            log.info("no version info received, not sending any update info");
+            return;
+        }
+        SemanticVersion clientVersion = SemanticVersion.from(s);
+        log.info("clientVersion: " + clientVersion.toString());
+        Dao dao = new Dao();
+        LanternVersion latestVersion = dao.getLatestLanternVersion();
+        log.info("latestVersion: " + latestVersion.toString());
+        if (clientVersion.compareTo(latestVersion) < 0) {
+            log.info("clientVersion < latestVersion, sending update notification");
+            Map<String, Object> map = latestVersion.toMap();
+            String installerUrl = "https://s3.amazonaws.com/lantern/latest";
+            String os = LanternControllerUtils.getProperty(doc, LanternConstants.OS_KEY);
+            log.info("os: " + os);
+            if (StringUtils.isBlank(os)) {
+                log.info("blank os, bailing");
+                return;
+            } else if (StringUtils.equalsIgnoreCase(os, "windows")) {
+                installerUrl += ".exe";
+            } else if (StringUtils.equalsIgnoreCase(os, "osx")) {
+                installerUrl += ".dmg";
+            } else if (StringUtils.equalsIgnoreCase(os, "ubuntu")) {
+                String arch = LanternControllerUtils.getProperty(doc, LanternConstants.ARCH_KEY);
+                log.info("arch: " + arch);
+                if (arch.contains("64")) {
+                    installerUrl += "-64.deb";
+                } else {
+                    installerUrl += "-32.deb";
+                }
+            } else {
+                log.info("unexpected os: " + os + ", bailing");
+                return;
+            }
+            log.info("sending installerUrl " + installerUrl);
+            map.put("installerUrl", installerUrl);
+            JSONObject o = new JSONObject(map);
+            responseJson.put(LanternConstants.UPDATE_KEY, o);
+            log.info("sending update info: " + o.toJSONString());
+        }
     }
 
     private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
@@ -262,6 +308,7 @@ public class XmppAvailableServlet extends HttpServlet {
         return isInvite;
     }
 
+    
     private void sendUpdateTime(final Presence presence,
         final XMPPService xmpp, final Map<String, Object> responseJson) {
         log.info("Sending client the next update time.");
