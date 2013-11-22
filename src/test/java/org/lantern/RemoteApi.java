@@ -55,7 +55,6 @@ public class RemoteApi {
             final Dao dao = new Dao();
             /* Trigger your hacks here.*/
             //dao.createInitialUser("insertmyaccount@getlantern.org");
-            dao.authorizeQueuedInvites();
         } finally {
             installer.uninstall();
         }

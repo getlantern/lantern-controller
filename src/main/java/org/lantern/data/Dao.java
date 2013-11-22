@@ -1525,7 +1525,7 @@ public class Dao extends DAOBase {
     /**
      * RemoteApi script.
      */
-    private static final boolean MASS_AUTHORIZE_INVITES_ENABLED = true;
+    private static final boolean MASS_AUTHORIZE_INVITES_ENABLED = false;
     public void authorizeQueuedInvites() {
         if (!MASS_AUTHORIZE_INVITES_ENABLED) {
             log.severe("Edit Dao.java and set MASS_AUTHORIZE_INVITES_ENABLED"
