@@ -26,6 +26,7 @@ import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 import com.googlecode.objectify.Key;
+import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
@@ -89,8 +90,8 @@ public class Dao extends DAOBase {
         ObjectifyService.register(Invite.class);
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
-        ObjectifyService.register(LanternVersion.class);
-        
+        ObjectifyService.register(LatestLanternVersion.class);
+
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
         ArrayList<String> timedCounters = new ArrayList<String>();
@@ -166,30 +167,18 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void createOrUpdateLanternVersion(final LanternVersion lanternVersion) {
-
-        Boolean result = new RetryingTransaction<Boolean>() {
-            @Override
-            protected Boolean run(Objectify ofy) {
-                Key<LanternVersion> key = new Key<LanternVersion>(LanternVersion.class, lanternVersion.getId());
-                LanternVersion toSave = ofy.find(key);
-                if (toSave == null) {
-                    toSave = lanternVersion;
-                } else {
-                    toSave = toSave.merge(lanternVersion);
-                }
-                ofy.put(toSave);
-                ofy.getTxn().commit();
-                log.info("Transaction successful.");
-                return true;
-            }
-        }.run();
-
-        if (result == null) {
-            log.warning("Too much contention; giving up!");
-        }
+    /**
+     * @throws NotFoundException Shouldn't happen in production because
+     * we'll make sure to populate this before it's called.
+     */
+    public LatestLanternVersion getLatestLanternVersion() throws NotFoundException {
+        Key<LatestLanternVersion> key = new Key<LatestLanternVersion>(LatestLanternVersion.class, LatestLanternVersion.SINGLETON_KEY);
+        return ofy().get(key);
     }
 
+    public void setLatestLanternVersion(final LatestLanternVersion lanternVersion) {
+        ofy().put(lanternVersion);
+    }
 
     /**
      * @return a list of the counters that should be incremented as a
@@ -616,15 +605,14 @@ public class Dao extends DAOBase {
 
 
     /**
-     * Uncomment the body of this method (and the call in RemoteApi.java) when
-     * initializing lantern-controller
+     * See https://github.com/getlantern/lantern-controller#setting-up-a-test-lantern-controller
      */
     public void createInitialUser(final String email) {
         if (true) {
             log.info("Flip the condition above if you really mean to run this.");
         } else {
             final Objectify ofy = ofy();
-            final LanternUser user = new LanternUser("lanternfriend@gmail.com");
+            final LanternUser user = new LanternUser("_pants@getlantern.org");
             user.setDegree(1);
             user.setEverSignedIn(true);
             user.setSponsor("lanternfriend@gmail.com");

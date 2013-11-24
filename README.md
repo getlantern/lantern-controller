@@ -42,7 +42,7 @@ management tasks:
 ## Setting up a Test Lantern Controller
 
  1. Set up a appengine instance
- 2. In `Dao.java`, uncomment the body of the method `createInitialUser`.
+ 2. In `Dao.java`, flip the boolean guard in `createInitialUser`.
  3. Deploy your app using `deploy.py` (make sure to specify the right instance
     name).
  4. Open `org.lantern.RemoteApi.java` and edit it to call

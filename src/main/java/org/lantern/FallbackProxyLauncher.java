@@ -1,18 +1,16 @@
 package org.lantern;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
-
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
-import org.littleshoot.util.ThreadUtils;
+
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 
 
 /**

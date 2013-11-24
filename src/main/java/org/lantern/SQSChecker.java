@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.lantern.data.Dao;
 
+
 @SuppressWarnings("serial")
 public class SQSChecker extends HttpServlet {
     private static final transient Logger log = Logger
