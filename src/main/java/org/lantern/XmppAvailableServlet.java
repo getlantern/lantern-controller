@@ -95,7 +95,7 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
-        handleFriendsSync(doc, presence.getFromJid(), xmpp);
+        //handleFriendsSync(doc, presence.getFromJid(), xmpp);
 
         String modeStr = LanternControllerUtils.getProperty(doc, "mode");
         Mode mode;

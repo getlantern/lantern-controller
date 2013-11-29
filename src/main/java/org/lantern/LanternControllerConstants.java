@@ -44,7 +44,7 @@ public class LanternControllerConstants {
         }
     }
 
-    public static final long UPDATE_TIME_MILLIS = 60 * 1000;
+    public static final long UPDATE_TIME_MILLIS = 5 * 60 * 1000;
 
     public static final int MAX_USERS = 100;
     public static final String TEAM_EMAIL = "team@getlantern.org";
