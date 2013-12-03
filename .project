@@ -1,24 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-  <name>lantern-controller</name>
-  <comment>Lantern is a peer-to-peer and trust-network-based tool for circumventing censors and preventing monitoring. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
-  <projects/>
-  <buildSpec>
-    <buildCommand>
-      <name>org.eclipse.jdt.core.javabuilder</name>
-    </buildCommand>
-    <buildCommand>
-      <name>com.google.gdt.eclipse.core.webAppProjectValidator</name>
-    </buildCommand>
-    <buildCommand>
-      <name>com.google.appengine.eclipse.core.projectValidator</name>
-    </buildCommand>
-    <buildCommand>
-      <name>com.google.appengine.eclipse.core.enhancerbuilder</name>
-    </buildCommand>
-  </buildSpec>
-  <natures>
-    <nature>org.eclipse.jdt.core.javanature</nature>
-    <nature>com.google.appengine.eclipse.core.gaeNature</nature>
-  </natures>
+	<name>lantern-controller</name>
+	<comment>Lantern is a peer-to-peer and trust-network-based tool for circumventing censors and preventing monitoring. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.python.pydev.PyDevBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>com.google.gdt.eclipse.core.webAppProjectValidator</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>com.google.appengine.eclipse.core.projectValidator</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>com.google.appengine.eclipse.core.enhancerbuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>com.google.appengine.eclipse.core.gaeNature</nature>
+		<nature>org.python.pydev.pythonNature</nature>
+	</natures>
 </projectDescription>
