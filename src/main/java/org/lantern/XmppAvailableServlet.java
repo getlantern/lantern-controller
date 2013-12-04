@@ -278,21 +278,10 @@ public class XmppAvailableServlet extends HttpServlet {
             inviteFailed(xmpp, presence, invitedEmail, "Bad address");
             return;
         }
-        final String refreshToken = LanternControllerUtils.getProperty(
-                doc, LanternConstants.INVITER_REFRESH_TOKEN);
-        if (refreshToken == null) {
-            log.info("No refresh token.");
-            //do not even queue invite, because no refresh token
-            return;
-        } else {
-            log.info("Refresh token starts with: "
-                     + refreshToken.substring(0, 12) + "...");
-        }
-
 
         final Dao dao = new Dao();
         dao.addInviteAndApproveIfUnpaused(
-                inviterEmail, invitedEmail, refreshToken);
+                inviterEmail, invitedEmail, null);
         inviteSucceeded(xmpp, presence, invitedEmail);
     }
 
