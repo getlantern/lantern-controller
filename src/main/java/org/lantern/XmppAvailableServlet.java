@@ -87,9 +87,13 @@ public class XmppAvailableServlet extends HttpServlet {
         }
         
         if (isInvite(doc)) {
-            log.info("Got invite in stanza: "+presence.getStanza());
+            log.info("Got invite in stanza: " + presence.getStanza());
             // Invites are now handled by FriendEndpoint, but old clients will
-            // still send them via XMPP - just ignore
+            // still send them via XMPP - just keep processing them as before
+            final String invitedEmail =
+                    LanternControllerUtils.getProperty(doc,
+                            LanternConstants.INVITED_EMAIL);
+            queueInvite(xmpp, presence, doc, invitedEmail);
             return;
         }
 
@@ -235,6 +239,61 @@ public class XmppAvailableServlet extends HttpServlet {
             log.severe("Error reading client message: " + e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    private void inviteSucceeded(XMPPService xmpp, Presence presence,
+            String invitedEmail) {
+        HashMap<String, Object> responseJson = new HashMap<String, Object>();
+        List<String> invited = Arrays.asList(invitedEmail);
+        responseJson.put(LanternConstants.INVITED_KEY, invited);
+        sendResponse(presence, xmpp, responseJson);
+    }
+
+    private void inviteFailed(final XMPPService xmpp, final Presence presence,
+            final String invitedEmail, String reason) {
+        HashMap<String, Object> responseJson = new HashMap<String, Object>();
+        final Map<String, Object> failedInvite = new HashMap<String, Object>();
+        failedInvite.put(LanternConstants.INVITED_EMAIL, invitedEmail);
+        failedInvite.put(LanternConstants.INVITE_FAILED_REASON, reason);
+        final List<Map<String, Object>> failedInvites = new ArrayList<Map<String, Object>>();
+        failedInvites.add(failedInvite);
+        responseJson.put(LanternConstants.FAILED_INVITES_KEY, failedInvites);
+        sendResponse(presence, xmpp, responseJson);
+    }
+
+    private void queueInvite(XMPPService xmpp, final Presence presence, final Document doc,
+            final String invitedEmail) {
+        // XXX this is really a jabberid, email template makes it a "mailto:" link
+        final String inviterEmail = LanternControllerUtils.userId(presence);
+
+        if (StringUtils.isBlank(invitedEmail)) {
+            log.severe("No e-mail to invite?");
+            inviteFailed(xmpp, presence, invitedEmail, "Blank invite");
+            return;
+        }
+        if (invitedEmail.contains("public.talk.google.com")) {
+            // This is a google talk JID and not an e-mail address -- we
+            // can't use it!.
+            log.info("Can't e-mail a Google Talk ID. Ignoring.");
+            inviteFailed(xmpp, presence, invitedEmail, "Bad address");
+            return;
+        }
+        final String refreshToken = LanternControllerUtils.getProperty(
+                doc, LanternConstants.INVITER_REFRESH_TOKEN);
+        if (refreshToken == null) {
+            log.info("No refresh token.");
+            //do not even queue invite, because no refresh token
+            return;
+        } else {
+            log.info("Refresh token starts with: "
+                     + refreshToken.substring(0, 12) + "...");
+        }
+
+
+        final Dao dao = new Dao();
+        dao.addInviteAndApproveIfUnpaused(
+                inviterEmail, invitedEmail, refreshToken);
+        inviteSucceeded(xmpp, presence, invitedEmail);
     }
 
     private boolean isInvite(final Document doc) {
