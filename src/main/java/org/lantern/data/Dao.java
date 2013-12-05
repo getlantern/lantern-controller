@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.Random;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
@@ -1252,7 +1254,7 @@ public class Dao extends DAOBase {
         String desc = "Invite from " + inviterEmail
                       + " to " + inviteeEmail
                       + ": setting status to " + toStatus;
-        boolean statusUpdated = tx.run();
+        Boolean statusUpdated = tx.run();
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
@@ -1432,7 +1434,23 @@ public class Dao extends DAOBase {
      * is being launched.
      */
     public Integer incrementFallbackInvites(final String userId,
-                                            final int increment) {
+                                            int increment) {
+        final int STAT_QUANTUM = 10;
+        if (increment == 1) {
+            // We're getting spammed by these and this whole system is
+            // stochastic anyway, so let's do statistical increments.
+            if (new Random().nextInt(STAT_QUANTUM) == 0) {
+                increment = STAT_QUANTUM;
+            } else {
+                // XXX HACK: don't launch a new proxy.
+                //
+                // Actual figures will be returned next time we roll a zero.
+                // Ten more or less invites assigned to a proxy don't matter,
+                // esp. when we're overloaded.
+                return 0;
+            }
+        }
+        final int inc = increment;
         RetryingTransaction<Integer> txn = new RetryingTransaction<Integer>() {
             protected Integer run(Objectify ofy) {
                 String instanceId = ofy.find(LanternUser.class, userId)
@@ -1444,7 +1462,7 @@ public class Dao extends DAOBase {
                 LanternInstance instance = findInstance(ofy,
                                                         userId,
                                                         instanceId);
-                instance.incrementNumberOfInvitesForFallback(increment);
+                instance.incrementNumberOfInvitesForFallback(inc);
                 ofy.put(instance);
                 ofy.getTxn().commit();
                 return instance.getNumberOfInvitesForFallback();
@@ -1452,7 +1470,19 @@ public class Dao extends DAOBase {
         };
         Integer ret = txn.run();
         if (txn.failed()) {
-            throw new RuntimeException("Too much contention!");
+            log.severe("Too much contention!");
+            if (increment > STAT_QUANTUM) {
+                // We're handling a proxy-up notification.  We don't want to
+                // hold the sending of invite emails to users that are waiting
+                // for this proxy to come up, so the best we can do without
+                // a bigger revamp of this system is to log this and at least
+                // return the right value.
+                logPermanently(UUID.randomUUID().toString(),
+                               "Failed to record " + increment
+                               + " invites for " + userId);
+                return increment;
+            }
+            return 0;
         }
         return ret;
     }
