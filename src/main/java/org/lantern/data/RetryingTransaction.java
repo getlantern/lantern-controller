@@ -2,6 +2,7 @@ package org.lantern.data;
 
 import java.util.ConcurrentModificationException;
 import java.util.logging.Logger;
+import java.util.Random;
 
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
@@ -25,6 +26,9 @@ public abstract class RetryingTransaction<T> {
                 return result;
             } catch (final ConcurrentModificationException e) {
                 log.info("Concurrent modification! Retrying...");
+                try {
+                    Thread.sleep(500 + new Random().nextInt(1000));
+                } catch (InterruptedException ex) {}
                 continue;
             } finally {
                 if (ofy.getTxn().isActive()) {
