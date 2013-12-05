@@ -616,8 +616,21 @@ public class Dao extends DAOBase {
 
     private Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
-        return ofy.find(Invite.class,
-                        Invite.makeId(inviterEmail, inviteeEmail));
+        Invite ret = ofy.find(Invite.class,
+                              Invite.makeId(inviterEmail, inviteeEmail));
+        if (ret != null) {
+            return ret;
+        }
+        // Transition: we may have old invites with an ancestor.
+        Objectify otherOfy = ofy();
+        try {
+            return otherOfy.query(Invite.class)
+                           .filter("inviter", inviterEmail)
+                           .filter("invitee", inviteeEmail)
+                           .get();
+        } catch (NotFoundException e) {
+            return null;
+        }
     }
 
     public boolean isInvited(final String email) {
