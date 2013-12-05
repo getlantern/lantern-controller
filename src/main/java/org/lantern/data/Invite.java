@@ -26,17 +26,14 @@ public class Invite {
     // Determined by both inviter and invitee; see makeId.
     private String id;
 
-    @Parent
-    // TRANSITION: this points to the inviter's fallbackProxyUserId if they
-    // have a non-null one.  Otherwise (or for old invites created before the
-    // fallback-balancing scheme was deployed) this points to the inviter.
-    private Key<LanternUser> inviterKey;
-
     @Persistent
     private String inviter;
 
     @Persistent
     private String invitee;
+
+    @Persistent
+    private String fallbackProxyUser;
 
     // Status transitions only ever advance monotonically in the order in which
     // they are listed below.
@@ -59,17 +56,17 @@ public class Invite {
     public Invite() {
     };
 
-    public Invite(String inviter, String invitee, String parent) {
+    public Invite(String inviter, String invitee, String fallbackProxyUser) {
         this.id = makeId(inviter, invitee);
-        this.inviterKey = new Key<LanternUser>(LanternUser.class, parent);
         this.inviter = inviter;
         this.invitee = invitee;
+        this.fallbackProxyUser = fallbackProxyUser;
     }
 
     public static String makeId(String inviterEmail, String inviteeEmail) {
         return inviterEmail + "\1" + inviteeEmail;
     }
-    
+
     public static String[] parseId(String id) {
         return id.split("\1");
     }
@@ -84,6 +81,10 @@ public class Invite {
 
     public String getInvitee() {
         return invitee;
+    }
+
+    public String getFallbackProxyUser() {
+        return fallbackProxyUser;
     }
 
     public Status getStatus() {

@@ -101,9 +101,10 @@ public class FallbackProxyLauncher {
                                   installerLocation,
                                   ip,
                                   port);
+        dao.setFallbackForNewInvitees(fallbackProxyUserId, instanceId);
         final Collection<Invite> invites =
-            dao.setFallbackAndGetAuthorizedInvites(
-                    fallbackProxyUserId, instanceId);
+            dao.getAuthorizedInvitesForFallbackProxyUserId(
+                    fallbackProxyUserId);
         incrementFallbackInvites(fallbackProxyUserId,
                                  invites.size());
         for (Invite invite : invites) {
@@ -154,7 +155,8 @@ public class FallbackProxyLauncher {
                     "Fallback proxy user without refresh token?" + userId);
         }
         String launching = LanternControllerConstants.FALLBACK_PROXY_LAUNCHING;
-        if (launching.equals(dao.setUserFallback(userId, launching))) {
+        if (launching.equals(dao.setFallbackForNewInvitees(
+                        userId, launching))) {
             log.warning("We were already launching a proxy for this user.");
             return;
         }
@@ -188,7 +190,10 @@ public class FallbackProxyLauncher {
                                  inviteeEmail,
                                  Invite.Status.authorized,
                                  Invite.Status.sending)) {
-            log.severe("Bad invite state.");
+            // We may get these if an invite comes shortly after a fallback
+            // proxy comes up, so we send it immediately (because the proxy is
+            // up), but we also suspect it to have been waiting for the proxy.
+            log.warning("Bad invite state.");
             return;
         }
         LanternUser inviter = dao.findUser(inviterEmail);
