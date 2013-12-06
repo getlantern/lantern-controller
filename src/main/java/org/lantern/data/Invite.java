@@ -26,6 +26,11 @@ public class Invite {
     // Determined by both inviter and invitee; see makeId.
     private String id;
 
+    // Bogus; this is actually the same as the id.
+    // For backwards compatibility.
+    @Parent
+    private Key<LanternUser> inviterKey;
+
     @Persistent
     private String inviter;
 
@@ -57,7 +62,8 @@ public class Invite {
     };
 
     public Invite(String inviter, String invitee, String fallbackProxyUser) {
-        this.id = makeId(inviter, invitee);
+        id = makeId(inviter, invitee);
+        inviterKey = new Key<LanternUser>(LanternUser.class, id);
         this.inviter = inviter;
         this.invitee = invitee;
         this.fallbackProxyUser = fallbackProxyUser;

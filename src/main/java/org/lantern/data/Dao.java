@@ -616,8 +616,12 @@ public class Dao extends DAOBase {
 
     private Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
-        Invite ret = ofy.find(Invite.class,
-                              Invite.makeId(inviterEmail, inviteeEmail));
+        // We try this first not for performance, but to get integrity guarantees
+        // on new invites.
+        String id = Invite.makeId(inviterEmail, inviteeEmail);
+        Key<LanternUser> bogusParentKey
+            = new Key<LanternUser>(LanternUser.class, id);
+        Invite ret = ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
         if (ret != null) {
             return ret;
         }
