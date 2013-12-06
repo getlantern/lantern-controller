@@ -1,12 +1,7 @@
 package org.lantern;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -21,12 +16,9 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
-import org.lantern.data.LegacyFriend;
-import org.lantern.data.LegacyFriends;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
-import com.google.appengine.api.xmpp.JID;
 import com.google.appengine.api.xmpp.Message;
 import com.google.appengine.api.xmpp.MessageBuilder;
 import com.google.appengine.api.xmpp.MessageType;
@@ -88,12 +80,7 @@ public class XmppAvailableServlet extends HttpServlet {
         
         if (isInvite(doc)) {
             log.info("Got invite in stanza: " + presence.getStanza());
-            // Invites are now handled by FriendEndpoint, but old clients will
-            // still send them via XMPP - just keep processing them as before
-            final String invitedEmail =
-                    LanternControllerUtils.getProperty(doc,
-                            LanternConstants.INVITED_EMAIL);
-            queueInvite(xmpp, presence, doc, invitedEmail);
+            // Invites are now handled by FriendEndpoint, so we just ignore them
             return;
         }
 
@@ -173,127 +160,6 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.UPDATE_KEY, o);
             log.info("sending update info: " + o.toJSONString());
         }
-    }
-
-    private boolean handleFriendsSync(Document doc, JID fromJid, XMPPService xmpp) {
-        //handle friends sync
-        final String friendsJson =
-                LanternControllerUtils.getProperty(doc, LanternConstants.FRIENDS);
-
-        log.info("Handling friend sync");
-        Dao dao = new Dao();
-
-        String userId = LanternXmppUtils.jidToEmail(fromJid.getId());
-
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new MrBeanModule());
-
-        if (StringUtils.isEmpty(friendsJson)) {
-
-            final String friendJson =
-                    LanternControllerUtils.getProperty(doc, LanternConstants.FRIEND);
-            if (StringUtils.isEmpty(friendJson)) {
-                return false;
-            }
-
-            log.info("Syncing single friend");
-            LegacyFriend clientFriend = safeMap(friendJson, mapper, LegacyFriend.class);
-            dao.syncFriend(userId, clientFriend);
-            return true;
-        }
-
-
-        LegacyFriends clientFriends = safeMap(friendsJson, mapper, LegacyFriends.class);
-
-        log.info("Synced friends count = " + clientFriends.getFriends().size());
-
-        List<LegacyFriend> changed = dao.syncFriends(userId, clientFriends);
-        log.info("Changed friends count = " + changed.size());
-        if (changed.size() > 0) {
-            Map<String, Object> response = new HashMap<String, Object>();
-            response.put(LanternConstants.FRIENDS, changed);
-            String json = JsonUtils.jsonify(response);
-
-            Message msg = new MessageBuilder()
-                    .withRecipientJids(fromJid).withBody(json)
-                    .withMessageType(MessageType.HEADLINE).build();
-            log.info("Sending response:\n" + json.toString());
-            xmpp.sendMessage(msg);
-        }
-
-        return true;
-    }
-
-    private <T> T safeMap(final String json, final ObjectMapper mapper, Class<T> cls) {
-        try {
-            return mapper.readValue(json, cls);
-        } catch (final UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        } catch (final JsonParseException e) {
-            log.severe("Error parsing client message: " + e.getMessage());
-            throw new RuntimeException(e);
-        } catch (final JsonMappingException e) {
-            log.severe("Error parsing client message: " + e.getMessage());
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            log.severe("Error reading client message: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void inviteSucceeded(XMPPService xmpp, Presence presence,
-            String invitedEmail) {
-        HashMap<String, Object> responseJson = new HashMap<String, Object>();
-        List<String> invited = Arrays.asList(invitedEmail);
-        responseJson.put(LanternConstants.INVITED_KEY, invited);
-        sendResponse(presence, xmpp, responseJson);
-    }
-
-    private void inviteFailed(final XMPPService xmpp, final Presence presence,
-            final String invitedEmail, String reason) {
-        HashMap<String, Object> responseJson = new HashMap<String, Object>();
-        final Map<String, Object> failedInvite = new HashMap<String, Object>();
-        failedInvite.put(LanternConstants.INVITED_EMAIL, invitedEmail);
-        failedInvite.put(LanternConstants.INVITE_FAILED_REASON, reason);
-        final List<Map<String, Object>> failedInvites = new ArrayList<Map<String, Object>>();
-        failedInvites.add(failedInvite);
-        responseJson.put(LanternConstants.FAILED_INVITES_KEY, failedInvites);
-        sendResponse(presence, xmpp, responseJson);
-    }
-
-    private void queueInvite(XMPPService xmpp, final Presence presence, final Document doc,
-            final String invitedEmail) {
-        // XXX this is really a jabberid, email template makes it a "mailto:" link
-        final String inviterEmail = LanternControllerUtils.userId(presence);
-
-        if (StringUtils.isBlank(invitedEmail)) {
-            log.severe("No e-mail to invite?");
-            inviteFailed(xmpp, presence, invitedEmail, "Blank invite");
-            return;
-        }
-        if (invitedEmail.contains("public.talk.google.com")) {
-            // This is a google talk JID and not an e-mail address -- we
-            // can't use it!.
-            log.info("Can't e-mail a Google Talk ID. Ignoring.");
-            inviteFailed(xmpp, presence, invitedEmail, "Bad address");
-            return;
-        }
-        final String refreshToken = LanternControllerUtils.getProperty(
-                doc, LanternConstants.INVITER_REFRESH_TOKEN);
-        if (refreshToken == null) {
-            log.info("No refresh token.");
-            //do not even queue invite, because no refresh token
-            return;
-        } else {
-            log.info("Refresh token starts with: "
-                     + refreshToken.substring(0, 12) + "...");
-        }
-
-
-        final Dao dao = new Dao();
-        dao.addInviteAndApproveIfUnpaused(
-                inviterEmail, invitedEmail, refreshToken);
-        inviteSucceeded(xmpp, presence, invitedEmail);
     }
 
     private boolean isInvite(final Document doc) {
