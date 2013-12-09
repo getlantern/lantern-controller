@@ -34,6 +34,9 @@ import com.google.appengine.api.xmpp.Presence;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 
+import com.googlecode.objectify.NotFoundException;
+
+
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
 
@@ -158,7 +161,13 @@ public class XmppAvailableServlet extends HttpServlet {
         SemanticVersion clientVersion = SemanticVersion.from(s);
         log.info("clientVersion: " + clientVersion.toString());
         Dao dao = new Dao();
-        LanternVersion latestVersion = dao.getLatestLanternVersion();
+        LanternVersion latestVersion;
+        try {
+            latestVersion = dao.getLatestLanternVersion();
+        } catch (NotFoundException e) {
+            log.severe("No latest version set in this controller?");
+            return;
+        }
         log.info("latestVersion: " + latestVersion.toString());
         if (clientVersion.compareTo(latestVersion) < 0) {
             log.info("clientVersion < latestVersion, sending update notification");
