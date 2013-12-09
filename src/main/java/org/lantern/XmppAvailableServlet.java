@@ -74,8 +74,28 @@ public class XmppAvailableServlet extends HttpServlet {
                 "instanceId");
         final String hostAndPort = LanternControllerUtils.getProperty(doc,
                 LanternConstants.HOST_AND_PORT);
-        final String fallbackHostAndPort = LanternControllerUtils.getProperty(
-                doc, LanternConstants.FALLBACK_HOST_AND_PORT);
+
+        String fallbackConfigCookie = LanternControllerUtils.getProperty(
+                doc, LanternConstants.FALLBACK_COOKIE);
+        String fallbackHostAndPort;
+        if (StringUtils.isBlank(fallbackConfigCookie)) {
+            // Backwards compatibility.
+            fallbackHostAndPort = LanternControllerUtils.getProperty(
+                    doc, LanternConstants.FALLBACK_HOST_AND_PORT);
+        } else {
+            // The fallbackConfigCookie has a <scheme>|<payload> format, where
+            // <scheme> must currently be "bc" (backwards compatibility) and
+            // the rest is just the fallback host:port.
+            String[] parts = fallbackConfigCookie.split("\\|");
+            if (parts.length == 2 && parts[0] == "bc") {
+                fallbackHostAndPort = parts[1];
+            } else {
+                log.severe("Unrecognized fallbackConfigCookie: '"
+                           + fallbackConfigCookie + "'");
+                fallbackHostAndPort = null;
+            }
+        }
+
         final boolean isFallbackProxy = "true".equalsIgnoreCase(
                 LanternControllerUtils.getProperty(doc,
                         LanternConstants.IS_FALLBACK_PROXY));
