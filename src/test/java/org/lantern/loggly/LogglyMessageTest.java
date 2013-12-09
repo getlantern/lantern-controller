@@ -18,20 +18,6 @@ public class LogglyMessageTest {
                 "org.lantern.loggly.LogglyMessageTest.throwException"));
     }
 
-    @Test
-    public void testEqualityAndHashcode() throws Exception {
-        LogglyMessage m1 = newMessage("1");
-        LogglyMessage m2 = newMessage("1");
-        LogglyMessage m3 = newMessage("1").setThrowable(null);
-        LogglyMessage m4 = newMessage("1").setThrowable(null);
-
-        assertEquals(m1, m2);
-        assertFalse(m1.equals(m3));
-        assertFalse(m3.equals(m4));
-
-        assertEquals(m1.hashCode(), m2.hashCode());
-    }
-
     private LogglyMessage newMessage(String message) {
         try {
             catchException();
