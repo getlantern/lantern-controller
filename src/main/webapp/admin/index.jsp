@@ -71,5 +71,14 @@ Send to: <input type="text" name="to" value="test@getlantern.org">
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<h2>Test resetting fallback.json</h2>
+<p>(Temporary) enter an email and a fallback proxy configuration (see example text) and we'll set that configuration in that client next time they log in.</p>
+<form method="POST" action="/admin/post/testFallbackConfigUpdate">
+Email: <input type="text" name="email" value="aranhoide@gmail.com">
+Json: <input type="textarea" name="json" value='{"cookie": "bc|12.34.56.78:5555", "proxies": [{"ip": "12.34.56.78", "port": 5555}]}'>
+<button type="submit" name="set" value="true">Reset fallback.json</button>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+
 </body>
 </html>

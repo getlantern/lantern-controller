@@ -23,6 +23,7 @@ import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriends;
+import org.lantern.data.UserFallbackConfig;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -144,12 +145,27 @@ public class XmppAvailableServlet extends HttpServlet {
                 isFallbackProxy);
 
         handleVersionUpdate(doc, responseJson);
+        testFallbackConfig(from, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
 
         dao.signedIn(from, language);
+    }
+
+    private void testFallbackConfig(String userId,
+                                    Map<String, Object> responseJson) {
+        Dao dao = new Dao();
+        UserFallbackConfig cfg = dao.ofy().find(UserFallbackConfig.class, userId);
+        if (cfg == null) {
+            log.info("No fallback config.");
+        } else {
+            log.info("Setting fallback config.");
+            responseJson.put(LanternConstants.FALLBACK_UPDATE_KEY,
+                             cfg.getJson());
+            //dao.ofy().delete(cfg);
+        }
     }
 
     private void handleVersionUpdate(Document doc, Map<String, Object> responseJson) {

@@ -93,6 +93,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
         ObjectifyService.register(LatestLanternVersion.class);
+        ObjectifyService.register(UserFallbackConfig.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();

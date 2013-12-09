@@ -26,6 +26,7 @@ import com.google.appengine.api.users.UserServiceFactory;
 
 import org.lantern.data.Dao;
 import org.lantern.data.LanternUser;
+import org.lantern.data.UserFallbackConfig;
 
 
 public class AdminServlet extends HttpServlet {
@@ -278,5 +279,19 @@ public class AdminServlet extends HttpServlet {
                     "Parameter can't be null or empty: " + param);
         }
         return raw.trim();
+    }
+
+    public void testFallbackConfigUpdate(HttpServletRequest request,
+                                         HttpServletResponse response,
+                                         String[] pathComponents) {
+        try {
+            String email = checkAndTrim(request, "email");
+            String json = checkAndTrim(request, "json");
+            UserFallbackConfig config = new UserFallbackConfig(email, json);
+            new Dao().ofy().put(config);
+            LanternControllerUtils.populateOKResponse(response, "OK");
+        } catch (IOException e) {
+            LanternControllerUtils.populateErrorResponse(response, e.toString());
+        }
     }
 }
