@@ -134,15 +134,6 @@
   </servlet>
 
   <servlet>
-      <servlet-name>mailhandler</servlet-name>
-      <servlet-class>org.lantern.MailHandlerServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-      <servlet-name>mailhandler</servlet-name>
-      <url-pattern>/_ah/mail/*</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
     <servlet-name>Jersey REST Service</servlet-name>
     <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
     <init-param>
@@ -184,7 +175,6 @@
       <url-pattern>/send_invite_task</url-pattern>
       <url-pattern>/invite_requests_task</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
-      <url-pattern>/_ah/mail/*</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
