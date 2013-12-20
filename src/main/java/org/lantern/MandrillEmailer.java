@@ -174,7 +174,7 @@ public class MandrillEmailer {
         final Map<String, String> to = new HashMap<String, String>();
         to.put("email", toEmail);
         msg.put("to", Arrays.asList(to));
-        msg.put("track_opens", false);
+        msg.put("track_opens", true);
         msg.put("track_clicks", false);
         msg.put("auto_text", true);
         msg.put("url_strip_qs", true);

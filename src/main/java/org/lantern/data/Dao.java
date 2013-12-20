@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.Random;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
@@ -325,9 +327,9 @@ public class Dao extends DAOBase {
             return;
         }
 
-        Boolean updateInvites = new RetryingTransaction<Boolean>() {
+        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
             @Override
-            protected Boolean run(Objectify txnOfy) {
+            protected Void run(Objectify txnOfy) {
                 LanternUser user = txnOfy.find(LanternUser.class, userId);
 
                 // The only point of the transaction is to protect the read
@@ -343,13 +345,13 @@ public class Dao extends DAOBase {
                                    userId + "'s fallback host and port "
                                    + hostAndPort
                                    + " don't match any fallback proxy.");
-                    return false;
+                    return null;
                 } else if (matches.size() > 1) {
                     log.severe(matches.size() + "instances found with ip:port"
                                + hostAndPort + "!");
                     // Bail rather than pair user with someone they don't
                     // trust.
-                    return false;
+                    return null;
                 }
 
                 LanternInstance instance = matches.get(0);
@@ -359,7 +361,7 @@ public class Dao extends DAOBase {
                                    userId + " has obsolete fallback proxy "
                                    + instance.getId() + " of user "
                                    + instance.getUser());
-                    return false;
+                    return null;
                 }
 
                 String oldFpuid = user.getFallbackProxyUserId();
@@ -389,60 +391,15 @@ public class Dao extends DAOBase {
                     txnOfy.getTxn().commit();
                 }
 
-                return fpUserChanged;
+                return null;
             }
-        }.run();
-
-        if (updateInvites == null) {
+        };
+        txn.run();
+        if (txn.failed()) {
             log.warning("Transaction failed!");
-        } else if (updateInvites) {
-            updateInvitesToFallbackBalancingScheme(userId);
         }
     }
 
-    /** Update invites for this user so they're parented to its
-     * fallbackProxyUserId.
-     *
-     * In the old scheme, invites were parented to the inviter instead.
-     *
-     * TRANSITION: this can be removed as soon as there are no longer old
-     * Invites or users without fallbackProxyUserId.
-     */
-    private void updateInvitesToFallbackBalancingScheme(final String userId) {
-        log.info("Updating " + userId + "'s invites.");
-        Objectify ofy = ofy();
-        Key<LanternUser> userKey = new Key<LanternUser>(
-                                        LanternUser.class, userId);
-        LanternUser user = ofy.get(userKey);
-        String fpuid = user.getFallbackProxyUserId();
-        if (fpuid == userId) {
-            // In this case the old Invites happen to have the right parent.
-            log.info("No need; " + userId
-                     + " is their own fallbackProxyUserId");
-            return;
-        }
-        List<Invite> invites = ofy.query(Invite.class)
-                                  .filter("inviter", userId)
-                                  .list();
-        log.info("Got " + invites.size() + " invites from " + userId
-                 + " to update.");
-        for (Invite invite : invites) {
-            ofy.delete(invite);
-            Invite newInvite = new Invite(userId,
-                                          invite.getInvitee(),
-                                          fpuid);
-            newInvite.setStatus(invite.getStatus());
-            ofy.put(newInvite);
-        }
-
-        for (Invite invite : invites) {
-            if (invite.getStatus() == Invite.Status.authorized) {
-                log.info("Thawing invite to " + invite.getInvitee());
-                FallbackProxyLauncher.processAuthorizedInvite(
-                        userId, invite.getInvitee());
-            }
-        }
-    }
 
     /**
      * Allow user to start fallback proxies.
@@ -540,6 +497,7 @@ public class Dao extends DAOBase {
      * @return
      */
     public boolean addInvite(final String inviterId, final String inviteeEmail,
+            //XXX not used anymore
             final String refreshToken) {
         // We just add the invite object here. We create the invitee when the
         // invite is sent in shouldSendInvite (and yes, that one needs
@@ -557,14 +515,6 @@ public class Dao extends DAOBase {
                 if (alreadyInvitedBy(ofy, inviterId, inviteeEmail)) {
                     log.info("Not re-sending e-mail since user is already invited");
                     return false;
-                }
-
-                // XXX: We don't really need a refresh token for new inviters
-                // unless we want to make them fallbackProxyUsers in the
-                // future.
-                if (refreshToken != null) {
-                    inviter.setRefreshToken(refreshToken);
-                    ofy.put(inviter);
                 }
 
                 String fpuid = inviter.getFallbackProxyUserId();
@@ -666,15 +616,25 @@ public class Dao extends DAOBase {
 
     private Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
-        Key<LanternUser> inviterKey = getUserKey(inviterEmail);
-        LanternUser inviter = ofy.find(inviterKey);
-        String fpuid = inviter.getFallbackProxyUserId();
-        Key<LanternUser> parentKey
-            = (fpuid == null) ? inviterKey : getUserKey(fpuid);
+        // We try this first not for performance, but to get integrity guarantees
+        // on new invites.
         String id = Invite.makeId(inviterEmail, inviteeEmail);
-        final Invite invite = ofy.find(new Key<Invite>(parentKey, Invite.class,
-                id));
-        return invite;
+        Key<LanternUser> bogusParentKey
+            = new Key<LanternUser>(LanternUser.class, id);
+        Invite ret = ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
+        if (ret != null) {
+            return ret;
+        }
+        // Transition: we may have old invites with an ancestor.
+        Objectify otherOfy = ofy();
+        try {
+            return otherOfy.query(Invite.class)
+                           .filter("inviter", inviterEmail)
+                           .filter("invitee", inviteeEmail)
+                           .get();
+        } catch (NotFoundException e) {
+            return null;
+        }
     }
 
     public boolean isInvited(final String email) {
@@ -970,8 +930,8 @@ public class Dao extends DAOBase {
     /**
      * @return the old one.
      */
-    public String setUserFallback(final String userId,
-                                  final String newFallback) {
+    public String setFallbackForNewInvitees(
+            final String userId, final String newFallback) {
         RetryingTransaction<String> txn = new RetryingTransaction<String>() {
             @Override
             public String run(Objectify ofy) {
@@ -986,68 +946,20 @@ public class Dao extends DAOBase {
 
         String old = txn.run();
         if (txn.failed()) {
-            // XXX: is really returning our best guess better than failing?
-            log.warning("Gave up because of too much contention!");
+            throw new RuntimeException(
+                    "Gave up because of too much contention!");
         }
         return old;
     }
 
-   /**
-    * Perform, as an atomic operation, the setting of the fallbackForNewUsers
-    * and the getting of the invites had been waiting for the fallback proxy to
-    * come up.
-    *
-    * Return up to `maxInvitesPerProxy` invites, leaving the rest queued for the
-    * next instance.
-    *
-    * This is to prevent the case that an invitation is processed between
-    * these operations, thus triggering the sending of two invite e-mails
-    * (one in the handling of the server-up event, and another in the
-    * handling of the invitation proper, which sees the server as available
-    * and thus sends the e-mail immediately).
-    *
-    * While this would not be terrible, it's not hard to avoid either.
-    */
-    public Collection<Invite> setFallbackAndGetAuthorizedInvites(
-            final String userId, final String instanceId) {
-        // The GAE datastore only gives strong consistency guarantees for
-        // queries that specify an 'ancestor' constraint ("ancestor queries").
-        // In addition, no other queries are allowed in a transaction.
-        //
-        // As of this writing, we are only ever querying invites per inviter,
-        // hence the grouping.
-        final Key<LanternUser> ancestor = getUserKey(userId);
-
-        RetryingTransaction<Collection<Invite>> txn =
-                new RetryingTransaction<Collection<Invite>>() {
-            int maxInvites = settingsManager.getInteger("maxInvitesPerProxy");
-            @Override
-            public Collection<Invite> run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                if (user == null) {
-                    throw new RuntimeException("Unknown user? " + userId);
-                }
-                user.setFallbackForNewInvitees(instanceId);
-                final Collection<Invite> invites = ofy.query(Invite.class)
-                    .ancestor(ancestor)
-                    .filter("status =", Invite.Status.authorized)
+    public Collection<Invite> getAuthorizedInvitesForFallbackProxyUserId(
+            String userId) {
+        int maxInvites = settingsManager.getInteger("maxInvitesPerProxy");
+        return ofy().query(Invite.class)
+                    .filter("status", Invite.Status.authorized)
+                    .filter("fallbackProxyUser", userId)
                     .limit(maxInvites)
                     .list();
-                ofy.put(user);
-                ofy.getTxn().commit();
-                log.info("Returning " + invites.size() + " invites.");
-                return invites;
-            }
-        };
-
-        Collection<Invite> invites = txn.run();
-
-        if (txn.failed()) {
-            throw new RuntimeException(
-                    "Gave up because of too many failed transactions!");
-        }
-
-        return invites;
     }
 
     private boolean emailsMatch(final String one, final String other) {
@@ -1252,7 +1164,7 @@ public class Dao extends DAOBase {
         String desc = "Invite from " + inviterEmail
                       + " to " + inviteeEmail
                       + ": setting status to " + toStatus;
-        boolean statusUpdated = tx.run();
+        Boolean statusUpdated = tx.run();
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
@@ -1432,7 +1344,23 @@ public class Dao extends DAOBase {
      * is being launched.
      */
     public Integer incrementFallbackInvites(final String userId,
-                                            final int increment) {
+                                            int increment) {
+        final int STAT_QUANTUM = 10;
+        if (increment == 1) {
+            // We're getting spammed by these and this whole system is
+            // stochastic anyway, so let's do statistical increments.
+            if (new Random().nextInt(STAT_QUANTUM) == 0) {
+                increment = STAT_QUANTUM;
+            } else {
+                // XXX HACK: don't launch a new proxy.
+                //
+                // Actual figures will be returned next time we roll a zero.
+                // Ten more or less invites assigned to a proxy don't matter,
+                // esp. when we're overloaded.
+                return 0;
+            }
+        }
+        final int inc = increment;
         RetryingTransaction<Integer> txn = new RetryingTransaction<Integer>() {
             protected Integer run(Objectify ofy) {
                 String instanceId = ofy.find(LanternUser.class, userId)
@@ -1444,7 +1372,7 @@ public class Dao extends DAOBase {
                 LanternInstance instance = findInstance(ofy,
                                                         userId,
                                                         instanceId);
-                instance.incrementNumberOfInvitesForFallback(increment);
+                instance.incrementNumberOfInvitesForFallback(inc);
                 ofy.put(instance);
                 ofy.getTxn().commit();
                 return instance.getNumberOfInvitesForFallback();
@@ -1452,7 +1380,19 @@ public class Dao extends DAOBase {
         };
         Integer ret = txn.run();
         if (txn.failed()) {
-            throw new RuntimeException("Too much contention!");
+            log.severe("Too much contention!");
+            if (increment > STAT_QUANTUM) {
+                // We're handling a proxy-up notification.  We don't want to
+                // hold the sending of invite emails to users that are waiting
+                // for this proxy to come up, so the best we can do without
+                // a bigger revamp of this system is to log this and at least
+                // return the right value.
+                logPermanently(UUID.randomUUID().toString(),
+                               "Failed to record " + increment
+                               + " invites for " + userId);
+                return increment;
+            }
+            return 0;
         }
         return ret;
     }
