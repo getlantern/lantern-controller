@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>{{COMPILED_CSS}}</style>
+  </head>
+  <body>
+    <div class="banner">
+      <a href="https://www.getlantern.org/">
+        <img class="logo" height="100" width="217" src="https://raw.github.com/getlantern/graphics/master/logo/email-header.png" alt="Lantern">
+      </a>
+    </div>
+    {% if (LANGS|length) > 1 %}
+    <div class="langbar">
+      <ul>
+        {% for lang in LANGS -%}
+        <li><a href="#{{lang.code}}">{{lang.name}}</a> ∙ </li>
+        {%- endfor %}
+        <li><a href="https://github.com/getlantern/lantern/wiki/Translating-Lantern">Help Translate</a></li>
+      </ul>
+    </div>
+    {% endif %}
+
+    {% for lang in LANGS %}
+    <div class="lang-container {{lang.dir}}" dir="{{lang.dir}}">
+      <p>{{'HOW_TO_GET_LANTERN'|trans(lang)}}</p>
+      
+      <div class="footer">
+        <ul>
+          <li><a href="https://www.getlantern.org/">{{'HOMEPAGE'|trans(lang)}}</a></li> ∙
+          <li><a href="https://groups.google.com/group/lantern-users-en">{{'FORUMS'|trans(lang)}}</a></li> ∙
+          <li><a href="https://github.com/getlantern/lantern/wiki">{{'DOCS'|trans(lang)}}</a></li> ∙
+          <li><a href="https://github.com/getlantern/lantern">{{'DEVELOPERS'|trans(lang)}}</a></li>
+        </ul>
+      </div>
+    </div>
+    {% endfor -%}
+
+  </body>
+</html>

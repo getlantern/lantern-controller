@@ -3,7 +3,6 @@
     "NOTE_BODY_FROM_DEVS": "<i>Vì đây là phiên bản phát hành thử nghiệm, nên những trải nghiệm cũng như những ý kiến phản hồi từ phía bạn khi sử dụng chương trình sẽ là nguồn động lực cũng như sự trợ giúp lớn lao mà chúng tôi nhận được. Xin đừng ngại cũng như e dè khi muốn liên hệ với chúng tôi, xin bạn hãy vui lòng truy cập <b><a href=\"https://github.com/getlantern/lantern/wiki/Get-Involved\">Trang Tham Gia Vào Dự Án</a></b>. Xin cảm ơn bạn rất nhiều, hãy cùng chia sẻ thông tin về Lantern cho nhiều người khác vì một Internet không bị kiểm duyệt nhé!</i>",
     "INVITED_HEADER": "Gửi lời mời sử dụng Lantern bản thử nghiệm",
     "UPDATE_HEADER": "New Lantern Version Available",
-    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "MINVER_UBUNTU": "Ubuntu 12.04+",
     "PROMPT_HEADER_NEED": "Bạn cần có một kết nối không bị kiểm duyệt?",
     "LANTERN_BLURB": "Lantern kết nối mọi người trên toàn thế giới lại với nhau trong một mạng xã hội nhằm chia sẻ các kết nối internet với mục tiêu <i> thoát khỏi tình trạng kiểm duyệt</i>. Hãy tải về ngay bây giờ để có thể truy cập vì một thế giới internet tự do trên toàn cầu!",
@@ -15,6 +14,7 @@
     "NOTE_HEADER_GOOGLE": "Lantern cần có một tài khoản Google để có thể được hoạt động trơn tru.",
     "NOTE_BODY_BETA": "Chúng tôi đang nỗ lực hết sức mình để có thể phân phối phần mềm Lantern đến mọi người dùng trên khắp thế giới. Bạn cũng có thể tham gia vào quy trình phổ biến Lantern bằng cách <b>gửi các báo cáo về lỗi cũng như những ý kiến của chính bạn đến với chúng tôi</b> theo địa chỉ  <a href=\"https://groups.google.com/group/lantern-users-en\">tại diễn đàn này</a> hoặc thông qua phần liên lạc trên trang web của chúng tôi nếu bạn muốn ẩn đi danh tính của mình. Cùng với sự trợ giúp của bạn cũng như những người khác, chúng ta có thể cùng nhau tạo ra một công cụ chống lại các phương thức kiểm duyệt Internet trên toàn cầu.",
     "INVITED_SUBHEADER": "<a href=\"mailto:*|INVITER_EMAIL|*\">*|INVITER_NAME|*</a> hiện đang sử dụng <a href=\"https://www.getlantern.org\">Lantern</a> và muốn mời bạn tham gia.",
+    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "DOCS": "Tài liệu",
     "DEVELOPERS": "Các nhà phát triển",
     "HOMEPAGE": "Trang chủ",
@@ -32,5 +32,6 @@
     "NOTE_BODY_GOOGLE": "Nếu đây không phải là tài khoản Google, hãy phản hồi lại email này và yêu cầu *|INVITER_NAME|* để thêm bạn vào bằng một tài khoản khác.",
     "DOWNLOAD_SUBHEADER": "Các liên kết khác dành cho những người dùng khác nhau sẽ giúp cho Lantern trở nên dễ dàng truy cập hơn.",
     "PLEASE_NOTE": "Xin lưu ý:",
-    "PROMPT_INVITE": "Mỗi một máy tính bất kỳ được kết nối vào mạng lưới Lantern sẽ làm cho việc kiểm duyệt thông tin trở nên vô hiệu, vì vậy, xin hãy cài đặt Lantern, và thêm vào kết nối đến bạn bè, và cùng nhau lan tỏa sức mạnh tự do trên toàn bộ thế giới này!"
+    "PROMPT_INVITE": "Mỗi một máy tính bất kỳ được kết nối vào mạng lưới Lantern sẽ làm cho việc kiểm duyệt thông tin trở nên vô hiệu, vì vậy, xin hãy cài đặt Lantern, và thêm vào kết nối đến bạn bè, và cùng nhau lan tỏa sức mạnh tự do trên toàn bộ thế giới này!",
+    "HOW_TO_GET_LANTERN": "Lantern is no longer accepting requests for invitations.  In order to protect Lantern against infiltration by censors, all invitations are now made by friends to friends.  If you know and trust someone who is already using Lantern, please contact them to request an invitation."
 }

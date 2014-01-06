@@ -3,17 +3,18 @@
     "NOTE_BODY_FROM_DEVS": "<i>As one of our first beta testers, your usage and feedback at this early stage can make a huge contribution. Donʼt hesitate to get in touch, and please consider <b><a href=\"https://github.com/getlantern/lantern/wiki/Get-Involved\">Getting Involved</a></b>. Thank you, and to equal internet access the world over!</i>",
     "INVITED_HEADER": "Lantern Beta Invitation",
     "UPDATE_HEADER": "New Lantern Version Available",
-    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "MINVER_UBUNTU": "Ubuntu 12.04+",
     "PROMPT_HEADER_NEED": "Need an uncensored connection?",
     "LANTERN_BLURB": "Lantern connects people all over the world together in a social network for sharing internet connections that <i>keeps out censors</i>. Download now to give or get access to the open internet and help defeat censorship all over the world!",
     "PROMPT_BODY_HAVE": "By sharing your connection through Lantern, you can directly help people in your network who need it. It works automatically in the background, is easy to set up, and then stays out of your way.",
     "MINVER_WINDOWS": "Windows XP+",
+    "MORE_INFO": "More info:",
     "INSTALLATION": "Installation",
     "MINVER_OS_X": "Mac OS X 10.6+",
     "NOTE_HEADER_GOOGLE": "Lantern requires a Google account.",
     "NOTE_BODY_BETA": "We are working hard to get Lantern ready for larger-scale distribution. In the meantime, you may hit snags, but <b>you can help</b> by reporting any problems or suggestions in the <a href=\"https://groups.google.com/group/lantern-users-en\">forums</a> or privately through the Contact form in Lantern itself. Together with your help, we strive to build the most effective tool against censorship out there.",
     "INVITED_SUBHEADER": "<a href=\"mailto:*|INVITER_EMAIL|*\">*|INVITER_NAME|*</a> is using <a href=\"https://www.getlantern.org\">Lantern</a> and would like you to join.",
+    "UPDATE_SUBHEADER": "Lantern *|VERSION|* is out and available for download!",
     "DOCS": "Docs",
     "DEVELOPERS": "Developers",
     "HOMEPAGE": "Homepage",
@@ -31,5 +32,6 @@
     "NOTE_BODY_GOOGLE": "If this is not a Google account, reply to this email to ask *|INVITER_NAME|* to add you using a different account.",
     "DOWNLOAD_SUBHEADER": "Different links for different users makes it harder for censors to block Lantern.",
     "PLEASE_NOTE": "Please note:",
-    "PROMPT_INVITE": "Every additional computer running Lantern makes it that much harder for censors to block, so please run Lantern, add your friends, and spread the word!"
+    "PROMPT_INVITE": "Every additional computer running Lantern makes it that much harder for censors to block, so please run Lantern, add your friends, and spread the word!",
+    "HOW_TO_GET_LANTERN": "Lantern is no longer accepting requests for invitations.  In order to protect Lantern against infiltration by censors, all invitations are now made by friends to friends.  If you know and trust someone who is already using Lantern, please contact them to request an invitation."
 }
