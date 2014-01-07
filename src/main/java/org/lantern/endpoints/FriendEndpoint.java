@@ -8,9 +8,11 @@ import javax.inject.Named;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
+import org.lantern.data.Dao;
 import org.lantern.data.PMF;
 import org.lantern.data.ServerFriend;
 import org.lantern.state.Friend;
+import org.lantern.state.Friend.Status;
 
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
@@ -119,6 +121,11 @@ public class FriendEndpoint {
         
         log.info("Inserting friend");
         persist(mgr, friend);
+        
+        if (Friend.Status.friend == friend.getStatus()) {
+            invite(friend);
+        }
+        
         return friend;
     }
 
@@ -141,9 +148,13 @@ public class FriendEndpoint {
         final PersistenceManager mgr = getPersistenceManager();
         final ServerFriend existing = getExistingFriend(friend, user);
         if (existing != null) {
-            log.warning("Found existing friend?");
+            log.info("Found existing friend");
+            Status priorStatus = existing.getStatus();
             update(existing, friend);
             persist(mgr, existing);
+            if (Status.friend == friend.getStatus() && Status.friend != priorStatus) {
+                invite(friend);
+            }
             return existing;
         }
         friend.setUserEmail(email(user));
@@ -247,9 +258,16 @@ public class FriendEndpoint {
         }
         */
     }
+    
+    private void invite(Friend friend) {
+        log.info("Inviting friend");
+        final Dao dao = new Dao();
+        dao.addInviteAndApproveIfUnpaused(
+                friend.getUserEmail(), friend.getEmail(), null);
+    }
 
     private static PersistenceManager getPersistenceManager() {
         return PMF.get().getPersistenceManager();
     }
-
+    
 }
