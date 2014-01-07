@@ -37,6 +37,7 @@ management tasks:
 - `https://<appid>.appspot.com/admin/index.jsp` - misc. global state
 - `https://<appid>.appspot.com/admin/invites.html` - approve
   pending invites
+- `https://<appid>.appspot.com/admin/latest.html` - set latest lantern version
 
 
 ## Setting up a Test Lantern Controller
