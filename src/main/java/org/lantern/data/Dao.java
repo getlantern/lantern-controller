@@ -7,9 +7,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.Random;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
@@ -93,6 +93,8 @@ public class Dao extends DAOBase {
         ObjectifyService.register(PermanentLogEntry.class);
         ObjectifyService.register(TrustRelationship.class);
         ObjectifyService.register(LatestLanternVersion.class);
+        ObjectifyService.register(LanternFriend.class);
+        ObjectifyService.register(FriendingQuota.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
@@ -1480,5 +1482,53 @@ public class Dao extends DAOBase {
             }
         }
         log.info("All done.");
+    }
+    
+    /**
+     * Run the given call with Objectify and return the result.
+     * 
+     * @param call
+     * @return
+     */
+    public <T> T withObjectify(final DbCall<T> call) {
+        return call.call(ofy());
+    }
+
+    /**
+     * Execute the given call in a transaction and return the result;
+     * 
+     * @param call
+     * @return the result of calling call
+     * @throws TxFailure
+     *             if the transaction fails
+     */
+    public <T> T withTransaction(final DbCall<T> call) throws TxFailure {
+        RetryingTransaction<T> tx = new RetryingTransaction<T>() {
+            protected T run(Objectify ofy) {
+                T result = call.call(ofy);
+                ofy.getTxn().commit();
+                return result;
+            }
+        };
+        T result = tx.run();
+        if (tx.failed()) {
+            throw new RuntimeException("Transaction failed!");
+        }
+        return result;
+    }
+ 
+    /**
+     * Callback for execution within a transaction.
+     * 
+     * @param <T>
+     */
+    public interface DbCall<T> {
+        T call(Objectify ofy);
+    }
+    
+    public static class TxFailure extends RuntimeException {
+        public TxFailure() {
+            super("Transaction failed");
+        }
     }
 }

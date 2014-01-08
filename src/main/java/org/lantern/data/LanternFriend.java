@@ -1,44 +1,47 @@
 package org.lantern.data;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-
+import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
+import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import com.googlecode.objectify.Key;
+import com.googlecode.objectify.annotation.Parent;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@PersistenceCapable
-public class ServerFriend implements org.lantern.state.Friend {
+@Entity
+public class LanternFriend implements org.lantern.state.Friend {
 
-    @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    @Parent
+    @JsonIgnore
+    private Key<FriendingQuota> quota;
+
+    @Id
     private Long id;
-    
-    @Persistent
     private String email;
-
-    @Persistent
     private String userEmail;
-
-    @Persistent
     private Status status = Status.pending;
-    
-    @Persistent
     public Long lastUpdated = System.currentTimeMillis();
-
     private String name;
 
-    public ServerFriend() {
+    public LanternFriend() {
     }
 
-    public ServerFriend(String email) {
+    public LanternFriend(String email) {
         this.email = email;
     }
-    
+
     public void setLongId(Long id) {
         this.id = id;
+    }
+
+    @JsonIgnore
+    public Key<FriendingQuota> getQuota() {
+        return quota;
+    }
+
+    public void setQuota(Key<FriendingQuota> quota) {
+        this.quota = quota;
     }
 
     @Override
@@ -60,7 +63,6 @@ public class ServerFriend implements org.lantern.state.Friend {
     public void setEmail(String email) {
         this.email = email;
     }
-    
 
     @Override
     public String getName() {
@@ -81,7 +83,7 @@ public class ServerFriend implements org.lantern.state.Friend {
     public void setStatus(Status status) {
         this.status = status;
     }
-    
+
     @Override
     public String getUserEmail() {
         return userEmail;
@@ -89,7 +91,13 @@ public class ServerFriend implements org.lantern.state.Friend {
 
     @Override
     public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail.toLowerCase();
+        this.userEmail = userEmail.trim().toLowerCase();
+        // Derive the FriendingQuota key from the user email
+        if (this.userEmail.length() > 0) {
+            this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
+        } else {
+            this.setQuota(null);
+        }
     }
 
     @Override
