@@ -97,6 +97,7 @@ public class BaseFriendEndpoint {
 
                 if (friended) {
                     if (!quota.checkAndIncrement()) {
+                        log.info("Friending quota exceeded");
                         return failure(quota);
                     }
                 }
@@ -142,8 +143,8 @@ public class BaseFriendEndpoint {
                             && Status.friend != priorStatus;
                     if (newlyFriended) {
                         if (!quota.checkAndIncrement()) {
-                            // TODO: return something meaningful here
-                            throw new RuntimeException("Hit limit");
+                            log.info("Friending quota exceeded");
+                            return failure(quota);
                         }
                     }
                     existing.setEmail(friend.getEmail());
