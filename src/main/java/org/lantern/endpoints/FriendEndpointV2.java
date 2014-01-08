@@ -16,7 +16,7 @@ import com.google.api.server.spi.response.UnauthorizedException;
  * Endpoint for interacting with the friends of a given user, version 2.
  */
 @Api(name = "friend",
-        version = "v1",
+        version = "v2",
         clientIds = { "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com" },
         scopes = { "https://www.googleapis.com/auth/userinfo.email" })
 public class FriendEndpointV2 extends BaseFriendEndpoint {
