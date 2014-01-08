@@ -42,7 +42,7 @@ public class BaseFriendEndpoint {
                                 ofy.query(LanternFriend.class)
                                         .ancestor(quota)
                                         .list());
-                        return FriendResponse.success(quota, friends);
+                        return success(quota, friends);
                     }
                 });
     }
@@ -63,7 +63,7 @@ public class BaseFriendEndpoint {
                         Key<LanternFriend> key = Key.create(parentKey,
                                 LanternFriend.class, id);
                         Friend friend = ofy.find(key);
-                        return FriendResponse.success(quota, friend);
+                        return success(quota, friend);
                     }
                 });
 
@@ -94,14 +94,14 @@ public class BaseFriendEndpoint {
                         friendEmail);
                 if (existing != null) {
                     log.warning("Found existing friend " + existing.getEmail());
-                    return FriendResponse.success(quota, existing);
+                    return success(quota, existing);
                 }
 
                 boolean friended = Friend.Status.friend == friend.getStatus();
 
                 if (friended) {
                     if (!quota.checkAndIncrement()) {
-                        return FriendResponse.failure(quota);
+                        return failure(quota);
                     }
                 }
 
@@ -113,7 +113,7 @@ public class BaseFriendEndpoint {
                     invite(friend);
                 }
 
-                return FriendResponse.success(quota, friend);
+                return success(quota, friend);
             }
         });
     }
@@ -158,7 +158,7 @@ public class BaseFriendEndpoint {
                         invite(friend);
                     }
                 }
-                return FriendResponse.success(quota, friend);
+                return success(quota, friend);
             }
         });
     }
@@ -178,7 +178,7 @@ public class BaseFriendEndpoint {
                         LanternFriend.class, id);
                 LanternFriend existing = ofy.get(key);
                 ofy.delete(existing);
-                return FriendResponse.success(quota, null);
+                return success(quota, null);
             }
         });
     }
@@ -259,4 +259,11 @@ public class BaseFriendEndpoint {
                 friend.getUserEmail(), friend.getEmail(), null);
     }
 
+    private <P> FriendResponse<P> success(FriendingQuota quota, P payload) {
+        return new FriendResponse<P>(true, quota.getRemainingQuota(), payload);
+    }
+
+    private <P> FriendResponse<P> failure(FriendingQuota quota) {
+        return new FriendResponse<P>(false, quota.getRemainingQuota(), null);
+    }
 }
