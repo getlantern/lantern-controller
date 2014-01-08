@@ -249,11 +249,6 @@ public class BaseFriendEndpoint {
             log.warning("User is unauthorized!");
             throw new UnauthorizedException("Unauthorized");
         }
-        /*
-         * final Dao dao = new Dao(); final String email = email(user); if
-         * (!dao.isInvited(email)) { throw new
-         * UnauthorizedException("Unauthorized"); }
-         */
     }
 
     private void invite(Friend friend) {
