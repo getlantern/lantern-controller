@@ -225,9 +225,6 @@ public class BaseFriendEndpoint {
             LanternUser user = ofy.find(LanternUser.class, userEmail);
             int maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
                     - user.getDegree();
-            // Everyone gets at least MIN_MAX_FRIENDS friends
-            maxFriends = Math.max(maxFriends,
-                    LanternControllerConstants.MIN_MAX_FRIENDS);
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
         }
