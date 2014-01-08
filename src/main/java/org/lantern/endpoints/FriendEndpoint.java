@@ -35,7 +35,7 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public List<Friend> listFriend(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doListFriend(user).getPayload();
+        return doListFriend(user).payload();
     }
 
     /**
@@ -55,7 +55,7 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend getFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doGetFriend(id, user).getPayload();
+        return doGetFriend(id, user).payload();
     }
 
     /**
@@ -74,7 +74,7 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend insertFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doInsertFriend(friend, user).getPayload();
+        return doInsertFriend(friend, user).payload();
     }
 
     /**
@@ -93,7 +93,7 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend updateFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doUpdateFriend(friend, user).getPayload();
+        return doUpdateFriend(friend, user).payload();
     }
 
     /**

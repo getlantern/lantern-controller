@@ -9,11 +9,13 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@org.codehaus.jackson.annotate.JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 public class LanternFriend implements org.lantern.state.Friend {
 
     @Parent
     @JsonIgnore
+    @org.codehaus.jackson.annotate.JsonIgnore
     private Key<FriendingQuota> quota;
 
     @Id
@@ -36,6 +38,7 @@ public class LanternFriend implements org.lantern.state.Friend {
     }
 
     @JsonIgnore
+    @org.codehaus.jackson.annotate.JsonIgnore
     public Key<FriendingQuota> getQuota() {
         return quota;
     }

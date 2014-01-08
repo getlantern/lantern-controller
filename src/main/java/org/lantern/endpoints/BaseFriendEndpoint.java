@@ -58,16 +58,12 @@ public class BaseFriendEndpoint {
                     @Override
                     public FriendResponse<Friend> call(Objectify ofy) {
                         FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
-                        Key<FriendingQuota> parentKey =
-                                Key.create(FriendingQuota.class, userEmail);
-                        Key<LanternFriend> key = Key.create(parentKey,
-                                LanternFriend.class, id);
-                        Friend friend = ofy.find(key);
-                        return success(quota, friend);
+                        Friend existing = getExistingFriendById(ofy, quota, id);
+                        return success(quota, existing);
                     }
                 });
 
-        if (!resp.getPayload().getUserEmail().toLowerCase().equals(userEmail)) {
+        if (!resp.payload().getUserEmail().toLowerCase().equals(userEmail)) {
             log.warning("Emails don't match?");
             throw new UnauthorizedException("Unauthorized");
         }
@@ -89,7 +85,7 @@ public class BaseFriendEndpoint {
                 friend.setUserEmail(userEmail);
 
                 FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
-                Friend existing = getExistingFriend(ofy,
+                Friend existing = getExistingFriendByEmail(ofy,
                         quota,
                         friendEmail);
                 if (existing != null) {
@@ -133,13 +129,14 @@ public class BaseFriendEndpoint {
             public FriendResponse<Friend> call(Objectify ofy) {
                 log.info("Updating friend...");
                 String userEmail = email(user);
-                String friendEmail = friend.getEmail();
                 FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
-                Friend existing = getExistingFriend(ofy,
+                Friend existing = getExistingFriendById(ofy,
                         quota,
-                        friendEmail);
-                if (existing != null) {
-                    log.info("Found existing friend");
+                        friend.getId());
+                if (existing == null) {
+                    log.warning("Didn't find existing friend to update");
+                } else {
+                    log.info("Found existing friend to update");
                     Status priorStatus = existing.getStatus();
                     boolean newlyFriended = Status.friend == friend.getStatus()
                             && Status.friend != priorStatus;
@@ -149,6 +146,7 @@ public class BaseFriendEndpoint {
                             throw new RuntimeException("Hit limit");
                         }
                     }
+                    existing.setEmail(friend.getEmail());
                     existing.setName(friend.getName());
                     existing.setStatus(friend.getStatus());
                     existing.setLastUpdated(friend.getLastUpdated());
@@ -172,11 +170,7 @@ public class BaseFriendEndpoint {
             public FriendResponse<Void> call(Objectify ofy) {
                 String userEmail = email(user);
                 FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
-                Key<FriendingQuota> parentKey =
-                        Key.create(FriendingQuota.class, userEmail);
-                Key<LanternFriend> key = Key.create(parentKey,
-                        LanternFriend.class, id);
-                LanternFriend existing = ofy.get(key);
+                LanternFriend existing = getExistingFriendById(ofy, quota, id);
                 ofy.delete(existing);
                 return success(quota, null);
             }
@@ -184,8 +178,7 @@ public class BaseFriendEndpoint {
     }
 
     /**
-     * Check for an existing friend to avoid duplicate friends that somehow are
-     * creeping into the database.
+     * Get an existing fried by their email address.
      * 
      * @param ofy
      *            the Objectify instance
@@ -196,13 +189,23 @@ public class BaseFriendEndpoint {
      * @return The existing friend or <code>null</code> if no such friend
      *         exists.
      */
-    private LanternFriend getExistingFriend(Objectify ofy,
+    private LanternFriend getExistingFriendByEmail(Objectify ofy,
             FriendingQuota quota,
             String friendEmail) {
         return ofy.query(LanternFriend.class)
                 .ancestor(quota)
                 .filter("email", friendEmail.toLowerCase())
                 .get();
+    }
+    
+    private LanternFriend getExistingFriendById(Objectify ofy,
+            FriendingQuota quota,
+            long id) {
+        Key<FriendingQuota> parentKey =
+                Key.create(FriendingQuota.class, quota.getEmail());
+        Key<LanternFriend> key = Key.create(parentKey,
+                LanternFriend.class, id);
+        return ofy.find(key);
     }
 
     /**
