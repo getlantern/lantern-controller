@@ -223,10 +223,12 @@ public class BaseFriendEndpoint {
         if (quota == null) {
             // Create a new quota for this user
             LanternUser user = ofy.find(LanternUser.class, userEmail);
-            quota = new FriendingQuota(
-                    userEmail,
-                    LanternControllerConstants.DEFAULT_MAX_FRIENDS
-                            - user.getDegree());
+            int maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
+                    - user.getDegree();
+            // Everyone gets at least MIN_MAX_FRIENDS friends
+            maxFriends = Math.max(maxFriends,
+                    LanternControllerConstants.MIN_MAX_FRIENDS);
+            quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
         }
         return quota;
