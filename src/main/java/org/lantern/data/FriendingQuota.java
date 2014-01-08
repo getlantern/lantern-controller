@@ -3,8 +3,16 @@ package org.lantern.data;
 import javax.persistence.Id;
 
 /**
+ * <p>
  * Tracks how much a user has friended versus how much they're allowed to
  * friend.
+ * </p>
+ * 
+ * <p>
+ * FriendingQuota is the ancestor of {@link LanternFriend}, thereby grouping all
+ * LanternFriends for a single {@link LanternUser} (key email) into a single entity
+ * group that is separate from the LanternUser's entity group.
+ * </p>
  */
 public class FriendingQuota {
     @Id
