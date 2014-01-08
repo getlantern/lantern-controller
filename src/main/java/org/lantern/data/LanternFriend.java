@@ -8,6 +8,17 @@ import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreP
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
 
+/**
+ * <p>
+ * Maps a friend relationship between a user identified by {@link #userEmail}
+ * and the friend's {@link #email}. Depending on the {@link #status}, the pair
+ * represented here may or may not actually be friends.
+ * </p>
+ * 
+ * <p>
+ * This class replaces the old {@link ServerFriend} class.
+ * </p>
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @org.codehaus.jackson.annotate.JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
