@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
@@ -13,8 +12,6 @@ import com.googlecode.objectify.Key;
 
 public class LanternUser implements Serializable {
     private static final long serialVersionUID = 1953109001251375722L;
-
-    private final transient Logger log = Logger.getLogger(getClass().getName());
 
     @Id
     private String id;

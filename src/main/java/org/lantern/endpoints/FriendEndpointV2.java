@@ -1,24 +1,22 @@
 package org.lantern.endpoints;
 
-import java.util.List;
-
 import javax.inject.Named;
 
 import org.lantern.data.LanternFriend;
-import org.lantern.state.Friend;
+import org.lantern.messages.FriendResponse;
 
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.response.UnauthorizedException;
 
 /**
- * Endpoint for interacting with the friends of a given user.
+ * Endpoint for interacting with the friends of a given user, version 2.
  */
 @Api(name = "friend",
-        version = "v1",
+        version = "v2",
         clientIds = { "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com" },
         scopes = { "https://www.googleapis.com/auth/userinfo.email" })
-public class FriendEndpoint extends BaseFriendEndpoint {
+public class FriendEndpointV2 extends BaseFriendEndpoint {
 
     /**
      * This method lists all the entities inserted in datastore. It uses HTTP
@@ -32,10 +30,10 @@ public class FriendEndpoint extends BaseFriendEndpoint {
             httpMethod = "GET",
             name = "friend.list",
             path = "friend/list")
-    public List<Friend> listFriend(
+    public FriendResponse listFriend(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doListFriend(user).payload();
+        return doListFriend(user);
     }
 
     /**
@@ -52,10 +50,10 @@ public class FriendEndpoint extends BaseFriendEndpoint {
             httpMethod = "GET",
             name = "friend.get",
             path = "friend/get/{id}")
-    public Friend getFriend(@Named("id") final Long id,
+    public FriendResponse getFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doGetFriend(id, user).payload();
+        return doGetFriend(id, user);
     }
 
     /**
@@ -71,10 +69,10 @@ public class FriendEndpoint extends BaseFriendEndpoint {
             httpMethod = "POST",
             name = "friend.insert",
             path = "friend/insert")
-    public Friend insertFriend(final LanternFriend friend,
+    public FriendResponse insertFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doInsertFriend(friend, user).payload();
+        return doInsertFriend(friend, user);
     }
 
     /**
@@ -90,10 +88,10 @@ public class FriendEndpoint extends BaseFriendEndpoint {
             httpMethod = "POST",
             name = "friend.update",
             path = "friend/update")
-    public Friend updateFriend(final LanternFriend friend,
+    public FriendResponse updateFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doUpdateFriend(friend, user).payload();
+        return doUpdateFriend(friend, user);
     }
 
     /**
@@ -108,9 +106,9 @@ public class FriendEndpoint extends BaseFriendEndpoint {
             httpMethod = "DELETE",
             name = "friend.remove",
             path = "friend/remove/{id}")
-    public void removeFriend(@Named("id") final Long id,
+    public FriendResponse removeFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        doRemoveFriend(id, user);
+        return doRemoveFriend(id, user);
     }
 }
