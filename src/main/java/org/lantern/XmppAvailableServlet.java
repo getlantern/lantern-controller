@@ -26,6 +26,9 @@ import com.google.appengine.api.xmpp.Presence;
 import com.google.appengine.api.xmpp.XMPPService;
 import com.google.appengine.api.xmpp.XMPPServiceFactory;
 
+import com.googlecode.objectify.NotFoundException;
+
+
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
 
@@ -66,8 +69,28 @@ public class XmppAvailableServlet extends HttpServlet {
                 "instanceId");
         final String hostAndPort = LanternControllerUtils.getProperty(doc,
                 LanternConstants.HOST_AND_PORT);
-        final String fallbackHostAndPort = LanternControllerUtils.getProperty(
-                doc, LanternConstants.FALLBACK_HOST_AND_PORT);
+
+        String fallbackConfigCookie = LanternControllerUtils.getProperty(
+                doc, LanternConstants.FALLBACK_COOKIE);
+        String fallbackHostAndPort;
+        if (StringUtils.isBlank(fallbackConfigCookie)) {
+            // Backwards compatibility.
+            fallbackHostAndPort = LanternControllerUtils.getProperty(
+                    doc, LanternConstants.FALLBACK_HOST_AND_PORT);
+        } else {
+            // The fallbackConfigCookie has a <scheme>|<payload> format, where
+            // <scheme> must currently be "bc" (backwards compatibility) and
+            // the rest is just the fallback host:port.
+            String[] parts = fallbackConfigCookie.split("\\|");
+            if (parts.length == 2 && parts[0] == "bc") {
+                fallbackHostAndPort = parts[1];
+            } else {
+                log.severe("Unrecognized fallbackConfigCookie: '"
+                           + fallbackConfigCookie + "'");
+                fallbackHostAndPort = null;
+            }
+        }
+
         final boolean isFallbackProxy = "true".equalsIgnoreCase(
                 LanternControllerUtils.getProperty(doc,
                         LanternConstants.IS_FALLBACK_PROXY));
@@ -127,7 +150,13 @@ public class XmppAvailableServlet extends HttpServlet {
         SemanticVersion clientVersion = SemanticVersion.from(s);
         log.info("clientVersion: " + clientVersion.toString());
         Dao dao = new Dao();
-        LanternVersion latestVersion = dao.getLatestLanternVersion();
+        LanternVersion latestVersion;
+        try {
+            latestVersion = dao.getLatestLanternVersion();
+        } catch (NotFoundException e) {
+            log.severe("No latest version set in this controller?");
+            return;
+        }
         log.info("latestVersion: " + latestVersion.toString());
         if (clientVersion.compareTo(latestVersion) < 0) {
             log.info("clientVersion < latestVersion, sending update notification");
