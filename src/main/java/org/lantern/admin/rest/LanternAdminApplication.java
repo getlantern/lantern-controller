@@ -21,6 +21,7 @@ public class LanternAdminApplication extends Application {
     public LanternAdminApplication() {
         resources.add(InvitesResource.class);
         resources.add(LatestLanternVersionResource.class);
+        resources.add(FriendingQuotaResource.class);
 
         // register Jackson ObjectMapper resolver
         resources.add(CustomObjectMapperProvider.class);

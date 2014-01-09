@@ -3,6 +3,7 @@ package org.lantern.endpoints;
 import javax.inject.Named;
 
 import org.lantern.data.LanternFriend;
+import org.lantern.friending.Friending;
 import org.lantern.messages.FriendResponse;
 
 import com.google.api.server.spi.config.Api;
@@ -33,7 +34,8 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
     public FriendResponse listFriend(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doListFriend(user);
+        checkAuthorization(user);
+        return Friending.listFriend(user);
     }
 
     /**
@@ -53,7 +55,8 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
     public FriendResponse getFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doGetFriend(id, user);
+        checkAuthorization(user);
+        return Friending.getFriend(id, user);
     }
 
     /**
@@ -72,7 +75,8 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
     public FriendResponse insertFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doInsertFriend(friend, user);
+        checkAuthorization(user);
+        return Friending.insertFriend(friend, user);
     }
 
     /**
@@ -91,7 +95,8 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
     public FriendResponse updateFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doUpdateFriend(friend, user);
+        checkAuthorization(user);
+        return Friending.updateFriend(friend, user);
     }
 
     /**
@@ -109,6 +114,7 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
     public FriendResponse removeFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doRemoveFriend(id, user);
+        checkAuthorization(user);
+        return Friending.removeFriend(id, user);
     }
 }
