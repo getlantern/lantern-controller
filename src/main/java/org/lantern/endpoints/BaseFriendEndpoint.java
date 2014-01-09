@@ -89,8 +89,8 @@ public class BaseFriendEndpoint {
                         quota,
                         friendEmail);
                 if (existing != null) {
-                    log.warning("Found existing friend " + existing.getEmail());
-                    return success(quota, existing);
+                    log.warning("Found existing friend, updating instead: " + existing.getEmail());
+                    return doDoUpdateFriend(ofy, quota, friend, existing);
                 }
 
                 boolean friended = Friend.Status.friend == friend.getStatus();
@@ -134,32 +134,39 @@ public class BaseFriendEndpoint {
                 Friend existing = getExistingFriendById(ofy,
                         quota,
                         friend.getId());
-                if (existing == null) {
-                    log.warning("Didn't find existing friend to update");
-                } else {
-                    log.info("Found existing friend to update");
-                    Status priorStatus = existing.getStatus();
-                    boolean newlyFriended = Status.friend == friend.getStatus()
-                            && Status.friend != priorStatus;
-                    if (newlyFriended) {
-                        if (!quota.checkAndIncrementTotalFriended()) {
-                            log.info("Friending quota exceeded");
-                            return failure(quota);
-                        }
-                    }
-                    existing.setEmail(friend.getEmail());
-                    existing.setName(friend.getName());
-                    existing.setStatus(friend.getStatus());
-                    existing.setLastUpdated(friend.getLastUpdated());
-                    ofy.put(existing);
-                    ofy.put(quota);
-                    if (newlyFriended) {
-                        invite(friend);
-                    }
-                }
-                return success(quota, friend);
+                return doDoUpdateFriend(ofy, quota, friend, existing);
             }
         });
+    }
+    
+    private FriendResponse<Friend> doDoUpdateFriend(Objectify ofy,
+            FriendingQuota quota,
+            Friend friend,
+            Friend existing) {
+        if (existing == null) {
+            log.warning("Didn't find existing friend to update");
+        } else {
+            log.info("Found existing friend to update");
+            Status priorStatus = existing.getStatus();
+            boolean newlyFriended = Status.friend == friend.getStatus()
+                    && Status.friend != priorStatus;
+            if (newlyFriended) {
+                if (!quota.checkAndIncrementTotalFriended()) {
+                    log.info("Friending quota exceeded");
+                    return failure(quota);
+                }
+            }
+            existing.setEmail(friend.getEmail());
+            existing.setName(friend.getName());
+            existing.setStatus(friend.getStatus());
+            existing.setLastUpdated(friend.getLastUpdated());
+            ofy.put(existing);
+            ofy.put(quota);
+            if (newlyFriended) {
+                invite(friend);
+            }
+        }
+        return success(quota, friend);
     }
 
     protected FriendResponse<Void> doRemoveFriend(final Long id,
