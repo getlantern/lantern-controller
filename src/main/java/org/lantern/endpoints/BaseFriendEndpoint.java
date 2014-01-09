@@ -96,7 +96,7 @@ public class BaseFriendEndpoint {
                 boolean friended = Friend.Status.friend == friend.getStatus();
 
                 if (friended) {
-                    if (!quota.checkAndIncrement()) {
+                    if (!quota.checkAndIncrementTotalFriended()) {
                         log.info("Friending quota exceeded");
                         return failure(quota);
                     }
@@ -142,7 +142,7 @@ public class BaseFriendEndpoint {
                     boolean newlyFriended = Status.friend == friend.getStatus()
                             && Status.friend != priorStatus;
                     if (newlyFriended) {
-                        if (!quota.checkAndIncrement()) {
+                        if (!quota.checkAndIncrementTotalFriended()) {
                             log.info("Friending quota exceeded");
                             return failure(quota);
                         }
