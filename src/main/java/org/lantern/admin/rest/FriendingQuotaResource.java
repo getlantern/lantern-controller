@@ -33,7 +33,7 @@ public class FriendingQuotaResource {
             return null;
         }
         try {
-            return Friending.getQuota(email);
+            return Friending.getOrCreateQuota(email);
         } catch (Exception e) {
             String msg = "Unable to get quota: " + e.getMessage();
             LOGGER.log(Level.WARNING, msg, e);

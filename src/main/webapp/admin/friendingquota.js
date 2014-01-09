@@ -23,7 +23,7 @@ angular.module('FriendingQuotaApp', [])
         if (quota) {
           $rootScope.addMessage("found quota");
         } else {
-          $rootScope.addMessage("no matching quota found for " + $rootScope.email, "error");
+          $rootScope.addMessage("no user found for " + $rootScope.email, "error");
         }
       }).error(function() {
         $rootScope.quota = null;

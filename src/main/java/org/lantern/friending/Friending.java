@@ -32,7 +32,7 @@ public class Friending {
                 .withTransaction(new DbCall<FriendResponse<List<Friend>>>() {
                     @Override
                     public FriendResponse<List<Friend>> call(Objectify ofy) {
-                        FriendingQuota quota = getOrCreateQuota(ofy,
+                        FriendingQuota quota = doGetOrCreateQuota(ofy,
                                 userEmail);
                         List<Friend> friends = new ArrayList<Friend>(
                                 ofy.query(LanternFriend.class)
@@ -52,7 +52,7 @@ public class Friending {
                 .withTransaction(new DbCall<FriendResponse<Friend>>() {
                     @Override
                     public FriendResponse<Friend> call(Objectify ofy) {
-                        FriendingQuota quota = getOrCreateQuota(ofy,
+                        FriendingQuota quota = doGetOrCreateQuota(ofy,
                                 userEmail);
                         Friend existing = getExistingFriendById(ofy, quota, id);
                         return success(quota, existing);
@@ -78,7 +78,7 @@ public class Friending {
                         + friend.getEmail());
                 friend.setUserEmail(userEmail);
 
-                FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
+                FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
                 Friend existing = getExistingFriendByEmail(ofy,
                         quota,
                         friendEmail);
@@ -123,7 +123,7 @@ public class Friending {
             public FriendResponse<Friend> call(Objectify ofy) {
                 log.info("Updating friend...");
                 String userEmail = email(user);
-                FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
+                FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
                 Friend existing = getExistingFriendById(ofy,
                         quota,
                         friend.getId());
@@ -139,7 +139,7 @@ public class Friending {
             @Override
             public FriendResponse<Void> call(Objectify ofy) {
                 String userEmail = email(user);
-                FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
+                FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
                 LanternFriend existing = getExistingFriendById(ofy, quota, id);
                 ofy.delete(existing);
                 return success(quota, null);
@@ -147,13 +147,11 @@ public class Friending {
         });
     }
 
-    public static FriendingQuota getQuota(final String userEmail) {
+    public static FriendingQuota getOrCreateQuota(final String userEmail) {
         return new Dao().withTransaction(new DbCall<FriendingQuota>() {
             @Override
             public FriendingQuota call(Objectify ofy) {
-                Key<FriendingQuota> quotaKey =
-                        Key.create(FriendingQuota.class, userEmail);
-                return ofy.find(quotaKey);
+                return doGetOrCreateQuota(ofy, userEmail);
             }
         });
     }
@@ -163,7 +161,7 @@ public class Friending {
         new Dao().withTransaction(new DbCall<Void>() {
             @Override
             public Void call(Objectify ofy) {
-                FriendingQuota quota = getOrCreateQuota(ofy, userEmail);
+                FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
                 quota.setMaxAllowed(newMaxAllowed);
                 ofy.put(quota);
                 return null;
@@ -239,7 +237,7 @@ public class Friending {
      * @param userEmail
      * @return
      */
-    private static FriendingQuota getOrCreateQuota(Objectify ofy,
+    private static FriendingQuota doGetOrCreateQuota(Objectify ofy,
             String userEmail) {
         Key<FriendingQuota> quotaKey =
                 Key.create(FriendingQuota.class, userEmail);
@@ -247,6 +245,9 @@ public class Friending {
         if (quota == null) {
             // Create a new quota for this user
             LanternUser user = ofy.find(LanternUser.class, userEmail);
+            if (user == null) {
+                return null;
+            }
             int maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
                     - user.getDegree();
             quota = new FriendingQuota(userEmail, maxFriends);
