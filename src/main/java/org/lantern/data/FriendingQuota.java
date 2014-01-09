@@ -19,7 +19,7 @@ public class FriendingQuota {
     private String email;
 
     /**
-     * The maximum number of friends allowed for this user.
+     * The maximum number of friending operations allowed for this user.
      * 
      * Note - adding someone as a friend consumes this quota. Unfriending
      * doesn't give you a 2nd chance.
@@ -27,8 +27,8 @@ public class FriendingQuota {
     private int maxAllowed;
 
     /**
-     * The total number of friends, including past friends even if they're no
-     * longer friends.
+     * The total number of friending ops, including past friends even if they're
+     * no longer friends.
      */
     private int totalFriended = 0;
 

@@ -1,6 +1,5 @@
 package org.lantern.data;
 
-import javax.persistence.Entity;
 import javax.persistence.Id;
 
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
@@ -21,7 +20,6 @@ import com.googlecode.objectify.annotation.Parent;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @org.codehaus.jackson.annotate.JsonIgnoreProperties(ignoreUnknown = true)
-@Entity
 public class LanternFriend implements org.lantern.state.Friend {
 
     @Parent
@@ -42,10 +40,6 @@ public class LanternFriend implements org.lantern.state.Friend {
 
     public LanternFriend(String email) {
         this.email = email;
-    }
-
-    public void setLongId(Long id) {
-        this.id = id;
     }
 
     @JsonIgnore
