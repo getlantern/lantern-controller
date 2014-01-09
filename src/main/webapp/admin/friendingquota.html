@@ -45,10 +45,9 @@
         <h4>Set Max Allowed Friending Ops</h4>
         <div class="input-group" style="width: 200px;">
           <input type="number" class="form-control" ng-model="maxAllowed"
-                 placeholder="5"
                  min="0"
                  max="1000"
-                 placeholder="">
+                 placeholder="{{quota.maxAllowed}}">
           <span class="input-group-btn">
             <input type="submit" class="btn" value="Set" ng-disabled="!maxAllowed && maxAllowed !== 0">
           </span>
