@@ -258,10 +258,8 @@ public class BaseFriendEndpoint {
     }
 
     private void invite(Friend friend) {
-        // TODO: we might want to do this in the same transaction as the rest
-        // of the friending work, but we haven't been.  This would be a largish
-        // refactoring to dao.addInviteAndApproveIfUnpaused, so I'm leaving it
-        // alone for now.
+        // TODO: we shoudl probably pop something on a task queue for processing
+        // the invite after this transaction has succeeded
         log.info("Inviting friend");
         final Dao dao = new Dao();
         dao.addInviteAndApproveIfUnpaused(
