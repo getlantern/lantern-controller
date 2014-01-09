@@ -1,0 +1,69 @@
+<!doctype html>
+<html ng-app="FriendingQuotaApp">
+  <head>
+    <meta charset="utf-8">
+    <script src="/bower_components/angular/angular.js"></script>
+    <script src="/bower_components/lodash/dist/lodash.min.js"></script>
+    <script src="/bower_components/angular-lodash/angular-lodash.js"></script>
+    <script src="friendingquota.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/style/admin.css">
+  </head>
+  <body>
+    <header>
+      <h1>
+        Friending Quota by User
+      </h1>
+      <form ng-submit="find()">
+        <div class="input-group">
+          <input type="text" class="form-control" ng-model="email" autofocus
+                 placeholder="email@domain.com">
+          <span class="input-group-btn">
+            <input type="submit" class="btn" value="Find" ng-disabled="!email">
+          </span>
+        </div>
+      </form>
+    </header>
+    
+    <table class="table" ng-hide="!quota">
+      <tr>
+        <th>User</th>
+        <th>Already Friended</th>
+        <th>Max Allowed</th>
+        <th>Remaining Allowed</th>
+      </tr>
+      <tr>
+        <td>{{quota.email}}</td>
+        <td>{{quota.totalFriended}}</td>
+        <td>{{quota.maxAllowed}}</td>
+        <td>{{quota.maxAllowed - quota.totalFriended}}</td>
+      </tr>
+    </table>
+    
+    <div ng-hide="!quota" style="margin-left: 25px;">
+      <form ng-submit="setMaxAllowed()">
+        <h4>Set Max Allowed Friending Ops</h4>
+        <div class="input-group" style="width: 200px;">
+          <input type="number" class="form-control" ng-model="maxAllowed"
+                 placeholder="5"
+                 min="0"
+                 max="1000"
+                 placeholder="">
+          <span class="input-group-btn">
+            <input type="submit" class="btn" value="Set" ng-disabled="!maxAllowed && maxAllowed !== 0">
+          </span>
+        </div>
+      </form>
+    </div>
+    
+    <ul id="messages" class="list-unstyled" ng-show="messages.length > 0">
+        <li ng-repeat="message in messages" class="{{ message.type }}">
+            {{ message.date | date:"MM/dd/yyyy hh:mm a" }} -> {{ message.text }}
+        </li>
+    </ul>
+    
+    <div id="busy-overlay" ng-show="busy">
+       <img src="/img/ajax-loader.gif">
+    </div>
+  </body>
+</html>

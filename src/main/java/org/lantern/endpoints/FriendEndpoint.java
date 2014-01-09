@@ -5,6 +5,7 @@ import java.util.List;
 import javax.inject.Named;
 
 import org.lantern.data.LanternFriend;
+import org.lantern.friending.Friending;
 import org.lantern.state.Friend;
 
 import com.google.api.server.spi.config.Api;
@@ -35,7 +36,8 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public List<Friend> listFriend(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doListFriend(user).payload();
+        checkAuthorization(user);
+        return Friending.listFriend(user).payload();
     }
 
     /**
@@ -55,7 +57,8 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend getFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doGetFriend(id, user).payload();
+        checkAuthorization(user);
+        return Friending.getFriend(id, user).payload();
     }
 
     /**
@@ -74,7 +77,8 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend insertFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doInsertFriend(friend, user).payload();
+        checkAuthorization(user);
+        return Friending.insertFriend(friend, user).payload();
     }
 
     /**
@@ -93,7 +97,8 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public Friend updateFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return doUpdateFriend(friend, user).payload();
+        checkAuthorization(user);
+        return Friending.updateFriend(friend, user).payload();
     }
 
     /**
@@ -111,6 +116,7 @@ public class FriendEndpoint extends BaseFriendEndpoint {
     public void removeFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        doRemoveFriend(id, user);
+        checkAuthorization(user);
+        Friending.removeFriend(id, user);
     }
 }
