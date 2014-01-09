@@ -186,7 +186,7 @@ public class BaseFriendEndpoint {
     }
 
     /**
-     * Get an existing fried by their email address.
+     * Get an existing friend by their email address.
      * 
      * @param ofy
      *            the Objectify instance
