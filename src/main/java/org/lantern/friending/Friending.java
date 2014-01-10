@@ -91,7 +91,8 @@ public class Friending {
                 boolean friended = Friend.Status.friend == friend.getStatus();
 
                 if (friended) {
-                    if (!quota.checkAndIncrementTotalFriended()) {
+                    if (!haveBeenFriendedBy(friend) &&
+                            !quota.checkAndIncrementTotalFriended()) {
                         log.info("Friending quota exceeded");
                         return failure(quota);
                     }
@@ -181,7 +182,8 @@ public class Friending {
             boolean newlyFriended = Status.friend == friend.getStatus()
                     && Status.friend != priorStatus;
             if (newlyFriended) {
-                if (!quota.checkAndIncrementTotalFriended()) {
+                if (!haveBeenFriendedBy(friend) &&
+                        !quota.checkAndIncrementTotalFriended()) {
                     log.info("Friending quota exceeded");
                     return failure(quota);
                 }
@@ -250,6 +252,9 @@ public class Friending {
             }
             int maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
                     - user.getDegree();
+            // Everyone gets at least MIN_MAX_FRIENDS friends
+            maxFriends = Math.max(maxFriends,
+                    LanternControllerConstants.MIN_MAX_FRIENDS);
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
         }
@@ -274,6 +279,30 @@ public class Friending {
         final Dao dao = new Dao();
         dao.addInviteAndApproveIfUnpaused(
                 friend.getUserEmail(), friend.getEmail(), null);
+    }
+
+    private static boolean haveBeenFriendedBy(final Friend friend) {
+        return new Dao().withTransaction(new DbCall<Boolean>() {
+            @Override
+            public Boolean call(Objectify ofy) {
+                String selfEmail = friend.getUserEmail();
+                String friendEmail = friend.getEmail();
+                log.info("Checking whether " + selfEmail + " has already been friended by: " + friendEmail);
+                FriendingQuota reverseQuota = doGetOrCreateQuota(ofy,
+                        friendEmail);
+                if (reverseQuota == null) {
+                    log.info("Friend not found");
+                    return false;
+                }
+                Friend reverse = getExistingFriendByEmail(ofy, reverseQuota,
+                        selfEmail);
+                log.info("Found? " + reverse);
+                boolean haveBeenFriendedBy = reverse != null && Status.friend == reverse.getStatus();
+                log.info("Have been friended by?: " + haveBeenFriendedBy);
+                return haveBeenFriendedBy;
+            }
+        });
+
     }
 
     private static <P> FriendResponse<P> success(FriendingQuota quota, P payload) {
