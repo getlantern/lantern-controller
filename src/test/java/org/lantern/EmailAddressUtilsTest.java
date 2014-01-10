@@ -5,8 +5,6 @@ import static org.junit.Assert.*;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
-import com.google.appengine.repackaged.org.apache.commons.io.IOUtils;
-
 public class EmailAddressUtilsTest {
     @Test
     public void testNormalizedEmail() throws Exception {
