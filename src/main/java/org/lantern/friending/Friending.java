@@ -1,9 +1,9 @@
 package org.lantern.friending;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lantern.LanternControllerConstants;
@@ -40,23 +40,39 @@ public class Friending {
                                 ofy.query(LanternFriend.class)
                                         .ancestor(quota)
                                         .list());
-                        Set<Friend> uniqueFriends = new HashSet<Friend>(friends);
-                        // Find friend relationships referencing this user and add them
+                        Map<String, Friend> uniqueFriends = new HashMap<String, Friend>();
+                        for (Friend friend : friends) {
+                            uniqueFriends.put(friend.getEmail(), friend);
+                        }
+                        // Find friend relationships referencing this user and
+                        // add them
                         // to the set of unique Friends as free to friend
                         List<LanternFriend> reverseFriends = new Dao()
                                 .withObjectify(new DbCall<List<LanternFriend>>() {
                                     @Override
-                                    public List<LanternFriend> call(Objectify ofy) {
-                                        return ofy.query(LanternFriend.class)
+                                    public List<LanternFriend> call(
+                                            Objectify ofy) {
+                                        return ofy
+                                                .query(LanternFriend.class)
                                                 .filter("email", userEmail)
                                                 .filter("status", Status.friend)
                                                 .list();
                                     }
                                 });
                         for (Friend friend : reverseFriends) {
-                            uniqueFriends.add(new LanternFriend(friend.getUserEmail(), userEmail, Status.pending, true));
+                            Friend friendSuggestion =
+                                    new LanternFriend(friend.getUserEmail(),
+                                            userEmail, Status.pending, true);
+                            Friend originalFriend = uniqueFriends
+                                    .get(friendSuggestion.getEmail());
+                            if (originalFriend == null
+                                    || originalFriend.getStatus() == Status.pending) {
+                                uniqueFriends.put(friendSuggestion.getEmail(),
+                                        friendSuggestion);
+                            }
                         }
-                        List<Friend> allFriends = new ArrayList<Friend>(uniqueFriends);
+                        List<Friend> allFriends = new ArrayList<Friend>(
+                                uniqueFriends.values());
                         return success(quota, allFriends);
                     }
                 });
