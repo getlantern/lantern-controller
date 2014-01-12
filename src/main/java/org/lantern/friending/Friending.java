@@ -1,7 +1,9 @@
 package org.lantern.friending;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.lantern.LanternControllerConstants;
@@ -38,7 +40,24 @@ public class Friending {
                                 ofy.query(LanternFriend.class)
                                         .ancestor(quota)
                                         .list());
-                        return success(quota, friends);
+                        Set<Friend> uniqueFriends = new HashSet<Friend>(friends);
+                        // Find friend relationships referencing this user and add them
+                        // to the set of unique Friends as free to friend
+                        List<LanternFriend> reverseFriends = new Dao()
+                                .withObjectify(new DbCall<List<LanternFriend>>() {
+                                    @Override
+                                    public List<LanternFriend> call(Objectify ofy) {
+                                        return ofy.query(LanternFriend.class)
+                                                .filter("email", userEmail)
+                                                .filter("status", Status.friend)
+                                                .list();
+                                    }
+                                });
+                        for (Friend friend : reverseFriends) {
+                            uniqueFriends.add(new LanternFriend(friend.getUserEmail(), userEmail, Status.pending, true));
+                        }
+                        List<Friend> allFriends = new ArrayList<Friend>(uniqueFriends);
+                        return success(quota, allFriends);
                     }
                 });
     }
@@ -115,8 +134,8 @@ public class Friending {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         if (friend.getId() == null) {
-            log.warning("No ID on friend? Ignoring update.");
-            throw new RuntimeException("No id provided");
+            log.info("No ID on friend, treating as insert");
+            return insertFriend(friend, user);
         }
 
         return new Dao().withTransaction(new DbCall<FriendResponse<Friend>>() {
@@ -287,7 +306,8 @@ public class Friending {
             public Boolean call(Objectify ofy) {
                 String selfEmail = friend.getUserEmail();
                 String friendEmail = friend.getEmail();
-                log.info("Checking whether " + selfEmail + " has already been friended by: " + friendEmail);
+                log.info("Checking whether " + selfEmail
+                        + " has already been friended by: " + friendEmail);
                 FriendingQuota reverseQuota = doGetOrCreateQuota(ofy,
                         friendEmail);
                 if (reverseQuota == null) {
@@ -297,7 +317,8 @@ public class Friending {
                 Friend reverse = getExistingFriendByEmail(ofy, reverseQuota,
                         selfEmail);
                 log.info("Found? " + reverse);
-                boolean haveBeenFriendedBy = reverse != null && Status.friend == reverse.getStatus();
+                boolean haveBeenFriendedBy = reverse != null
+                        && Status.friend == reverse.getStatus();
                 log.info("Have been friended by?: " + haveBeenFriendedBy);
                 return haveBeenFriendedBy;
             }
