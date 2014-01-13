@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import javax.persistence.Id;
+import javax.persistence.Transient;
 
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -34,12 +35,23 @@ public class LanternFriend implements org.lantern.state.Friend {
     private Status status = Status.pending;
     public Long lastUpdated = System.currentTimeMillis();
     private String name;
+    @Transient
+    private boolean freeToFriend = false;
 
     public LanternFriend() {
     }
 
     public LanternFriend(String email) {
         this.email = email;
+    }
+
+    public LanternFriend(String email, String userEmail, Status status,
+            boolean freeToFriend) {
+        super();
+        this.email = email;
+        this.userEmail = userEmail;
+        this.status = status;
+        this.freeToFriend = freeToFriend;
     }
 
     @JsonIgnore
@@ -119,7 +131,50 @@ public class LanternFriend implements org.lantern.state.Friend {
     }
 
     @Override
+    public void setFreeToFriend(boolean freeToFriend) {
+        this.freeToFriend = freeToFriend;
+    }
+
+    @Override
+    public boolean isFreeToFriend() {
+        return this.freeToFriend;
+    }
+
+    @Override
     public String toString() {
         return "Friend(" + email + ")";
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((email == null) ? 0 : email.hashCode());
+        result = prime * result
+                + ((userEmail == null) ? 0 : userEmail.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        LanternFriend other = (LanternFriend) obj;
+        if (email == null) {
+            if (other.email != null)
+                return false;
+        } else if (!email.equals(other.email))
+            return false;
+        if (userEmail == null) {
+            if (other.userEmail != null)
+                return false;
+        } else if (!userEmail.equals(other.userEmail))
+            return false;
+        return true;
+    }
+
 }
