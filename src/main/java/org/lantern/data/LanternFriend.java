@@ -35,6 +35,10 @@ public class LanternFriend implements org.lantern.state.Friend {
     public Long lastUpdated = System.currentTimeMillis();
     private String name;
 
+    private boolean suggestedBecauseOnRoster;
+
+    private boolean suggestedBecauseInvited;
+
     public LanternFriend() {
     }
 
@@ -121,5 +125,26 @@ public class LanternFriend implements org.lantern.state.Friend {
     @Override
     public String toString() {
         return "Friend(" + email + ")";
+    }
+    
+
+    @Override
+    public boolean isSuggestedBecauseOnRoster() {
+        return this.suggestedBecauseOnRoster;
+    }
+
+    @Override
+    public void setSuggestedBecauseOnRoster(final boolean suggestedBecauseOnRoster) {
+        this.suggestedBecauseOnRoster = suggestedBecauseOnRoster;
+    }
+
+    @Override
+    public boolean isSuggestedBecauseInvited() {
+        return this.suggestedBecauseInvited;
+    }
+
+    @Override
+    public void setSuggestedBecauseInvited(boolean suggestedBecauseInvited) {
+        this.suggestedBecauseInvited = suggestedBecauseInvited;
     }
 }
