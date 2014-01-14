@@ -14,7 +14,7 @@ import com.google.appengine.api.xmpp.XMPPServiceFactory;
 @SuppressWarnings("serial")
 public class XmppReceiverServlet extends HttpServlet {
     
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = org.lantern.loggly.LoggerFactory.getLogger(getClass().getName());
 
     @Override
     public void doPost(final HttpServletRequest req, 

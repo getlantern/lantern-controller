@@ -1,6 +1,7 @@
 package org.lantern.data;
 
 import java.util.Date;
+
 import javax.persistence.Id;
 
 public class PermanentLogEntry {

@@ -12,6 +12,7 @@ import org.lantern.data.Dao.DbCall;
 import org.lantern.data.FriendingQuota;
 import org.lantern.data.LanternFriend;
 import org.lantern.data.LanternUser;
+import org.lantern.loggly.LoggerFactory;
 import org.lantern.messages.FriendResponse;
 import org.lantern.state.Friend;
 import org.lantern.state.Friend.Status;
@@ -22,8 +23,7 @@ import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
 
 public class Friending {
-    private static final Logger log = Logger.getLogger(Friending.class
-            .getName());
+    private static final Logger log = LoggerFactory.getLogger(Friending.class);
 
     public static FriendResponse<List<Friend>> listFriend(
             final com.google.appengine.api.users.User user)

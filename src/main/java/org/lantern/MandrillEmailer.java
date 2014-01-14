@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.lantern.loggly.LoggerFactory;
 import org.littleshoot.util.ThreadUtils;
 
 import com.google.appengine.api.urlfetch.FetchOptions;
@@ -33,7 +34,7 @@ import com.google.appengine.api.urlfetch.URLFetchServiceFactory;
 public class MandrillEmailer {
 
     private static final transient Logger log =
-        Logger.getLogger(MandrillEmailer.class.getName());
+        LoggerFactory.getLogger(MandrillEmailer.class);
 
     /**
      * Send an invite e-mail.

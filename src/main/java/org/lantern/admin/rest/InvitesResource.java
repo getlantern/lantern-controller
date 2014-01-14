@@ -26,12 +26,13 @@ import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.lantern.data.PMF;
+import org.lantern.loggly.LoggerFactory;
 
 @Path("/invites")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InvitesResource {
-    private static final transient Logger LOGGER = Logger
-            .getLogger(InvitesResource.class.getName());
+    private static final transient Logger LOGGER = LoggerFactory
+            .getLogger(InvitesResource.class);
     
     @GET
     @Path("/pending")

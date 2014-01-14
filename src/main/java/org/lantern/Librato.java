@@ -8,6 +8,8 @@ import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.lantern.loggly.LoggerFactory;
+
 import com.google.appengine.api.urlfetch.HTTPHeader;
 import com.google.appengine.api.urlfetch.HTTPMethod;
 import com.google.appengine.api.urlfetch.HTTPRequest;
@@ -22,7 +24,7 @@ import com.jayway.jsonpath.JsonPath;
  */
 public class Librato {
     private static final transient Logger LOGGER =
-            Logger.getLogger(Librato.class.getName());
+            LoggerFactory.getLogger(Librato.class);
 
     private static final String BASE_LIBRATO_COUNT_URL =
             "https://metrics-api.librato.com/v1/metrics/LanternStat_countOfDistinctProxiedClientAddresses?sources[]=%1$s&summarize_time=1&start_time=%2$s&end_time=%3$s&resolution=3600";

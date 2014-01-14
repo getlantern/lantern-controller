@@ -9,13 +9,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
+import org.lantern.loggly.LoggerFactory;
 
 
 @SuppressWarnings("serial")
 public class SendInviteTask extends HttpServlet {
 
-    private static final transient Logger log = Logger
-            .getLogger(SendInviteTask.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(SendInviteTask.class);
 
     @Override
     public void doPost(final HttpServletRequest request,

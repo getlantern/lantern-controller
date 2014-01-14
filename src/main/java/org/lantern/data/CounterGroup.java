@@ -12,6 +12,8 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
+import org.lantern.loggly.LoggerFactory;
+
 import com.google.appengine.api.datastore.Text;
 
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
@@ -20,7 +22,7 @@ public class CounterGroup implements Serializable {
     public static final String singletonKey = "cg";
 
     private static final transient Logger log =
-        Logger.getLogger(CounterGroup.class.getName());
+        LoggerFactory.getLogger(CounterGroup.class);
 
     @PrimaryKey
     @Persistent

@@ -2,6 +2,8 @@ package org.lantern.endpoints;
 
 import java.util.logging.Logger;
 
+import org.lantern.loggly.LoggerFactory;
+
 import com.google.api.server.spi.response.UnauthorizedException;
 import com.google.appengine.api.users.User;
 
@@ -10,7 +12,7 @@ import com.google.appengine.api.users.User;
  */
 public class BaseFriendEndpoint {
 
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     protected void checkAuthorization(final User user)
             throws UnauthorizedException {

@@ -17,6 +17,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
+import org.lantern.loggly.LoggerFactory;
 
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
@@ -24,14 +27,11 @@ import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 
-import org.lantern.data.Dao;
-import org.lantern.data.LanternUser;
-
 
 public class AdminServlet extends HttpServlet {
     private static final long serialVersionUID = -2328208258840617005L;
-    private static final transient Logger log = Logger
-            .getLogger(AdminServlet.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(AdminServlet.class);
     private static String secret;
     
     static {

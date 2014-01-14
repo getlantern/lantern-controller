@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
+import org.lantern.loggly.LoggerFactory;
 
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
@@ -20,7 +21,7 @@ import com.google.appengine.api.taskqueue.TaskOptions;
 public class FallbackProxyLauncher {
 
     private static final transient Logger log =
-        Logger.getLogger(FallbackProxyLauncher.class.getName());
+        LoggerFactory.getLogger(FallbackProxyLauncher.class);
 
     public static int authorizeInvites(String[] ids) {
         int totalAuthorized = 0;

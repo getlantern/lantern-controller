@@ -13,8 +13,6 @@ import com.google.appengine.api.xmpp.XMPPServiceFactory;
 @SuppressWarnings("serial")
 public class XmppProbeServlet extends HttpServlet {
     
-    //private final Logger log = Logger.getLogger(getClass().getName());
-    
     @Override
     public void doPost(final HttpServletRequest req, 
         final HttpServletResponse res) throws IOException {

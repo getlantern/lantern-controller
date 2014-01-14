@@ -14,12 +14,13 @@ import javax.ws.rs.core.MediaType;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.lantern.data.FriendingQuota;
 import org.lantern.friending.Friending;
+import org.lantern.loggly.LoggerFactory;
 
 @Path("/friendingquota")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FriendingQuotaResource {
-    private static final Logger LOGGER = Logger
-            .getLogger(FriendingQuotaResource.class.getName());
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(FriendingQuotaResource.class);
 
     @GET
     @Path("/{email}")

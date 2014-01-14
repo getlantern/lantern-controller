@@ -13,6 +13,7 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 import org.apache.commons.lang3.StringUtils;
+import org.lantern.loggly.LoggerFactory;
 
 import com.google.appengine.api.datastore.Text;
 
@@ -27,7 +28,7 @@ public class Settings implements Serializable {
     public static final String singletonKey = "settings";
 
     private static final transient Logger log =
-        Logger.getLogger(Settings.class.getName());
+        LoggerFactory.getLogger(Settings.class);
 
     @PrimaryKey
     @Persistent

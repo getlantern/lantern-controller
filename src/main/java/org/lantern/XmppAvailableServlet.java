@@ -16,6 +16,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
+import org.lantern.loggly.LoggerFactory;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -29,7 +30,7 @@ import com.google.appengine.api.xmpp.XMPPServiceFactory;
 @SuppressWarnings("serial")
 public class XmppAvailableServlet extends HttpServlet {
 
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     @Override
     public void doPost(final HttpServletRequest req,

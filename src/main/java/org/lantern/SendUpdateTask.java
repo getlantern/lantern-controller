@@ -7,12 +7,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.lantern.loggly.LoggerFactory;
+
 
 @SuppressWarnings("serial")
 public class SendUpdateTask extends HttpServlet {
 
-    private static final transient Logger log = Logger
-            .getLogger(SendUpdateTask.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(SendUpdateTask.class);
 
     @Override
     public void doPost(final HttpServletRequest request,

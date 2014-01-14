@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.lantern.data.Dao;
 import org.lantern.data.DatastoreCounter;
 import org.lantern.data.ShardedCounterManager;
+import org.lantern.loggly.LoggerFactory;
 
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
@@ -19,8 +20,8 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 @SuppressWarnings("serial")
 public class PersistController extends HttpServlet {
-    private static final transient Logger log = Logger
-            .getLogger(PersistController.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(PersistController.class);
 
     @Override
     public void doGet(final HttpServletRequest request,

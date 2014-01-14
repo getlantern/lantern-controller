@@ -12,12 +12,13 @@ import javax.ws.rs.core.MediaType;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.lantern.data.Dao;
 import org.lantern.data.LatestLanternVersion;
+import org.lantern.loggly.LoggerFactory;
 
 
 @Path("/LatestLanternVersion")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LatestLanternVersionResource {
-    private final static Logger LOG = Logger.getLogger("LatestLanternVersionResource");
+    private final static Logger LOG = LoggerFactory.getLogger("LatestLanternVersionResource");
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)

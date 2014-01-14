@@ -7,23 +7,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.commons.codec.binary.Base64;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.lantern.loggly.LoggerFactory;
+
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-
 import com.google.appengine.api.utils.SystemProperty;
 import com.google.apphosting.api.DeadlineExceededException;
-import org.apache.commons.codec.binary.Base64;
-
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 
 public class SQSUtil {
 
@@ -68,7 +68,7 @@ public class SQSUtil {
     private static final BasicAWSCredentials creds = new BasicAWSCredentials(
             LanternControllerConstants.getAWSAccessKeyId(),
             LanternControllerConstants.getAWSSecretKey());
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     public void send(final Map<String, Object> msgMap) {
         final AmazonSQSClient sqs = getClient();

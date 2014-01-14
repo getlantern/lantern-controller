@@ -19,6 +19,7 @@ import org.apache.commons.lang.StringUtils;
 import org.lantern.AdminServlet;
 import org.lantern.LanternControllerConstants;
 import org.lantern.SecurityUtils;
+import org.lantern.loggly.LoggerFactory;
 
 import com.google.appengine.api.utils.SystemProperty;
 
@@ -28,8 +29,8 @@ import com.google.appengine.api.utils.SystemProperty;
  * and HEAD) always check the CSRF token before processing the operation.
  */
 public class CSRFProtectionFilter implements Filter {
-    private static final transient Logger log = Logger
-            .getLogger(CSRFProtectionFilter.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(CSRFProtectionFilter.class);
 
     public static final Pattern SAFE_METHODS = Pattern.compile("^(GET|HEAD|OPTIONS|TRACE)$");
     @Override

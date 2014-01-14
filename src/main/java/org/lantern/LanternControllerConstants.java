@@ -17,6 +17,7 @@ public class LanternControllerConstants {
     static final String INVITE_EMAIL_BCC_ADDRESS = "lantern-invites@googlegroups.com";
     public static final String DEFAULT_FALLBACK_HOST_AND_PORT;
     public static final String FALLBACK_PROXY_LAUNCHING = "launching";
+    public static final boolean IS_RUNNING_IN_SANDBOX = "Development".equals(SystemProperty.environment.key());
 
     /**
      * The inviter for all invites triggered by an email request.

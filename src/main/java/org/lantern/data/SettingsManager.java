@@ -28,6 +28,8 @@ import java.util.logging.Logger;
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.PersistenceManager;
 
+import org.lantern.loggly.LoggerFactory;
+
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Key;
@@ -40,8 +42,8 @@ import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 public class SettingsManager {
 
-    private static final transient Logger log = Logger
-            .getLogger(SettingsManager.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(SettingsManager.class);
 
     private static final Key SETTINGSKEY = KeyFactory.createKey(
             Settings.class.getSimpleName(), Settings.singletonKey);

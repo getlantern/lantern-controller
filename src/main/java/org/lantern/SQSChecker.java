@@ -1,28 +1,28 @@
 package org.lantern;
 
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import javax.mail.Message;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.lantern.data.Dao;
+import org.lantern.loggly.LoggerFactory;
 
 
 @SuppressWarnings("serial")
 public class SQSChecker extends HttpServlet {
-    private static final transient Logger log = Logger
-            .getLogger(SQSChecker.class.getName());
+    private static final transient Logger log = LoggerFactory
+            .getLogger(SQSChecker.class);
 
     @Override
     public void doGet(final HttpServletRequest request,

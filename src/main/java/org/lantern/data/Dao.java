@@ -19,6 +19,7 @@ import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
+import org.lantern.loggly.LoggerFactory;
 import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
@@ -36,7 +37,7 @@ import com.googlecode.objectify.util.DAOBase;
 
 public class Dao extends DAOBase {
 
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     private static final String[] countries = { "AF", "AX", "AL", "DZ", "AS",
             "AD", "AO", "AI", "AQ", "AG", "AR", "AM", "AW", "AU", "AT", "AZ",

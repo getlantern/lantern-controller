@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import javax.persistence.Id;
 
+import org.lantern.loggly.LoggerFactory;
 import org.lantern.state.Mode;
 
 import com.googlecode.objectify.Key;
@@ -13,7 +14,7 @@ import com.googlecode.objectify.annotation.Parent;
 public class LanternInstance {
 
     private static final transient Logger log =
-        Logger.getLogger(LanternInstance.class.getName());
+        LoggerFactory.getLogger(LanternInstance.class);
 
     @Id
     private String id;

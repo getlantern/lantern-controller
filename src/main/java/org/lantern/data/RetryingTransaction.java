@@ -3,11 +3,13 @@ package org.lantern.data;
 import java.util.ConcurrentModificationException;
 import java.util.logging.Logger;
 
+import org.lantern.loggly.LoggerFactory;
+
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 
 public abstract class RetryingTransaction<T> {
-    private final transient Logger log = Logger.getLogger(getClass().getName());
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
     Boolean failed = null;
 
     public boolean failed() {
