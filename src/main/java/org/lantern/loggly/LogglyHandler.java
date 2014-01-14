@@ -14,7 +14,8 @@ import com.google.appengine.api.utils.SystemProperty;
  */
 public class LogglyHandler extends Handler {
 
-    private Loggly loggly = new Loggly(LanternControllerConstants.IS_RUNNING_IN_SANDBOX);
+    private Loggly loggly = new Loggly(
+            LanternControllerConstants.IS_RUNNING_IN_SANDBOX);
 
     /*
      * (non-API documentation)
@@ -27,7 +28,8 @@ public class LogglyHandler extends Handler {
             return;
 
         LogglyMessage msg = new LogglyMessage(
-                SystemProperty.applicationId.get(),
+                String.format("%1$s.appspot.com",
+                        SystemProperty.applicationId.get()),
                 record.getMessage(),
                 new Date(record.getMillis())).sanitized();
         Throwable thrown = record.getThrown();
