@@ -60,9 +60,7 @@ public class Friending {
                                     }
                                 });
                         for (Friend friend : reverseFriends) {
-                            Friend friendSuggestion =
-                                    new LanternFriend(friend.getUserEmail(),
-                                            userEmail, Status.pending, true);
+                            Friend friendSuggestion = LanternFriend.reverseOf(friend);
                             Friend originalFriend = uniqueFriends
                                     .get(friendSuggestion.getEmail());
                             if (originalFriend == null

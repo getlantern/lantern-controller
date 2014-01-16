@@ -3,6 +3,8 @@ package org.lantern.data;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 
+import org.lantern.state.Friend;
+
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import com.googlecode.objectify.Key;
@@ -21,7 +23,7 @@ import com.googlecode.objectify.annotation.Parent;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @org.codehaus.jackson.annotate.JsonIgnoreProperties(ignoreUnknown = true)
-public class LanternFriend implements org.lantern.state.Friend {
+public class LanternFriend implements Friend {
 
     @Parent
     @JsonIgnore
@@ -37,6 +39,7 @@ public class LanternFriend implements org.lantern.state.Friend {
     private String name;
     @Transient
     private boolean freeToFriend = false;
+    private SuggestionReason reason;
 
     public LanternFriend() {
     }
@@ -45,15 +48,15 @@ public class LanternFriend implements org.lantern.state.Friend {
         this.email = email;
     }
 
-    public LanternFriend(String email, String userEmail, Status status,
-            boolean freeToFriend) {
-        super();
-        this.email = email;
-        this.userEmail = userEmail;
-        this.status = status;
-        this.freeToFriend = freeToFriend;
+    public static LanternFriend reverseOf(Friend friendedBy) {
+        LanternFriend friend = new LanternFriend(friendedBy.getUserEmail());
+        friend.setUserEmail(friendedBy.getEmail());
+        friend.setStatus(Status.pending);
+        friend.setFreeToFriend(true);
+        friend.setReason(SuggestionReason.friendedYou);
+        return friend;
     }
-
+    
     @JsonIgnore
     @org.codehaus.jackson.annotate.JsonIgnore
     public Key<FriendingQuota> getQuota() {
@@ -138,6 +141,16 @@ public class LanternFriend implements org.lantern.state.Friend {
     @Override
     public boolean isFreeToFriend() {
         return this.freeToFriend;
+    }
+
+    @Override
+    public SuggestionReason getReason() {
+        return reason;
+    }
+
+    @Override
+    public void setReason(SuggestionReason reason) {
+        this.reason = reason;
     }
 
     @Override
