@@ -21,6 +21,8 @@
       <groupId>aws-on-gae</groupId>
       <artifactId>aws-on-gae</artifactId>
       <version>1.1.9</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/aws-on-gae-1.1.9.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.google.appengine</groupId>
