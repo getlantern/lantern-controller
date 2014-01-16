@@ -74,6 +74,8 @@
       <groupId>com.googlecode.objectify</groupId>
       <artifactId>objectify</artifactId>
       <version>3.1</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/objectify-3.1.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
