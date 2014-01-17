@@ -1284,11 +1284,11 @@ public class Dao extends DAOBase {
     }
 
     /**
-     * Find or create the instance and set its installerLocation.
+     * Find or create the instance and set its accessData.
      */
     public void registerFallbackProxy(final String userId,
                                       final String instanceId,
-                                      final String installerLocation,
+                                      final String accessData,
                                       final String ip,
                                       final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
@@ -1306,7 +1306,7 @@ public class Dao extends DAOBase {
                                                    getUserKey(userId));
                 }
                 instance.setFallbackProxy(true);
-                instance.setInstallerLocation(installerLocation);
+                instance.setAccessData(accessData);
                 instance.setListenHostAndPort(ip + ":" + port);
                 instance.setUser(userId);
                 ofy.put(instance);

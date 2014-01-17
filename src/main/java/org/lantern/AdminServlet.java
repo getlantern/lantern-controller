@@ -242,21 +242,20 @@ public class AdminServlet extends HttpServlet {
 
     private String enqueueUpdateEmail(LanternUser user, String version)
             throws IOException {
+        throw new RuntimeException("Don't do this while we're updating servers.");
+       /* 
         log.info("Enqueuing update notification to " + user);
         Dao dao = new Dao();
         if (user == null) {
             throw new IOException("Unknown user");
         }
-        String installerLocation
-            = dao.findInstance(
-                    user.getFallbackProxy()).getInstallerLocation();
         QueueFactory.getDefaultQueue().add(
             TaskOptions.Builder
                .withUrl("/send_update_task")
                .param("toEmail", user.getId())
-               .param("version", version)
-               .param("installerLocation", installerLocation));
+               .param("version", version));
         return null;
+        */
     }
 
     public static void setSecret(final String secret) {

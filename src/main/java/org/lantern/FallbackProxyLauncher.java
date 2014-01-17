@@ -93,17 +93,17 @@ public class FallbackProxyLauncher {
 
     public static void onFallbackProxyUp(String fallbackProxyUserId,
                                          String instanceId,
-                                         String installerLocation,
+                                         String accessData,
                                          String ip,
                                          String port) {
         final Dao dao = new Dao();
         dao.registerFallbackProxy(fallbackProxyUserId,
                                   instanceId,
-                                  installerLocation,
+                                  accessData,
                                   ip,
                                   port);
         dao.setFallbackForNewInvitees(fallbackProxyUserId, instanceId);
-        final Collection<Invite> invites =
+        /*final Collection<Invite> invites =
             dao.getAuthorizedInvitesForFallbackProxyUserId(
                     fallbackProxyUserId);
         incrementFallbackInvites(fallbackProxyUserId,
@@ -113,7 +113,7 @@ public class FallbackProxyLauncher {
                            invite.getInvitee(),
                            fallbackProxyUserId,
                            instanceId);
-        }
+        }*/
     }
 
     /** Increment number of invites for the currently filling fallback proxy
@@ -186,6 +186,9 @@ public class FallbackProxyLauncher {
                                        String inviteeEmail,
                                        String fallbackProxyUserId,
                                        String instanceId) {
+        log.warning("INVITES TEMPORARILY FROZEN; we'll process these after transition.");
+        return;
+        /*
         final Dao dao = new Dao();
         if (!dao.setInviteStatus(inviterEmail,
                                  inviteeEmail,
@@ -208,10 +211,8 @@ public class FallbackProxyLauncher {
                .param("inviterName", "" + inviter.getName()) // handle null
                .param("inviterEmail", inviterEmail)
                .param("inviteeEmail", inviteeEmail)
-               .param("installerLocation",
-                      dao.findInstance(fallbackProxyUserId, instanceId)
-                         .getInstallerLocation())
                .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
 
+        */
     }
 }

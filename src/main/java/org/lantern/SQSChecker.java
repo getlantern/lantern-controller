@@ -61,10 +61,10 @@ public class SQSChecker extends HttpServlet {
                        + " sent fp-up with no instance ID.");
             return;
         }
-        String installerLocation = (String)msg.get("fp-up-insloc");
-        if (installerLocation == null) {
+        String accessData = (String)msg.get("fp-up-access-data");
+        if (accessData == null) {
             log.severe(instanceId
-                       + " sent fp-up with no installer location.");
+                       + " sent fp-up with no access data.");
             return;
         }
         String ip = (String)msg.get("fp-up-ip");
@@ -81,7 +81,7 @@ public class SQSChecker extends HttpServlet {
         }
         FallbackProxyLauncher.onFallbackProxyUp(fallbackProxyUserId,
                                                 instanceId,
-                                                installerLocation,
+                                                accessData,
                                                 ip,
                                                 port);
     }
