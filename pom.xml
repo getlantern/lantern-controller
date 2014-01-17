@@ -21,8 +21,6 @@
       <groupId>aws-on-gae</groupId>
       <artifactId>aws-on-gae</artifactId>
       <version>1.1.9</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/aws-on-gae-1.1.9.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.google.appengine</groupId>
@@ -74,8 +72,6 @@
       <groupId>com.googlecode.objectify</groupId>
       <artifactId>objectify</artifactId>
       <version>3.1</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/objectify-3.1.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
