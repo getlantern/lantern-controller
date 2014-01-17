@@ -1,0 +1,52 @@
+version = "1.0.0-SNAPSHOT"
+
+buildscript {
+    dependencies {
+        classpath files("./lib/gradle-appengine-plugin-1.8.7-shadow.jar")
+    }
+}
+
+repositories { mavenCentral() }
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'war'
+apply plugin: 'appengine'
+
+project.appEngineVersion = "1.8.7"
+project.jerseyVersion = "1.17.1"
+
+appengine {
+    downloadSdk = true
+}
+
+dependencies {
+    compile files("./lib/aws-on-gae-1.1.9.jar")
+    compile files("./lib/objectify-3.1.jar")
+    appengineSdk "com.google.appengine:appengine-java-sdk:${project.appEngineVersion}"
+    compile project(":lantern-common")
+    compile group: "com.google.appengine", name: "appengine-api-1.0-sdk", version: project.appEngineVersion
+    compile group: "com.google.appengine", name: "appengine-endpoints", version: project.appEngineVersion
+    compile group: "com.google.appengine", name: "appengine-remote-api", version: project.appEngineVersion
+    runtime group: "com.google.appengine.orm", name: "datanucleus-appengine", version: "2.1.2"
+    compile group: "javax.inject", name: "javax.inject", version: "1"
+    compile group: "javax.jdo", name: "jdo-api", version: "3.0.1"
+    runtime group: "org.datanucleus", name: "datanucleus-core", version: "3.1.5"
+    runtime group: "org.datanucleus", name: "datanucleus-api-jdo", version: "3.1.4"
+    compile group: "com.google.guava", name: "guava", version: "14.0.1"
+    compile group: "commons-codec", name: "commons-codec", version: "1.7"
+    compile group: "commons-configuration", name: "commons-configuration", version: "1.9"
+    compile group: "javax.servlet", name: "servlet-api", version: "2.5"
+    compile group: "org.apache.commons", name: "commons-lang3", version: "3.1"
+    compile group: "org.apache.geronimo.specs", name: "geronimo-jpa_3.0_spec", version: "1.1.1"
+    compile group: "org.apache.httpcomponents", name: "httpclient", version: "4.2.2"
+    compile group: "com.jayway.jsonpath", name: "json-path", version: "0.8.1"
+    compile group: "org.littleshoot", name: "util", version: "1.0.3"
+    compile group: "com.googlecode.json-simple", name: "json-simple", version: "1.1.1"
+    compile group: "com.sun.jersey", name: "jersey-core", version: project.jerseyVersion
+    compile group: "com.sun.jersey", name: "jersey-server", version: project.jerseyVersion
+    compile group: "com.sun.jersey", name: "jersey-json", version: project.jerseyVersion
+    compile group: "com.sun.jersey", name: "jersey-servlet", version: project.jerseyVersion
+    testCompile group: "com.google.appengine", name: "appengine-testing", version: project.appEngineVersion
+    testCompile group: "com.google.appengine", name: "appengine-api-stubs", version: project.appEngineVersion
+}

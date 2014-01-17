@@ -208,7 +208,7 @@
   <servlet-class>com.google.api.server.spi.SystemServiceServlet</servlet-class>
   <init-param>
    <param-name>services</param-name>
-   <param-value/>
+   <param-value>org.lantern.endpoints.FriendEndpoint,org.lantern.endpoints.FriendEndpointV2</param-value>
   </init-param>
  </servlet>
  <servlet-mapping>

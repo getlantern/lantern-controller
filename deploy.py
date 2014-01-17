@@ -58,20 +58,6 @@ if bump and name == "lanternctrl":
     assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
     assert call("git push origin master", shell=True) == 0, "Could not push new version"
 
-setdefault = (get_arg_or_ask(3, "Should this be the default version? (y/N) ")
-              .lower().startswith('y'))
-
-if setdefault:
-    print "OK, we'll set this to be the default version"
-else:
-    print "OK, not setting the default version."
-
 print "Deploying..."
 
-assert call("mvn clean install", shell=True) == 0, "Could not run clean install"
-assert call("mvn appengine:enhance -Dmaven.test.skip=true", shell=True) == 0, "Could not enhance"
-assert call("mvn appengine:update -Dmaven.test.skip=true", shell=True) == 0, "Could not update"
-
-if setdefault:
-    assert call("mvn appengine:set_default_version", shell=True) == 0, "Could not set default version?"
-    print "Default version set!"
+assert call("gradle clean appengineExplodeApp appengineEnhance appengineEndpointsGetDiscoveryDocs appengineUpdate", shell=True) == 0, "Could not gradle"
