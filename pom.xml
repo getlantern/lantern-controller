@@ -248,19 +248,30 @@
     </plugins>
   </build>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>objectify-appengine</id>
-            <name>Objectify</name>
-            <url>http://maven.objectify-appengine.googlecode.com/git/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </pluginRepository>
-    </pluginRepositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>aws-release</id>
+      <name>AWS Release Repository</name>
+      <url>https://s3.amazonaws.com/lantern-mvn-repo/release</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>objectify-appengine</id>
+      <name>Objectify</name>
+      <url>http://maven.objectify-appengine.googlecode.com/git/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </pluginRepository>
+  </pluginRepositories>
 
   <repositories>
     <repository>
@@ -277,6 +288,12 @@
     <repository>
       <id>objectify-appengine</id>
       <url>http://maven.objectify-appengine.googlecode.com/git/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
   </repositories>
   <parent>
