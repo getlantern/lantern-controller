@@ -93,6 +93,8 @@ public class LanternUser implements Serializable {
     // TRANSITION: we use this to initialize the installerLocation of fallback
     // proxies that predate the fallback-balancing scheme.
     private String installerLocation;
+    
+    private int generation = 0;
 
     public LanternUser() {
         super();
@@ -101,6 +103,8 @@ public class LanternUser implements Serializable {
     public LanternUser(final String id) {
         super();
         this.id = id;
+        // New users get generation 1
+        this.generation = 1;
     }
 
     public String getId() {
@@ -269,5 +273,13 @@ public class LanternUser implements Serializable {
 
     public void setFallbackProxy(Key<LanternInstance> fallbackProxy) {
         this.fallbackProxy = fallbackProxy;
+    }
+    
+    public int getGeneration() {
+        return generation;
+    }
+    
+    public void setGeneration(int generation) {
+        this.generation = generation;
     }
 }
