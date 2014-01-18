@@ -67,7 +67,7 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         log.info("Uploading config:\n" + config);
         uploadToS3(configFolder, config);
         log.info("Successfully uploaded; enquequing wrapper request...");
-        enqueueWrapperUploadRequest(configFolder);
+        enqueueWrapperUploadRequest(userId, configFolder);
         log.info("All done.");
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
@@ -111,8 +111,10 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         }
     }
 
-    private void enqueueWrapperUploadRequest(String folderName) {
+    private void enqueueWrapperUploadRequest(String userId, String folderName) {
         Map<String, Object> m = new HashMap<String, Object>();
+        //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
+        m.put("upload-wrappers-id", userId);
         m.put("upload-wrappers-to", folderName);
         new SQSUtil().send(m);
     }
