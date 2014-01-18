@@ -94,6 +94,11 @@ public class LanternUser implements Serializable {
     // proxies that predate the fallback-balancing scheme.
     private String installerLocation;
 
+    /**
+     * S3 path suffix of the wrappers and config files for this user.
+     */
+    private String configFolder;
+
     public LanternUser() {
         super();
     }
@@ -256,6 +261,14 @@ public class LanternUser implements Serializable {
 
     public String getInstallerLocation() {
         return installerLocation;
+    }
+
+    public void setConfigFolder(String configFolder) {
+        this.configFolder = configFolder;
+    }
+
+    public String getConfigFolder() {
+        return configFolder;
     }
 
     public int incrementFallbackSerialNumber() {

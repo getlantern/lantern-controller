@@ -5,6 +5,8 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 import com.google.appengine.api.utils.SystemProperty;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+
 /**
  * Constants for Lantern.
  */
@@ -26,20 +28,25 @@ public class LanternControllerConstants {
         = "invite@getlantern.org";
 
     private static String mandrillApiKey;
-    private static String awsAccessKeyId;
-    private static String awsSecretKey;
     private static String mailChimpApiKey;
 
-    public static final String BASE_URL = String.format("https://%1$s.appspot.com", SystemProperty.applicationId.get());
+    public static final BasicAWSCredentials AWS_CREDENTIALS;
+    public static final String AWS_REGION = "ap-southeast-1";
+
+    public static final String BASE_URL
+        = String.format("https://%1$s.appspot.com", SystemProperty.applicationId.get());
+
     static {
         try {
-            PropertiesConfiguration config = new PropertiesConfiguration(LanternControllerConstants.class.getResource("secrets"));
+            PropertiesConfiguration config
+                = new PropertiesConfiguration(
+                        LanternControllerConstants.class.getResource("secrets"));
             mailChimpApiKey = config.getString("mailchimpApiKey");
             mandrillApiKey = config.getString("mandrillApiKey");
-            awsAccessKeyId = config.getString("awsAccessKeyId");
-            awsSecretKey = config.getString("awsSecretKey");
             DEFAULT_FALLBACK_HOST_AND_PORT
                 = config.getString("defaultFallbackHostAndPort");
+            AWS_CREDENTIALS = new BasicAWSCredentials(config.getString("awsAccessKeyId"),
+                                                      config.getString("awsSecretKey"));
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -58,12 +65,6 @@ public class LanternControllerConstants {
     
     public static String getMandrillApiKey() {
         return mandrillApiKey;
-    }
-    public static String getAWSAccessKeyId() {
-        return awsAccessKeyId;
-    }
-    public static String getAWSSecretKey() {
-        return awsSecretKey;
     }
     public static String getMailChimpApiKey() {
         return mailChimpApiKey;

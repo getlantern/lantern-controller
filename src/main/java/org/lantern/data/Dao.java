@@ -35,6 +35,10 @@ import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
+
 public class Dao extends DAOBase {
 
     private final transient Logger log = LoggerFactory.getLogger(getClass());
@@ -1530,6 +1534,32 @@ public class Dao extends DAOBase {
     public static class TxFailure extends RuntimeException {
         public TxFailure() {
             super("Transaction failed");
+        }
+    }
+
+    public void retrofitS3Config(String userId) {
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/upload_config_and_request_wrappers")
+               .param("userId", "" + userId));
+    }
+
+    public void setConfigFolder(final String userId,
+                                final String configFolder) {
+        log.info("Setting config folder for " + userId
+                 + " to '" + configFolder.substring(0, 10) + "'...");
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setConfigFolder(configFolder);
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Error trying to set config folder!");
         }
     }
 }
