@@ -31,12 +31,10 @@ public class LanternControllerConstants {
     private static String mailChimpApiKey;
 
     public static final BasicAWSCredentials AWS_CREDENTIALS;
-    public static final String AWS_REGION = "ap-southeast-1";
 
     public static final String CONTROLLER_ID = SystemProperty.applicationId.get();
     public static final String BASE_URL
         = String.format("https://%1$s.appspot.com", CONTROLLER_ID);
-
 
     static {
         try {

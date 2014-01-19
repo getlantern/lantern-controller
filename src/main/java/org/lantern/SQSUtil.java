@@ -28,7 +28,7 @@ import com.google.apphosting.api.DeadlineExceededException;
 public class SQSUtil {
 
     private static final String ENDPOINT
-        = "sqs." + LanternControllerConstants.AWS_REGION + ".amazonaws.com";
+        = "sqs." + LanternConstants.AWS_REGION + ".amazonaws.com";
     private static final String REQUEST_Q_NAME;
     private static final String NOTIFY_Q_NAME;
     static {

@@ -47,9 +47,6 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
     private static final String CONFIG_FOLDER_ALPHABET
         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
 
-    private static final String ENDPOINT
-        = "s3-" + LanternControllerConstants.AWS_REGION + ".amazonaws.com";
-
     private final Dao dao = new Dao();
 
     private static final transient Logger log = Logger
@@ -112,7 +109,7 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
     private void uploadToS3(String folderName, String configContents) {
         AmazonS3Client s3client
             = new AmazonS3Client(LanternControllerConstants.AWS_CREDENTIALS);
-        s3client.setEndpoint(ENDPOINT);
+        s3client.setEndpoint(LanternConstants.S3_ENDPOINT);
         String keyName = folderName + "/" + CONFIG_FILENAME;
         ObjectMetadata md = new ObjectMetadata();
         md.setCacheControl("no-cache");

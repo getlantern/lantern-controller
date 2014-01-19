@@ -125,9 +125,7 @@ public class MandrillEmailer {
     private static void populateInstallerUrls(Map<String, String> m,
                                               String configFolder) {
         //DRY: upload_wrappers.py at lantern_aws.
-        final String baseUrl = "https://s3-"
-                               + LanternControllerConstants.AWS_REGION
-                               + ".amazonaws.com/lantern-config/"
+        final String baseUrl = LanternConstants.S3_CONFIG_BASE_URL
                                + configFolder + "/lantern-net-installer_";
         m.put("INSTALLER_URL_DEB", baseUrl + "unix.html");
         m.put("INSTALLER_URL_DMG", baseUrl + "macos.html");
