@@ -22,6 +22,11 @@ import org.lantern.data.LanternUser;
 @SuppressWarnings("serial")
 public class UploadConfigAndRequestWrappers extends HttpServlet {
 
+    /** Minimum time clients should wait to check S3 for config updates. */
+    private static final int MIN_POLL_MINUTES = 5;
+    /** Maximum time clients should wait to check S3 for config updates. */
+    private static final int MAX_POLL_MINUTES = 15;
+
     /* DRY: grep lantern_aws. */
     private static final String CONFIG_BUCKET = "lantern-config";
     private static final String CONFIG_FILENAME = "config.json";
@@ -101,6 +106,8 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         return "{ \"serial_no\": 1"
             + ", \"controller\": \""
                 + LanternControllerConstants.CONTROLLER_ID + "\""
+            + ", \"minpoll\": " + MIN_POLL_MINUTES
+            + ", \"maxpoll\": " + MAX_POLL_MINUTES
             + ", \"fallbacks\" : [ "
                 + accessData
             + " ] }";
