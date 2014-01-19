@@ -83,10 +83,10 @@ public class FallbackProxyLauncher {
         } else if (incrementFallbackInvites(fpuid, 1)) {
             log.info("Proxy is full; launching a new one.");
         } else {
-            dispatchInvite(inviterEmail,
-                           inviteeEmail,
-                           fpuid,
-                           instanceId);
+            dao.createInvitee(inviteeEmail,
+                              inviterEmail,
+                              fpuid,
+                              instanceId);
         }
         return true;
     }
@@ -103,17 +103,19 @@ public class FallbackProxyLauncher {
                                   ip,
                                   port);
         dao.setFallbackForNewInvitees(fallbackProxyUserId, instanceId);
-        /*final Collection<Invite> invites =
+        final Collection<Invite> invites =
             dao.getAuthorizedInvitesForFallbackProxyUserId(
                     fallbackProxyUserId);
         incrementFallbackInvites(fallbackProxyUserId,
                                  invites.size());
+        // Currently we're only having one fallback per user.  In the
+        // future we may want to wait for all of a user's fallbacks to come up.
         for (Invite invite : invites) {
-            dispatchInvite(invite.getInviter(),
-                           invite.getInvitee(),
-                           fallbackProxyUserId,
-                           instanceId);
-        }*/
+            dao.createInvitee(invite.getInvitee(),
+                              invite.getInviter(),
+                              fallbackProxyUserId,
+                              instanceId);
+        }
     }
 
     /** Increment number of invites for the currently filling fallback proxy
@@ -174,45 +176,5 @@ public class FallbackProxyLauncher {
         map.put("launch-refrtok", refreshToken);
         map.put("launch-serial", serial);
         new SQSUtil().send(map);
-    }
-
-    /**
-     * Perform updates necessary when an invite is good to go, and send the
-     * invite email.
-     *
-     * Only a race condition could abort an invite at this point.
-     */
-    private static void dispatchInvite(String inviterEmail,
-                                       String inviteeEmail,
-                                       String fallbackProxyUserId,
-                                       String instanceId) {
-        log.warning("INVITES TEMPORARILY FROZEN; we'll process these after transition.");
-        return;
-        /*
-        final Dao dao = new Dao();
-        if (!dao.setInviteStatus(inviterEmail,
-                                 inviteeEmail,
-                                 Invite.Status.authorized,
-                                 Invite.Status.sending)) {
-            // We may get these if an invite comes shortly after a fallback
-            // proxy comes up, so we send it immediately (because the proxy is
-            // up), but we also suspect it to have been waiting for the proxy.
-            log.warning("Bad invite state.");
-            return;
-        }
-        LanternUser inviter = dao.findUser(inviterEmail);
-        LanternUser invitee = dao.createInvitee(inviter,
-                                                inviteeEmail,
-                                                fallbackProxyUserId,
-                                                instanceId);
-        QueueFactory.getDefaultQueue().add(
-            TaskOptions.Builder
-               .withUrl("/send_invite_task")
-               .param("inviterName", "" + inviter.getName()) // handle null
-               .param("inviterEmail", inviterEmail)
-               .param("inviteeEmail", inviteeEmail)
-               .param("inviteeEverSignedIn", "" + invitee.isEverSignedIn()));
-
-        */
     }
 }

@@ -578,17 +578,20 @@ public class Dao extends DAOBase {
         }
     }
 
-    public LanternUser createInvitee(final LanternUser inviter,
-                                     final String inviteeEmail,
+    public LanternUser createInvitee(final String inviteeEmail,
+                                     final String inviterId,
                                      final String fallbackProxyUserId,
                                      final String fallbackInstanceId) {
-        final Objectify ofy = ofy();
+        log.info("Making sure " + inviteeEmail + ", invited by " + inviterId
+                 + ", has been created.");
+        final LanternUser inviter = findUser(inviterId);
         RetryingTransaction<LanternUser> txn
             = new RetryingTransaction<LanternUser>() {
             @Override
             public LanternUser run(Objectify ofy) {
                 LanternUser invitee = ofy.find(LanternUser.class,
                                                inviteeEmail);
+                boolean anyChange = false;
                 if (invitee == null) {
                     log.info("Adding invitee to database");
                     invitee = new LanternUser(inviteeEmail);
@@ -598,11 +601,21 @@ public class Dao extends DAOBase {
                     invitee.setFallbackProxy(
                             getInstanceKey(fallbackProxyUserId,
                                            fallbackInstanceId));
+                    // Not bothering with a constant because any non-null value
+                    // will do.
+                    log.info("Successfully committed attempt to add invitee.");
+                    anyChange = true;
+                }
+                if (invitee.getConfigFolder() == null) {
+                    invitee.setConfigFolder("pending");
+                    enqueueConfigAndWrappers(inviteeEmail);
+                    anyChange = true;
+                }
+                if (anyChange) {
                     ofy.put(invitee);
                     ofy.getTxn().commit();
-                    log.info("Successfully committed attempt to add invitee.");
                 } else {
-                    log.info("Invitee exists, nothing to do here.");
+                    log.info("Invitee exists and wrappers have been requested; nothing to do here.");
                 }
                 return invitee;
             }
@@ -1175,7 +1188,7 @@ public class Dao extends DAOBase {
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
-            log.info(desc + ": OK");
+            log.info(desc + ": " + (statusUpdated ? "OK" : "nay!"));
         }
         return statusUpdated;
     }
@@ -1537,13 +1550,6 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void retrofitS3Config(String userId) {
-        QueueFactory.getDefaultQueue().add(
-            TaskOptions.Builder
-               .withUrl("/upload_config_and_request_wrappers")
-               .param("userId", "" + userId));
-    }
-
     public void setConfigFolder(final String userId,
                                 final String configFolder) {
         log.info("Setting config folder for " + userId
@@ -1561,5 +1567,82 @@ public class Dao extends DAOBase {
         if (t.failed()) {
             log.severe("Error trying to set config folder!");
         }
+    }
+
+    public void setWrappersUploaded(final String userId) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setWrappersUploaded();
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Error trying to set wrappersUploaded!");
+        }
+    }
+
+    public void sendInvitesTo(final String userId) {
+        log.info("Sending all authorized invites to " + userId);
+        LanternUser invitee = findUser(userId);
+        if (invitee == null) {
+            throw new RuntimeException("Not a LanternUser");
+        }
+        String configFolder = invitee.getConfigFolder();
+        if (configFolder == null) {
+            throw new RuntimeException("No config folder.");
+        }
+        for (Invite inv : ofy().query(Invite.class)
+                               .filter("invitee", userId)
+                               .filter("status", Invite.Status.authorized)) {
+            log.info("Got an invite from " + inv.getInviter());
+            if (!setInviteStatus(inv.getInviter(),
+                                 userId,
+                                 Invite.Status.authorized,
+                                 Invite.Status.sending)) {
+                log.warning("Weird race condition trying to advance invite?");
+                continue;
+            }
+            LanternUser inviter = findUser(inv.getInviter());
+            QueueFactory.getDefaultQueue().add(
+                TaskOptions.Builder
+                   .withUrl("/send_invite_task")
+                   .param("inviterName", "" + inviter.getName()) // handle null
+                   .param("inviterEmail", inviter.getId())
+                   .param("inviteeEmail", userId)
+                   .param("configFolder", configFolder));
+            log.info("Successfully enqueued invite email.");
+        }
+    }
+
+    public void retrofitConfigAndWrappers(final String userId) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user.getConfigFolder() == null) {
+                    // Not bothering with a constant because any non-null value
+                    // will do.
+                    user.setConfigFolder("pending");
+                    enqueueConfigAndWrappers(userId);
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                }
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Transaction failed!");
+        }
+    }
+
+    private void enqueueConfigAndWrappers(String userId) {
+        QueueFactory.getDefaultQueue().add(
+                TaskOptions.Builder
+                .withUrl("/upload_config_and_request_wrappers")
+                .param("userId", userId));
     }
 }

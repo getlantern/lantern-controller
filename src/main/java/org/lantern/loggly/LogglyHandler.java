@@ -7,8 +7,6 @@ import java.util.logging.LogRecord;
 
 import org.lantern.LanternControllerConstants;
 
-import com.google.appengine.api.utils.SystemProperty;
-
 /**
  * MyCustomHandler outputs contents to a specified file
  */
@@ -29,7 +27,7 @@ public class LogglyHandler extends Handler {
 
         LogglyMessage msg = new LogglyMessage(
                 String.format("%1$s.appspot.com",
-                        SystemProperty.applicationId.get()),
+                              LanternControllerConstants.CONTROLLER_ID),
                 record.getMessage(),
                 new Date(record.getMillis())).sanitized();
         Throwable thrown = record.getThrown();

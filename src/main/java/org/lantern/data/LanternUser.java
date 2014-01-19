@@ -99,6 +99,11 @@ public class LanternUser implements Serializable {
      */
     private String configFolder;
 
+    /**
+     * Whether the wrappers for this user have been reported as uploaded.
+     */
+    private boolean wrappersUploaded = false;
+
     public LanternUser() {
         super();
     }
@@ -269,6 +274,14 @@ public class LanternUser implements Serializable {
 
     public String getConfigFolder() {
         return configFolder;
+    }
+
+    public void setWrappersUploaded() {
+        wrappersUploaded = true;
+    }
+
+    public boolean getWrappersUploaded() {
+        return wrappersUploaded;
     }
 
     public int incrementFallbackSerialNumber() {

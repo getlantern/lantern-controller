@@ -15,6 +15,8 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import org.lantern.data.Dao;
+import org.lantern.data.LanternInstance;
+import org.lantern.data.LanternUser;
 
 
 @SuppressWarnings("serial")
@@ -84,8 +86,26 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
     }
 
     private String compileConfig(String userId) {
-        return "{ \"serial_no\": 1, \"fallbacks\" : [ "
-            + new Dao().ofy().get(dao.findUser(userId).getFallbackProxy()).getAccessData()
+        LanternUser user = dao.findUser(userId);
+        if (user == null) {
+            throw new RuntimeException("User doesn't exist");
+        }
+        if (user.getFallbackProxy() == null) {
+            throw new RuntimeException("No fallback proxy");
+        }
+        LanternInstance fallback = dao.ofy().get(user.getFallbackProxy());
+        if (fallback == null) {
+           throw new RuntimeException("Fallback not found");
+        }
+        String accessData = fallback.getAccessData();
+        if (accessData == null) {
+            throw new RuntimeException("Fallback has no access data");
+        }
+        return "{ \"serial_no\": 1"
+            + ", \"controller\": \""
+                + LanternControllerConstants.CONTROLLER_ID + "\""
+            + ", \"fallbacks\" : [ "
+                + accessData
             + " ] }";
     }
 
@@ -111,7 +131,8 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         }
     }
 
-    private void enqueueWrapperUploadRequest(String userId, String folderName) {
+    private void enqueueWrapperUploadRequest(String userId,
+                                             String folderName) {
         Map<String, Object> m = new HashMap<String, Object>();
         //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
         m.put("upload-wrappers-id", userId);

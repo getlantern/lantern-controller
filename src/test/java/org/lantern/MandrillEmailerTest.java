@@ -30,8 +30,7 @@ public class MandrillEmailerTest {
         final String payload = MandrillEmailer.inviteJson(inviterName,
                                                           inviterEmail,
                                                           invitedEmail,
-                                                          installerLocation,
-                                                          false);
+                                                          installerLocation);
         final HttpPost post = new HttpPost(
             LanternControllerConstants.MANDRILL_API_SEND_URL);
         post.setEntity(new StringEntity(payload, "UTF-8"));
