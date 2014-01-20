@@ -10,7 +10,7 @@
 
   <properties>
     <appengine.app.version>159</appengine.app.version>
-    <appengine.target.version>1.8.8</appengine.target.version>
+    <appengine.target.version>1.8.9</appengine.target.version>
     <jersey.version>1.17.1</jersey.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -248,6 +248,31 @@
     </plugins>
   </build>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>aws-release</id>
+      <name>AWS Release Repository</name>
+      <url>https://s3.amazonaws.com/lantern-mvn-repo/release</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>objectify-appengine</id>
+      <name>Objectify</name>
+      <url>http://maven.objectify-appengine.googlecode.com/git/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </pluginRepository>
+  </pluginRepositories>
+
   <repositories>
     <repository>
       <id>aws-release</id>
@@ -263,6 +288,12 @@
     <repository>
       <id>objectify-appengine</id>
       <url>http://maven.objectify-appengine.googlecode.com/git/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
     </repository>
   </repositories>
   <parent>

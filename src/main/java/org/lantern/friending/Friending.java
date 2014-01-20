@@ -283,11 +283,15 @@ public class Friending {
             if (user == null) {
                 return null;
             }
-            int maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
-                    - user.getDegree();
-            // Everyone gets at least MIN_MAX_FRIENDS friends
-            maxFriends = Math.max(maxFriends,
-                    LanternControllerConstants.MIN_MAX_FRIENDS);
+            int maxFriends = 0;
+            if (user.getGeneration() >= 1) {
+                // Gen 1 and over users get some allowed friending ops
+                maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
+                        - user.getDegree();
+                // Everyone gets at least MIN_MAX_FRIENDS friends
+                maxFriends = Math.max(maxFriends,
+                        LanternControllerConstants.MIN_MAX_FRIENDS);
+            }
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
         }
