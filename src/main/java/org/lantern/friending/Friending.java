@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.lantern.EmailAddressUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.data.Dao;
 import org.lantern.data.Dao.DbCall;
@@ -306,7 +307,11 @@ public class Friending {
      * @return The normalized address.
      */
     private static String email(final User user) {
-        return user.getEmail().toLowerCase();
+        try {
+            return EmailAddressUtils.normalizedEmail(user.getEmail());
+        } catch (EmailAddressUtils.NormalizationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void invite(Friend friend) {

@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
+import org.lantern.EmailAddressUtils;
 import org.lantern.FallbackProxyLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
@@ -582,19 +583,29 @@ public class Dao extends DAOBase {
                                      final String inviterId,
                                      final String fallbackProxyUserId,
                                      final String fallbackInstanceId) {
-        log.info("Making sure " + inviteeEmail + ", invited by " + inviterId
-                 + ", has been created.");
+        // Although the friends code should have made sure to normalize the
+        // inviteeEmail, let's double-check this just to be on the safe side.
+        final String normalizedInviteeEmail;
+        try {
+            normalizedInviteeEmail
+                = EmailAddressUtils.normalizedEmail(inviteeEmail);
+        } catch (EmailAddressUtils.NormalizationException e) {
+            throw new RuntimeException(e);
+        }
+
+        log.info("Making sure " + normalizedInviteeEmail
+                 + ", invited by " + inviterId + ", has been created.");
         final LanternUser inviter = findUser(inviterId);
         RetryingTransaction<LanternUser> txn
             = new RetryingTransaction<LanternUser>() {
             @Override
             public LanternUser run(Objectify ofy) {
                 LanternUser invitee = ofy.find(LanternUser.class,
-                                               inviteeEmail);
+                                               normalizedInviteeEmail);
                 boolean anyChange = false;
                 if (invitee == null) {
                     log.info("Adding invitee to database");
-                    invitee = new LanternUser(inviteeEmail);
+                    invitee = new LanternUser(normalizedInviteeEmail);
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
                     invitee.setFallbackProxyUserId(fallbackProxyUserId);
@@ -608,7 +619,7 @@ public class Dao extends DAOBase {
                 }
                 if (invitee.getConfigFolder() == null) {
                     invitee.setConfigFolder("pending");
-                    enqueueConfigAndWrappers(inviteeEmail);
+                    enqueueConfigAndWrappers(normalizedInviteeEmail);
                     anyChange = true;
                 }
                 if (anyChange) {
@@ -623,7 +634,8 @@ public class Dao extends DAOBase {
         LanternUser invitee = txn.run();
         if (txn.failed()) {
             throw new RuntimeException(
-                    "Transaction failed trying to create " + inviteeEmail);
+                    "Transaction failed trying to create "
+                    + normalizedInviteeEmail);
         }
         return invitee;
     }
