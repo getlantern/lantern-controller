@@ -50,7 +50,12 @@ public class XmppAvailableServlet extends HttpServlet {
         final Map<String,Object> responseJson =
                 new LinkedHashMap<String,Object>();
         final Dao dao = new Dao();
-        final String from = LanternControllerUtils.userId(presence);
+        String from;
+        try {
+            from = LanternControllerUtils.userId(presence);
+        } catch (EmailAddressUtils.NormalizationException e) {
+            throw new RuntimeException(e);
+        }
         if (!dao.isInvited(from)) {
             log.info(from+" not invited!!");
             processNotInvited(presence, xmpp, responseJson);
@@ -61,7 +66,12 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
         }
 
-        final String userId = LanternXmppUtils.jidToEmail(from);
+        String userId;
+        try {
+            userId = LanternXmppUtils.jidToEmail(from);
+        } catch (EmailAddressUtils.NormalizationException e) {
+            throw new RuntimeException(e);
+        }
         final String resource = LanternControllerUtils.resourceId(presence);
         final String instanceId = LanternControllerUtils.getProperty(doc,
                 "instanceId");
