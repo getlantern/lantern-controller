@@ -1,0 +1,146 @@
+package org.lantern;
+
+import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.logging.Logger;
+import java.util.Map;
+import java.util.HashMap;
+import java.security.SecureRandom;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
+import org.lantern.data.Dao;
+import org.lantern.data.LanternInstance;
+import org.lantern.data.LanternUser;
+
+
+@SuppressWarnings("serial")
+public class UploadConfigAndRequestWrappers extends HttpServlet {
+
+    /** Minimum time clients should wait to check S3 for config updates. */
+    private static final int MIN_POLL_MINUTES = 5;
+    /** Maximum time clients should wait to check S3 for config updates. */
+    private static final int MAX_POLL_MINUTES = 15;
+
+    /* DRY: grep lantern_aws. */
+    private static final String CONFIG_BUCKET = "lantern-config";
+    private static final String CONFIG_FILENAME = "config.json";
+
+    /**
+     * http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
+     *
+     * "The name for a key is a sequence of Unicode characters whose UTF-8
+     * encoding is at most 1024 bytes long."
+     *
+     * We reserve some 64 characters for filenames (the longest named wrappers
+     * currently have ~40 chars).
+     */
+    private static final int CONFIG_FOLDER_LENGTH = 1024 - 64;
+
+    /**
+     * For simplicity, and because the key space is absurdly vast anyway,
+     * let's just use characters that don't need to be percent encoded in
+     * a URL path.
+     *
+     * http://tools.ietf.org/html/rfc3986#section-2.3
+     */
+    private static final String CONFIG_FOLDER_ALPHABET
+        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+
+    private final Dao dao = new Dao();
+
+    private static final transient Logger log = Logger
+            .getLogger(UploadConfigAndRequestWrappers.class.getName());
+
+    @Override
+    public void doPost(final HttpServletRequest request,
+                       final HttpServletResponse response) {
+        String userId = request.getParameter("userId");
+        log.info("Uploading config for " + userId);
+        String configFolder = generateConfigFolder();
+        dao.setConfigFolder(userId, configFolder);
+        log.info("ConfigFolder starts with '"
+                 + configFolder.substring(0, 10)
+                 + "'...");
+        String config = compileConfig(userId);
+        log.info("Uploading config:\n" + config);
+        uploadToS3(configFolder, config);
+        log.info("Successfully uploaded; enquequing wrapper request...");
+        enqueueWrapperUploadRequest(userId, configFolder);
+        log.info("All done.");
+        LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private String generateConfigFolder() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        int alphabetLength = CONFIG_FOLDER_ALPHABET.length();
+        for (int i=0; i < CONFIG_FOLDER_LENGTH; i++) {
+            sb.append(CONFIG_FOLDER_ALPHABET.charAt(
+                           random.nextInt(alphabetLength)));
+        }
+        return sb.toString();
+    }
+
+    private String compileConfig(String userId) {
+        LanternUser user = dao.findUser(userId);
+        if (user == null) {
+            throw new RuntimeException("User doesn't exist");
+        }
+        if (user.getFallbackProxy() == null) {
+            throw new RuntimeException("No fallback proxy");
+        }
+        LanternInstance fallback = dao.ofy().get(user.getFallbackProxy());
+        if (fallback == null) {
+           throw new RuntimeException("Fallback not found");
+        }
+        String accessData = fallback.getAccessData();
+        if (accessData == null) {
+            throw new RuntimeException("Fallback has no access data");
+        }
+        return "{ \"serial_no\": 1"
+            + ", \"controller\": \""
+                + LanternControllerConstants.CONTROLLER_ID + "\""
+            + ", \"minpoll\": " + MIN_POLL_MINUTES
+            + ", \"maxpoll\": " + MAX_POLL_MINUTES
+            + ", \"fallbacks\" : [ "
+                + accessData
+            + " ] }";
+    }
+
+    private void uploadToS3(String folderName, String configContents) {
+        AmazonS3Client s3client
+            = new AmazonS3Client(LanternControllerConstants.AWS_CREDENTIALS);
+        s3client.setEndpoint(LanternConstants.S3_ENDPOINT);
+        String keyName = folderName + "/" + CONFIG_FILENAME;
+        ObjectMetadata md = new ObjectMetadata();
+        md.setCacheControl("no-cache");
+        md.setContentDisposition("attachment; filename=\""
+                                 + CONFIG_FILENAME
+                                 + "\"");
+        md.setContentType("application/json");
+        try {
+            s3client.putObject(CONFIG_BUCKET,
+                               keyName,
+                               new ByteArrayInputStream(
+                                   configContents.getBytes("UTF-8")),
+                               md);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void enqueueWrapperUploadRequest(String userId,
+                                             String folderName) {
+        Map<String, Object> m = new HashMap<String, Object>();
+        //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
+        m.put("upload-wrappers-id", userId);
+        m.put("upload-wrappers-to", folderName);
+        new SQSUtil().send(m);
+    }
+}

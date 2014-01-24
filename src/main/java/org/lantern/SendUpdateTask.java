@@ -26,7 +26,7 @@ public class SendUpdateTask extends HttpServlet {
             MandrillEmailer.sendVersionUpdate(
                 toEmail,
                 request.getParameter("version"),
-                request.getParameter("installerLocation"));
+                request.getParameter("configFolder"));
             LanternControllerUtils.populateOKResponse(response, "OK");
             log.info("Update notification task reported success.");
         } catch (IOException e) {

@@ -44,6 +44,8 @@ public class SQSChecker extends HttpServlet {
            handleFallbackProxyUp(msg);
        } else if (msg.containsKey("fp-alarm")) {
            handleFallbackProxyAlarm(msg);
+       } else if (msg.containsKey("wrappers-uploaded-for")) {
+           handleWrappersUploaded(msg);
        } else {
            log.severe("I don't understand this message: " + msg);
         }
@@ -61,10 +63,10 @@ public class SQSChecker extends HttpServlet {
                        + " sent fp-up with no instance ID.");
             return;
         }
-        String installerLocation = (String)msg.get("fp-up-insloc");
-        if (installerLocation == null) {
+        String accessData = (String)msg.get("fp-up-access-data");
+        if (accessData == null) {
             log.severe(instanceId
-                       + " sent fp-up with no installer location.");
+                       + " sent fp-up with no access data.");
             return;
         }
         String ip = (String)msg.get("fp-up-ip");
@@ -81,7 +83,7 @@ public class SQSChecker extends HttpServlet {
         }
         FallbackProxyLauncher.onFallbackProxyUp(fallbackProxyUserId,
                                                 instanceId,
-                                                installerLocation,
+                                                accessData,
                                                 ip,
                                                 port);
     }
@@ -117,5 +119,13 @@ public class SQSChecker extends HttpServlet {
         } else {
             log.info("Email not requested.");
         }
+    }
+
+    private void handleWrappersUploaded(Map<String, Object> msg) {
+        String userId = (String)msg.get("wrappers-uploaded-for");
+        log.info("Wrappers uploaded for " + userId);
+        Dao dao = new Dao();
+        dao.setWrappersUploaded(userId);
+        dao.sendInvitesTo(userId);
     }
 }

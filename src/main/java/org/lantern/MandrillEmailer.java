@@ -42,10 +42,9 @@ public class MandrillEmailer {
      * @param inviterName The name of the person doing the inviting.
      * @param inviterEmail The email of the person doing the inviting.
      * @param inviteeEmail The email of the person to invite.
-     * @param installerLocation The location where the installers can be found.
-     * @param isAlreadyUser We send a different email if the user has ever logged in
+     * @param configFolder The location where the installers can be found.
      *
-     * @see populateInstallerUrls for the format of installerLocation.
+     * @see populateInstallerUrls for the format of configFolder.
      *
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
@@ -53,33 +52,25 @@ public class MandrillEmailer {
     public static void sendInvite(String inviterName,
                                   String inviterEmail,
                                   String inviteeEmail,
-                                  String installerLocation,
-                                  boolean isAlreadyUser)
+                                  String configFolder)
             throws IOException {
         log.info("Sending invite to "+inviteeEmail);
         sendEmail(inviteJson(inviterName,
                              inviterEmail,
                              inviteeEmail,
-                             installerLocation,
-                             isAlreadyUser));
+                             configFolder));
     }
 
     // Factored out and made public for testing.
     public static String inviteJson(String inviterName,
                                     String inviterEmail,
                                     String inviteeEmail,
-                                    String installerLocation,
-                                    boolean isAlreadyUser)
+                                    String configFolder)
             throws IOException {
         if (StringUtils.isBlank(inviteeEmail)) {
             log.warning("No inviter e-mail!");
             throw new IOException("Invited e-mail required!!");
         }
-        // XXX: Temporarily disabled because there is no such
-        // "friend-notification" template at the time of this writing, and this
-        // was causing send_invite tasks to crash.
-        //String template
-        //    = isAlreadyUser ? "friend-notification" : "invite-notification";
         String template = "invite-notification";
         String inviterNameOrEmail
             = StringUtils.isBlank(inviterName) ? inviterEmail : inviterName;
@@ -89,7 +80,7 @@ public class MandrillEmailer {
         Map<String, String> m = new HashMap<String,String>();
         m.put("INVITER_EMAIL", inviterEmail);
         m.put("INVITER_NAME", inviterNameOrEmail);
-        populateInstallerUrls(m, installerLocation);
+        populateInstallerUrls(m, configFolder);
         return jsonToSendEmail(
                       template,
                       "Lantern Invitation",
@@ -106,21 +97,21 @@ public class MandrillEmailer {
      *
      * @param toEmail The email to which the e-mail should be sent.
      * @param version The version string to display in the e-mail.
-     * @param installerLocation The location where the installers can be found.
+     * @param configFolder The location where the installers can be found.
      *
-     * @see populateInstallerUrls for the format of installerLocation.
+     * @see populateInstallerUrls for the format of configFolder.
      *
      * @throws IOException If there's any error accessing Mandrill, generating
      * the JSON, etc.
      */
     public static void sendVersionUpdate(String toEmail,
                                          String version,
-                                         String installerLocation)
+                                         String configFolder)
             throws IOException {
         log.info("Sending version update notification to " + toEmail);
         Map<String, String> m = new HashMap<String,String>();
         m.put("VERSION", version);
-        populateInstallerUrls(m, installerLocation);
+        populateInstallerUrls(m, configFolder);
         sendEmail(jsonToSendEmail("update-notification",
                                   "Lantern Update Available",
                                   null,
@@ -132,16 +123,13 @@ public class MandrillEmailer {
     }
 
     private static void populateInstallerUrls(Map<String, String> m,
-                                              String installerLocation) {
-        final String[] parts = installerLocation.split(",");
-        assert parts.length == 2;
-        final String folder = parts[0];
-        final String version = parts[1];
-        final String baseUrl =
-            "https://s3.amazonaws.com/" + folder + "/lantern-net-installer_";
-        m.put("INSTALLER_URL_DEB", baseUrl + "unix_" + version + ".sh");
-        m.put("INSTALLER_URL_DMG", baseUrl + "macos_" + version + ".dmg");
-        m.put("INSTALLER_URL_EXE", baseUrl + "windows_" + version + ".exe");
+                                              String configFolder) {
+        //DRY: upload_wrappers.py at lantern_aws.
+        final String baseUrl = LanternConstants.S3_CONFIG_BASE_URL
+                               + configFolder + "/lantern-net-installer_";
+        m.put("INSTALLER_URL_DEB", baseUrl + "unix.html");
+        m.put("INSTALLER_URL_DMG", baseUrl + "macos.html");
+        m.put("INSTALLER_URL_EXE", baseUrl + "windows.html");
     }
 
     private static String jsonToSendEmail(String template,

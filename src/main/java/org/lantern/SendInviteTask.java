@@ -30,13 +30,13 @@ public class SendInviteTask extends HttpServlet {
         if ("null".equals(inviterName)) {
             inviterName = null;
         }
+        String configFolder = request.getParameter("configFolder");
         try {
             MandrillEmailer.sendInvite(
                 inviterName,
                 inviterEmail,
                 inviteeEmail,
-                request.getParameter("installerLocation"),
-                "true".equals(request.getParameter("inviteeEverSignedIn")));
+                configFolder);
             new Dao().setInviteStatus(inviterEmail,
                                       inviteeEmail,
                                       Invite.Status.sent);

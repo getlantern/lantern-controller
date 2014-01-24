@@ -55,11 +55,17 @@ public class LanternInstance {
     /**
      * The location of the installers pointing to this instance.
      *
-     * This is generated in the fallback proxies and unpacked in
-     * FallbackProxyLauncher.sendInviteEmail.  See that one if you're
-     * interested in the actual format.
+     * Not used for new fallbacks; kept for backwards compatibility.
      */
     private String installerLocation;
+
+    /**
+     * A blob containing data needed for clients to access this fallback.
+     *
+     * Fallback servers produce this, clients consume it.  All we really care
+     * about is that it's some JSON we can compile into a list.
+     */
+    private String accessData;
 
     /**
      * Is this a fallback proxy for which we have requested shutdown?
@@ -188,6 +194,14 @@ public class LanternInstance {
 
     public void setInstallerLocation(final String installerLocation) {
         this.installerLocation = installerLocation;
+    }
+
+    public String getAccessData() {
+        return accessData;
+    }
+
+    public void setAccessData(final String accessData) {
+        this.accessData = accessData;
     }
 
     public boolean isFallbackProxyShutdown() {

@@ -86,13 +86,13 @@
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>inviteRequestTask</servlet-name>
-    <servlet-class>org.lantern.InviteRequestTaskHandler</servlet-class>
+    <servlet-name>uploadConfigAndRequestWrappers</servlet-name>
+    <servlet-class>org.lantern.UploadConfigAndRequestWrappers</servlet-class>
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>inviteRequestTask</servlet-name>
-    <url-pattern>/invite_requests_task</url-pattern>
+    <servlet-name>uploadConfigAndRequestWrappers</servlet-name>
+    <url-pattern>/upload_config_and_request_wrappers</url-pattern>
   </servlet-mapping>
 
   <servlet>
@@ -173,7 +173,7 @@
       <url-pattern>/check_sqs</url-pattern>
       <url-pattern>/admin/*</url-pattern>
       <url-pattern>/send_invite_task</url-pattern>
-      <url-pattern>/invite_requests_task</url-pattern>
+      <url-pattern>/upload_config_and_request_wrappers</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
     </web-resource-collection>
     <auth-constraint>

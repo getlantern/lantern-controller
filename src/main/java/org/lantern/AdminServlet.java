@@ -217,7 +217,7 @@ public class AdminServlet extends HttpServlet {
             if ("EVERYONE, AND I MEAN IT!".equals(to)) {
                 log.info("Sending to all users.");
                 for (LanternUser user : dao.getAllUsers()) {
-                    if (user.isEverSignedIn()) {
+                    if (user.isEverSignedIn() && user.getConfigFolder() != null) {
                         enqueueUpdateEmail(user, version);
                     } else {
                         log.info("Not sending to " + user
@@ -243,19 +243,18 @@ public class AdminServlet extends HttpServlet {
     private String enqueueUpdateEmail(LanternUser user, String version)
             throws IOException {
         log.info("Enqueuing update notification to " + user);
-        Dao dao = new Dao();
         if (user == null) {
             throw new IOException("Unknown user");
         }
-        String installerLocation
-            = dao.findInstance(
-                    user.getFallbackProxy()).getInstallerLocation();
+        if (user.getConfigFolder() == null) {
+            throw new IOException("User has no S3 configuration.");
+        }
         QueueFactory.getDefaultQueue().add(
             TaskOptions.Builder
                .withUrl("/send_update_task")
                .param("toEmail", user.getId())
-               .param("version", version)
-               .param("installerLocation", installerLocation));
+               .param("configFolder", user.getConfigFolder())
+               .param("version", version));
         return null;
     }
 

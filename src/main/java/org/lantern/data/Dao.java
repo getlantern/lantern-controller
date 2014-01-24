@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.CensoredUtils;
+import org.lantern.EmailAddressUtils;
 import org.lantern.FallbackProxyLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
@@ -34,6 +35,10 @@ import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
+
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
 
 public class Dao extends DAOBase {
 
@@ -574,31 +579,54 @@ public class Dao extends DAOBase {
         }
     }
 
-    public LanternUser createInvitee(final LanternUser inviter,
-                                     final String inviteeEmail,
+    public LanternUser createInvitee(final String inviteeEmail,
+                                     final String inviterId,
                                      final String fallbackProxyUserId,
                                      final String fallbackInstanceId) {
-        final Objectify ofy = ofy();
+        // Although the friends code should have made sure to normalize the
+        // inviteeEmail, let's double-check this just to be on the safe side.
+        final String normalizedInviteeEmail;
+        try {
+            normalizedInviteeEmail
+                = EmailAddressUtils.normalizedEmail(inviteeEmail);
+        } catch (EmailAddressUtils.NormalizationException e) {
+            throw new RuntimeException(e);
+        }
+
+        log.info("Making sure " + normalizedInviteeEmail
+                 + ", invited by " + inviterId + ", has been created.");
+        final LanternUser inviter = findUser(inviterId);
         RetryingTransaction<LanternUser> txn
             = new RetryingTransaction<LanternUser>() {
             @Override
             public LanternUser run(Objectify ofy) {
                 LanternUser invitee = ofy.find(LanternUser.class,
-                                               inviteeEmail);
+                                               normalizedInviteeEmail);
+                boolean anyChange = false;
                 if (invitee == null) {
                     log.info("Adding invitee to database");
-                    invitee = new LanternUser(inviteeEmail);
+                    invitee = new LanternUser(normalizedInviteeEmail);
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
                     invitee.setFallbackProxyUserId(fallbackProxyUserId);
                     invitee.setFallbackProxy(
                             getInstanceKey(fallbackProxyUserId,
                                            fallbackInstanceId));
+                    // Not bothering with a constant because any non-null value
+                    // will do.
+                    log.info("Successfully committed attempt to add invitee.");
+                    anyChange = true;
+                }
+                if (invitee.getConfigFolder() == null) {
+                    invitee.setConfigFolder("pending");
+                    enqueueConfigAndWrappers(normalizedInviteeEmail);
+                    anyChange = true;
+                }
+                if (anyChange) {
                     ofy.put(invitee);
                     ofy.getTxn().commit();
-                    log.info("Successfully committed attempt to add invitee.");
                 } else {
-                    log.info("Invitee exists, nothing to do here.");
+                    log.info("Invitee exists and wrappers have been requested; nothing to do here.");
                 }
                 return invitee;
             }
@@ -606,7 +634,8 @@ public class Dao extends DAOBase {
         LanternUser invitee = txn.run();
         if (txn.failed()) {
             throw new RuntimeException(
-                    "Transaction failed trying to create " + inviteeEmail);
+                    "Transaction failed trying to create "
+                    + normalizedInviteeEmail);
         }
         return invitee;
     }
@@ -1171,7 +1200,7 @@ public class Dao extends DAOBase {
         if (tx.failed()) {
             throw new RuntimeException(desc + " -- transaction failed!");
         } else {
-            log.info(desc + ": OK");
+            log.info(desc + ": " + (statusUpdated ? "OK" : "nay!"));
         }
         return statusUpdated;
     }
@@ -1284,11 +1313,11 @@ public class Dao extends DAOBase {
     }
 
     /**
-     * Find or create the instance and set its installerLocation.
+     * Find or create the instance and set its accessData.
      */
     public void registerFallbackProxy(final String userId,
                                       final String instanceId,
-                                      final String installerLocation,
+                                      final String accessData,
                                       final String ip,
                                       final String port) {
         RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
@@ -1306,7 +1335,7 @@ public class Dao extends DAOBase {
                                                    getUserKey(userId));
                 }
                 instance.setFallbackProxy(true);
-                instance.setInstallerLocation(installerLocation);
+                instance.setAccessData(accessData);
                 instance.setListenHostAndPort(ip + ":" + port);
                 instance.setUser(userId);
                 ofy.put(instance);
@@ -1531,5 +1560,101 @@ public class Dao extends DAOBase {
         public TxFailure() {
             super("Transaction failed");
         }
+    }
+
+    public void setConfigFolder(final String userId,
+                                final String configFolder) {
+        log.info("Setting config folder for " + userId
+                 + " to '" + configFolder.substring(0, 10) + "'...");
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setConfigFolder(configFolder);
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Error trying to set config folder!");
+        }
+    }
+
+    public void setWrappersUploaded(final String userId) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                user.setWrappersUploaded();
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Error trying to set wrappersUploaded!");
+        }
+    }
+
+    public void sendInvitesTo(final String userId) {
+        log.info("Sending all authorized invites to " + userId);
+        LanternUser invitee = findUser(userId);
+        if (invitee == null) {
+            throw new RuntimeException("Not a LanternUser");
+        }
+        String configFolder = invitee.getConfigFolder();
+        if (configFolder == null) {
+            throw new RuntimeException("No config folder.");
+        }
+        for (Invite inv : ofy().query(Invite.class)
+                               .filter("invitee", userId)
+                               .filter("status", Invite.Status.authorized)) {
+            log.info("Got an invite from " + inv.getInviter());
+            if (!setInviteStatus(inv.getInviter(),
+                                 userId,
+                                 Invite.Status.authorized,
+                                 Invite.Status.sending)) {
+                log.warning("Weird race condition trying to advance invite?");
+                continue;
+            }
+            LanternUser inviter = findUser(inv.getInviter());
+            QueueFactory.getDefaultQueue().add(
+                TaskOptions.Builder
+                   .withUrl("/send_invite_task")
+                   .param("inviterName", "" + inviter.getName()) // handle null
+                   .param("inviterEmail", inviter.getId())
+                   .param("inviteeEmail", userId)
+                   .param("configFolder", configFolder));
+            log.info("Successfully enqueued invite email.");
+        }
+    }
+
+    public void retrofitConfigAndWrappers(final String userId) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user.getConfigFolder() == null) {
+                    // Not bothering with a constant because any non-null value
+                    // will do.
+                    user.setConfigFolder("pending");
+                    enqueueConfigAndWrappers(userId);
+                    ofy.put(user);
+                    ofy.getTxn().commit();
+                }
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Transaction failed!");
+        }
+    }
+
+    private void enqueueConfigAndWrappers(String userId) {
+        QueueFactory.getDefaultQueue().add(
+                TaskOptions.Builder
+                .withUrl("/upload_config_and_request_wrappers")
+                .param("userId", userId));
     }
 }

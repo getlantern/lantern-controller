@@ -142,11 +142,13 @@ public class LanternControllerUtils {
         return compiled;
     }
 
-    public static String userId(final Message message) {
+    public static String userId(final Message message)
+            throws EmailAddressUtils.NormalizationException {
         return LanternXmppUtils.jidToEmail(message.getFromJid().getId());
     }
 
-    public static String userId(final Presence presence) {
+    public static String userId(final Presence presence)
+            throws EmailAddressUtils.NormalizationException {
         return LanternXmppUtils.jidToEmail(presence.getFromJid().getId());
     }
 

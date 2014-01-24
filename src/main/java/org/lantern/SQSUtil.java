@@ -27,7 +27,8 @@ import com.google.apphosting.api.DeadlineExceededException;
 
 public class SQSUtil {
 
-    private static final String ENDPOINT = "sqs.ap-southeast-1.amazonaws.com";
+    private static final String ENDPOINT
+        = "sqs." + LanternConstants.AWS_REGION + ".amazonaws.com";
     private static final String REQUEST_Q_NAME;
     private static final String NOTIFY_Q_NAME;
     static {
@@ -65,9 +66,6 @@ public class SQSUtil {
                 ).getQueueUrl();
     }
 
-    private static final BasicAWSCredentials creds = new BasicAWSCredentials(
-            LanternControllerConstants.getAWSAccessKeyId(),
-            LanternControllerConstants.getAWSSecretKey());
     private final transient Logger log = LoggerFactory.getLogger(getClass());
 
     public void send(final Map<String, Object> msgMap) {
@@ -123,7 +121,8 @@ public class SQSUtil {
     }
 
     private static AmazonSQSClient getClient() {
-        AmazonSQSClient ret = new AmazonSQSClient(creds);
+        AmazonSQSClient ret = new AmazonSQSClient(
+                LanternControllerConstants.AWS_CREDENTIALS);
         ret.setEndpoint(ENDPOINT);
         return ret;
     }
