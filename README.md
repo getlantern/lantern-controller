@@ -39,6 +39,13 @@ management tasks:
   pending invites
 - `https://<appid>.appspot.com/admin/latest.html` - set latest lantern version
 
+### CSRF Protection
+
+If you do not yet have a CSRF protection cookie for the domain the admin pages
+are served on, visit the /admin/invites.html page, which should trigger an ajax
+GET and result in your getting a CSRF cookie (inspect document.cookies to
+verify). Once you have the CSRF cookie, you will be able to use other admin
+pages like /admin/latest.html from that point forward.
 
 ## Setting up a Test Lantern Controller
 
