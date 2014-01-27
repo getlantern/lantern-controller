@@ -40,6 +40,7 @@ LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
 LANG_RU_RU = Lang('ru_RU', u'Русский язык', 'ltr')
 LANG_SK = Lang('sk', u'slovenčina', 'ltr')
 LANG_SV = Lang('sv', u'Svenska', 'ltr')
+LANG_UG = Lang('ug', u'ئۇيغۇر', 'rtl')
 LANG_UK_UA = Lang('uk_UA', u'Українська', 'ltr')
 LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
 LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
@@ -64,6 +65,7 @@ LANGS = [
     LANG_CS,
     LANG_SK,
     LANG_HR,
+    LANG_UG,
     ]
 
 # must be kept in sync with .tx/config
