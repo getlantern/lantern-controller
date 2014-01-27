@@ -52,10 +52,19 @@ public class S3Config {
 
     private static final Dao dao = new Dao();
 
-    /** Utility. */
+    // Some of these functions have grown a controllerId parameter so they can
+    // be called in a RemoteApi context, where
+    // LanternControllerConstants.CONTROLLER_ID is null.
+
     public static void refreshConfig(String userId) {
+        refreshConfig(userId, LanternControllerConstants.CONTROLLER_ID);
+    }
+
+
+    /** Utility. */
+    public static void refreshConfig(String userId, String controllerId) {
         log.info("Refreshing config for " + userId);
-        String config = compileConfig(userId);
+        String config = compileConfig(userId, controllerId);
         LanternUser user = dao.findUser(userId);
         if (user.getConfigFolder() == null) {
             throw new RuntimeException("No config folder for user " + userId);
@@ -64,10 +73,10 @@ public class S3Config {
     }
 
     /** Utility. */
-    public static void refreshAllConfigs() {
+    public static void refreshAllConfigs(String controllerId) {
         for (LanternUser user : dao.ofy().query(LanternUser.class)) {
             try {
-                refreshConfig(user.getId());
+                refreshConfig(user.getId(), controllerId);
             } catch (Exception e) {
                 // This will happen for the root user.
                 log.warning("Exception trying to refresh config: " + e);
@@ -87,6 +96,10 @@ public class S3Config {
     }
 
     public static String compileConfig(String userId) {
+        return compileConfig(userId, LanternControllerConstants.CONTROLLER_ID);
+    }
+
+    public static String compileConfig(String userId, String controllerId) {
         LanternUser user = dao.findUser(userId);
         if (user == null) {
             throw new RuntimeException("User doesn't exist");
@@ -104,7 +117,7 @@ public class S3Config {
         }
         return "{ \"serial_no\": 1"
             + ", \"controller\": \""
-                + LanternControllerConstants.CONTROLLER_ID + "\""
+                + controllerId + "\""
             + ", \"minpoll\": " + MIN_POLL_MINUTES
             + ", \"maxpoll\": " + MAX_POLL_MINUTES
             + ", \"fallbacks\" : [ "
