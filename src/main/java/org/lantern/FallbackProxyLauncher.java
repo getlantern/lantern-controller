@@ -154,8 +154,7 @@ public class FallbackProxyLauncher {
         Dao dao = new Dao();
         String refreshToken = dao.findUser(userId).getRefreshToken();
         if (refreshToken == null) {
-            throw new RuntimeException(
-                    "Fallback proxy user without refresh token?" + userId);
+            refreshToken = "__bogus__";
         }
         String launching = LanternControllerConstants.FALLBACK_PROXY_LAUNCHING;
         if (launching.equals(dao.setFallbackForNewInvitees(
