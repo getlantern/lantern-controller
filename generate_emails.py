@@ -27,6 +27,7 @@ Lang = namedtuple('lang', 'code name dir')
 #LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
 LANG_CA = Lang('ca', u'català', 'ltr')
 LANG_CS = Lang('cs', u'čeština', 'ltr')
+LANG_DE = Lang('de', u'Deutsch', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
@@ -47,6 +48,7 @@ LANGS = [
     LANG_ZH_CN,
     LANG_FA_IR,
     LANG_ES,
+    LANG_DE,
     LANG_PT_BR,
     LANG_UK_UA,
     LANG_VI,
