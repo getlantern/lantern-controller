@@ -29,10 +29,11 @@ LANG_CA = Lang('ca', u'català', 'ltr')
 LANG_CS = Lang('cs', u'čeština', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
+LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
 LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
-LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
+LANG_SV = Lang('sv', u'Svenska', 'ltr')
 LANG_UK_UA = Lang('uk_UA', u'Українська', 'ltr')
 LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
 LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
@@ -48,6 +49,7 @@ LANGS = [
     LANG_VI,
     LANG_CA,
     LANG_NL,
+    LANG_SV,
     LANG_CS,
     LANG_FR_CA,
     ]
