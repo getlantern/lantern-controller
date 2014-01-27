@@ -35,6 +35,7 @@ LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
 LANG_RU_RU = Lang('ru_RU', u'Русский язык', 'ltr')
+LANG_SK = Lang('sk', u'slovenčina', 'ltr')
 LANG_SV = Lang('sv', u'Svenska', 'ltr')
 LANG_UK_UA = Lang('uk_UA', u'Українська', 'ltr')
 LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
@@ -54,6 +55,7 @@ LANGS = [
     LANG_NL,
     LANG_SV,
     LANG_CS,
+    LANG_SK,
     LANG_HR,
     LANG_FR_CA,
     ]
