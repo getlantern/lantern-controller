@@ -34,6 +34,7 @@ LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
 LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
 LANG_FR_FR = Lang('fr_FR', u'français (France)', 'ltr')
 LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
+LANG_IT = Lang('it', u'italiano', 'ltr')
 LANG_JA = Lang('ja', u'日本語', 'ltr')
 LANG_NB = Lang('nb', u'Norsk bokmål', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
@@ -56,6 +57,7 @@ LANGS = [
     LANG_PT_BR,
     LANG_FR_FR,
     LANG_FR_CA,
+    LANG_IT,
     LANG_UK_UA,
     LANG_VI,
     LANG_JA,
