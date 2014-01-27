@@ -37,6 +37,7 @@ LANG_HE_IL = Lang('he_IL', u'עברית', 'rtl')
 LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
 LANG_IT = Lang('it', u'italiano', 'ltr')
 LANG_JA = Lang('ja', u'日本語', 'ltr')
+LANG_KO = Lang('ko', u'한국말', 'ltr')
 LANG_NB = Lang('nb', u'Norsk bokmål', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
@@ -62,6 +63,7 @@ LANGS = [
     LANG_UK_UA,
     LANG_VI,
     LANG_JA,
+    LANG_KO,
     LANG_RU_RU,
     LANG_HE_IL,
     LANG_CA,
