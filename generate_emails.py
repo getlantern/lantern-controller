@@ -30,6 +30,7 @@ LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
+LANG_UK_UA = Lang('uk_UA', u'Українська', 'ltr')
 LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
 LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
 LANG_DEFAULT = LANG_EN_US
@@ -40,6 +41,7 @@ LANGS = [
     LANG_FA_IR,
     LANG_ES,
     LANG_PT_BR,
+    LANG_UK_UA,
     LANG_VI,
     LANG_CA,
     ]
