@@ -26,6 +26,7 @@ Lang = namedtuple('lang', 'code name dir')
 # get these from some standard dataset
 #LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
 LANG_CA = Lang('ca', u'català', 'ltr')
+LANG_CS = Lang('cs', u'čeština', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
 LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
@@ -47,6 +48,7 @@ LANGS = [
     LANG_VI,
     LANG_CA,
     LANG_NL,
+    LANG_CS,
     LANG_FR_CA,
     ]
 
