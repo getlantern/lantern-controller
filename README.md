@@ -58,11 +58,9 @@ pages like /admin/latest.html from that point forward.
     run Lantern
  5. Set up a remoteapi.properties in your root folder with the following:
  
-```
-username=<your google username>
-password=<your google password (Strongly recommend using app-specific password)>
-controller=<name of your controller>
-```
+        username=<your google username>
+        password=<your google password (Strongly recommend using app-specific password)>
+        controller=<name of your controller>
 
  6. `./call-remote-api.bash`
  7. Revert `Dao.java`
@@ -70,7 +68,7 @@ controller=<name of your controller>
  9. Open /admin/index.jsp of your app in a browser
  10. Click "Pause Invites"
  11. Visit `https://<your app id>.appspot.com/admin/invites.html` (this is just to get a CSRF cookie, as in the section **CSRF Protection** above.)
- 12. visit `https://<your app id>.appspot.com/admin/latest.html` and enter details for the latest version that this controller knows about.
+ 12. Visit `https://<your app id>.appspot.com/admin/latest.html` and enter details for the latest version that this controller knows about.
 
 ## i18n
 
