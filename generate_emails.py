@@ -28,6 +28,7 @@ Lang = namedtuple('lang', 'code name dir')
 LANG_CA = Lang('ca', u'català', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
+LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
@@ -46,6 +47,7 @@ LANGS = [
     LANG_VI,
     LANG_CA,
     LANG_NL,
+    LANG_FR_CA,
     ]
 
 # must be kept in sync with .tx/config
