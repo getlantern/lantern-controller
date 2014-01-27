@@ -69,7 +69,8 @@ controller=<name of your controller>
  8. Revert `RemoteApi.java`
  9. Open /admin/index.jsp of your app in a browser
  10. Click "Pause Invites"
-  
+ 11. Visit `https://<your app id>.appspot.com/admin/invites.html` (this is just to get a CSRF cookie, as in the section **CSRF Protection** above.)
+ 12. visit `https://<your app id>.appspot.com/admin/latest.html` and enter details for the latest version that this controller knows about.
 
 ## i18n
 
