@@ -32,6 +32,7 @@ LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
 LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
+LANG_FR_FR = Lang('fr_FR', u'français (France)', 'ltr')
 LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
 LANG_NL = Lang('nl', u'Nederlands', 'ltr')
 LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
@@ -50,6 +51,8 @@ LANGS = [
     LANG_ES,
     LANG_DE,
     LANG_PT_BR,
+    LANG_FR_FR,
+    LANG_FR_CA,
     LANG_UK_UA,
     LANG_VI,
     LANG_RU_RU,
@@ -59,7 +62,6 @@ LANGS = [
     LANG_CS,
     LANG_SK,
     LANG_HR,
-    LANG_FR_CA,
     ]
 
 # must be kept in sync with .tx/config
