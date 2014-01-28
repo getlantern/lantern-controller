@@ -143,7 +143,7 @@ public class XmppAvailableServlet extends HttpServlet {
         if (clientVersion.compareTo(latestVersion) < 0) {
             log.info("clientVersion < latestVersion, sending update notification");
             Map<String, Object> map = latestVersion.toMap();
-            String installerUrl = "https://s3.amazonaws.com/lantern/latest";
+            String installerUrl = latestVersion.getInstallerBaseUrl();
             String os = LanternControllerUtils.getProperty(doc, LanternConstants.OS_KEY);
             log.info("os: " + os);
             if (StringUtils.isBlank(os)) {
@@ -157,9 +157,9 @@ public class XmppAvailableServlet extends HttpServlet {
                 String arch = LanternControllerUtils.getProperty(doc, LanternConstants.ARCH_KEY);
                 log.info("arch: " + arch);
                 if (arch.contains("64")) {
-                    installerUrl += "-64.deb";
+                    installerUrl += "-64-bit.deb";
                 } else {
-                    installerUrl += "-32.deb";
+                    installerUrl += "-32-bit.deb";
                 }
             } else {
                 log.info("unexpected os: " + os + ", bailing");
