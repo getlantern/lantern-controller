@@ -4,6 +4,6 @@
   "dependencies": {
     "angular": "1.2.10",
     "lodash": "2.4.1",
-    "angular-lodash": "cabrel/angular-lodash#0974d299b90964b7f88ade26864930e7e464fe67"
+    "angular-lodash": "0.1.0"
   }
 }
