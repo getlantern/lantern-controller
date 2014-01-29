@@ -24,8 +24,9 @@
 
     {% for lang in LANGS %}
     <div class="lang-container {{lang.dir}}" dir="{{lang.dir}}">
+      <a name="{{lang.code}}"></a>
       <p>{{'HOW_TO_GET_LANTERN'|trans(lang)}}</p>
-      
+
       <div class="footer">
         <ul>
           <li><a href="https://www.getlantern.org/">{{'HOMEPAGE'|trans(lang)}}</a></li> ∙

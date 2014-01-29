@@ -22,14 +22,32 @@ with open(CSS_PATH, encoding='utf-8') as fp:
 
 Lang = namedtuple('lang', 'code name dir')
 
+# http://omniglot.com/language/names.htm
 # get these from some standard dataset
+#LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
+LANG_CA = Lang('ca', u'català', 'ltr')
+LANG_CS = Lang('cs', u'čeština', 'ltr')
+LANG_DE = Lang('de', u'Deutsch', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
-LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
-LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
-LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
-#LANG_AR_AR = Lang('ar_AR', u'العربية', 'rtl')
+LANG_FR_CA = Lang('fr_CA', u'français (Canada)', 'ltr')
+LANG_FR_FR = Lang('fr_FR', u'français (France)', 'ltr')
+LANG_HE_IL = Lang('he_IL', u'עברית', 'rtl')
+LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
+LANG_IT = Lang('it', u'italiano', 'ltr')
+LANG_JA = Lang('ja', u'日本語', 'ltr')
+LANG_KO = Lang('ko', u'한국말', 'ltr')
+LANG_NB = Lang('nb', u'Norsk bokmål', 'ltr')
+LANG_NL = Lang('nl', u'Nederlands', 'ltr')
+LANG_PT_BR = Lang('pt_BR', u'português', 'ltr')
+LANG_RU_RU = Lang('ru_RU', u'Русский язык', 'ltr')
+LANG_SK = Lang('sk', u'slovenčina', 'ltr')
+LANG_SV = Lang('sv', u'Svenska', 'ltr')
+LANG_UG = Lang('ug', u'ئۇيغۇر', 'rtl')
+LANG_UK_UA = Lang('uk_UA', u'Українська', 'ltr')
+LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
+LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
 LANG_DEFAULT = LANG_EN_US
 
 LANGS = [
@@ -37,8 +55,25 @@ LANGS = [
     LANG_ZH_CN,
     LANG_FA_IR,
     LANG_ES,
+    LANG_DE,
     LANG_PT_BR,
+    LANG_FR_FR,
+    LANG_FR_CA,
+    LANG_IT,
+    LANG_UK_UA,
     LANG_VI,
+    LANG_JA,
+    LANG_KO,
+    LANG_RU_RU,
+    LANG_HE_IL,
+    LANG_CA,
+    LANG_NL,
+    LANG_SV,
+    LANG_NB,
+    LANG_CS,
+    LANG_SK,
+    LANG_HR,
+    LANG_UG,
     ]
 
 # must be kept in sync with .tx/config

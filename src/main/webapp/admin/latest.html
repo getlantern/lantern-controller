@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <script src="/bower_components/angular/angular.min.js"></script>
     <script src="latest.js"></script>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
     <style>
       body { padding: 20px 100px; }
       .alert { margin: 20px; }
@@ -13,19 +13,24 @@
   <body>
     <h1>Latest Lantern Version</h1>
     <form name="latestForm">
-      <div ng-class="{'form-group': true, 'has-error': latestForm.id.$invalid}">
+      <div ng-class="{'form-group': true, 'has-error': !busy && latestForm.id.$invalid}">
         <label for="id" class="control-label">Version ID</label>
-        <input id="id" name="id" class="form-control" type="text" ng-model="latest.id" placeholder="x.y.z-beta2" autofocus required>
+        <input id="id" name="id" class="form-control" type="text" ng-model="latest.id" placeholder="x.y.z-beta2" autofocus required ng-disabled="busy">
       </div>
-      <div ng-class="{'form-group': true, 'has-error': latestForm.releaseDate.$invalid}">
+      <div ng-class="{'form-group': true, 'has-error': !busy && latestForm.releaseDate.$invalid}">
         <label for="releaseDate" class="control-label">Release Date</label>
         <input id="releaseDate" name="releaseDate" class="form-control" type="date"
-               ng-model="latest.releaseDate" placeholder="1970-01-01" required>
+               ng-model="latest.releaseDate" placeholder="1970-01-01" required ng-disabled="busy">
       </div>
-      <div ng-class="{'form-group': true, 'has-error': latestForm.infoUrl.$invalid}">
+      <div ng-class="{'form-group': true, 'has-error': !busy && latestForm.infoUrl.$invalid}">
         <label for="infoUrl" class="control-label">Info Url</label>
-        <input class="form-control" type="url" id="infoUrl" name="infoUrl" ng-model="latest.infoUrl" required
+        <input class="form-control" type="url" id="infoUrl" name="infoUrl" ng-model="latest.infoUrl" required ng-disabled="busy"
                placeholder="http://get-lantern.tumblr.com/post/xyz/lantern-x-y-z-beta2-just-went-live">
+      </div>
+      <div ng-class="{'form-group': true, 'has-error': !busy && latestForm.installerBaseUrl.$invalid}">
+        <label for="infoUrl" class="control-label">Installer Base Url (to which .dmg, .exe, -32-bit.deb, or -64-bit.deb will be appended)</label>
+        <input class="form-control" type="url" id="installerBaseUrl" name="installerBaseUrl" ng-model="latest.installerBaseUrl" required ng-disabled="busy"
+               placeholder="https://s3.amazonaws.com/lantern/lantern-x-y-z-tag-a1b2c3">
       </div>
 
       <button type="submit" class="btn btn-default" ng-click="submit()" ng-disabled="latestForm.$invalid || busy">
