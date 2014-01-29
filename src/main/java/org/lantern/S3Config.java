@@ -52,19 +52,16 @@ public class S3Config {
 
     private static final Dao dao = new Dao();
 
-    // Some of these functions have grown a controllerId parameter so they can
-    // be called in a RemoteApi context, where
-    // LanternControllerConstants.CONTROLLER_ID is null.
-
+    /**
+     * Utility.
+     *
+     * *WARNING*: If you call this from RemoteApi make sure to hardcode
+     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
+     * initialized to null by default in a RemoteApi context.
+     */
     public static void refreshConfig(String userId) {
-        refreshConfig(userId, LanternControllerConstants.CONTROLLER_ID);
-    }
-
-
-    /** Utility. */
-    public static void refreshConfig(String userId, String controllerId) {
         log.info("Refreshing config for " + userId);
-        String config = compileConfig(userId, controllerId);
+        String config = compileConfig(userId);
         LanternUser user = dao.findUser(userId);
         if (user.getConfigFolder() == null) {
             throw new RuntimeException("No config folder for user " + userId);
@@ -72,11 +69,38 @@ public class S3Config {
         uploadConfig(user.getConfigFolder(), config);
     }
 
-    /** Utility. */
-    public static void refreshAllConfigs(String controllerId) {
+    /**
+     * Utility.
+     *
+     * *WARNING*: If you call this from RemoteApi make sure to hardcode
+     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
+     * initialized to null by default in a RemoteApi context.
+     */
+    public static void refreshAllConfigs() {
         for (LanternUser user : dao.ofy().query(LanternUser.class)) {
             try {
-                refreshConfig(user.getId(), controllerId);
+                refreshConfig(user.getId());
+            } catch (Exception e) {
+                // This will happen for the root user.
+                log.warning("Exception trying to refresh config: " + e);
+            }
+        }
+    }
+
+    /**
+     * Utility.
+     *
+     * *WARNING*: If you call this from RemoteApi make sure to hardcode
+     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
+     * initialized to null by default in a RemoteApi context.
+     */
+    public static void refreshAllWrappers() {
+        for (LanternUser user : dao.ofy().query(LanternUser.class)) {
+            try {
+                if (user.getConfigFolder() != null) {
+                    enqueueWrapperUploadRequest(user.getId(),
+                                                user.getConfigFolder());
+                }
             } catch (Exception e) {
                 // This will happen for the root user.
                 log.warning("Exception trying to refresh config: " + e);
@@ -96,10 +120,6 @@ public class S3Config {
     }
 
     public static String compileConfig(String userId) {
-        return compileConfig(userId, LanternControllerConstants.CONTROLLER_ID);
-    }
-
-    public static String compileConfig(String userId, String controllerId) {
         LanternUser user = dao.findUser(userId);
         if (user == null) {
             throw new RuntimeException("User doesn't exist");
@@ -117,7 +137,7 @@ public class S3Config {
         }
         return "{ \"serial_no\": 1"
             + ", \"controller\": \""
-                + controllerId + "\""
+                + LanternControllerConstants.CONTROLLER_ID + "\""
             + ", \"minpoll\": " + MIN_POLL_MINUTES
             + ", \"maxpoll\": " + MAX_POLL_MINUTES
             + ", \"fallbacks\" : [ "
@@ -149,6 +169,7 @@ public class S3Config {
 
     public static void enqueueWrapperUploadRequest(String userId,
                                              String folderName) {
+        log.info("Requesting wrappers for " + userId);
         Map<String, Object> m = new HashMap<String, Object>();
         //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
         m.put("upload-wrappers-id", userId);

@@ -32,7 +32,7 @@ public class SQSUtil {
     private static final String REQUEST_Q_NAME;
     private static final String NOTIFY_Q_NAME;
     static {
-        final String appId = SystemProperty.applicationId.get();
+        final String appId = LanternControllerConstants.CONTROLLER_ID;
         REQUEST_Q_NAME = appId + "_request";
         NOTIFY_Q_NAME = "notify_" + appId;
     }
