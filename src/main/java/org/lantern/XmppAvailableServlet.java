@@ -157,9 +157,9 @@ public class XmppAvailableServlet extends HttpServlet {
                 String arch = LanternControllerUtils.getProperty(doc, LanternConstants.ARCH_KEY);
                 log.info("arch: " + arch);
                 if (arch.contains("64")) {
-                    installerUrl += "-64-bit.deb";
+                    installerUrl += "-64.deb";
                 } else {
-                    installerUrl += "-32-bit.deb";
+                    installerUrl += "-32.deb";
                 }
             } else {
                 log.info("unexpected os: " + os + ", bailing");
