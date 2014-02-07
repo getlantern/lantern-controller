@@ -94,6 +94,22 @@ public class S3Config {
      * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
      * initialized to null by default in a RemoteApi context.
      */
+    public static void refreshWrapper(String userId) {
+        log.info("Refreshing wrapper for " + userId);
+        LanternUser user = dao.findUser(userId);
+        if (user.getConfigFolder() == null) {
+            throw new RuntimeException("No config folder for user " + userId);
+        }
+        enqueueWrapperUploadRequest(user.getId(), user.getConfigFolder());
+    }
+
+    /**
+     * Utility.
+     *
+     * *WARNING*: If you call this from RemoteApi make sure to hardcode
+     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
+     * initialized to null by default in a RemoteApi context.
+     */
     public static void refreshAllWrappers() {
         for (LanternUser user : dao.ofy().query(LanternUser.class)) {
             try {
