@@ -505,8 +505,7 @@ public class Dao extends DAOBase {
      * @return
      */
     public boolean addInvite(final String inviterId, final String inviteeEmail,
-            //XXX not used anymore
-            final String refreshToken) {
+            final String emailTemplate) {
         // We just add the invite object here. We create the invitee when the
         // invite is sent in shouldSendInvite (and yes, that one needs
         // a better name and/or some refactoring).
@@ -532,7 +531,7 @@ public class Dao extends DAOBase {
                             "This should never be true anymore!");
                 }
 
-                Invite invite = new Invite(inviterId, inviteeEmail, fpuid);
+                Invite invite = new Invite(inviterId, inviteeEmail, fpuid, emailTemplate);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
@@ -549,10 +548,13 @@ public class Dao extends DAOBase {
         return result;
     }
 
-    // XXX: refactor to make a better home for this
+    public void addInviteAndApproveIfUnpaused(String inviterId, String inviteeId) {
+        addInviteAndApproveIfUnpaused(inviterId, inviteeId, "invite-notification");
+    }
+
     public void addInviteAndApproveIfUnpaused(
-            String inviterId, String inviteeId, String refreshToken) {
-        if (addInvite(inviterId, inviteeId, refreshToken)) {
+            String inviterId, String inviteeId, String emailTemplate) {
+        if (addInvite(inviterId, inviteeId, emailTemplate)) {
             if (areInvitesPaused()) {
                 log.info("Invite held for approval.");
             } else {
@@ -1625,7 +1627,8 @@ public class Dao extends DAOBase {
                    .param("inviterName", "" + inviter.getName()) // handle null
                    .param("inviterEmail", inviter.getId())
                    .param("inviteeEmail", userId)
-                   .param("configFolder", configFolder));
+                   .param("configFolder", configFolder)
+                   .param("template", inv.getEmailTemplate()));
             log.info("Successfully enqueued invite email.");
         }
     }

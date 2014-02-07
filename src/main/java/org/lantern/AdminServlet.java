@@ -262,6 +262,29 @@ public class AdminServlet extends HttpServlet {
         AdminServlet.secret = secret;
     }
 
+    public void inviteToNewTrustNetwork(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        String[] pathComponents) {
+        Dao dao = new Dao();
+        try {
+            String inviter = checkAndTrim(request, "inviter");
+            String emails = checkAndTrim(request, "invitees");
+            for (String email : emails.split("\n")) {
+                email = email.trim();
+                if (!StringUtils.isBlank(email)) {
+                    log.info("Inviting " + email);
+                    dao.addInviteAndApproveIfUnpaused(inviter,
+                                                      email,
+                                                      "new-trust-network-invite");
+                }
+            }
+            LanternControllerUtils.populateOKResponse(response, "OK");
+        } catch (IOException e) {
+            LanternControllerUtils.populateErrorResponse(
+                    response, e.getMessage());
+        }
+    }
+
     /**
      * Check that the request parameter is not blank, and return its value
      * trimmed.

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>{{COMPILED_CSS}}</style>
+  </head>
+  <body>
+    <div class="banner">
+      <a href="https://www.getlantern.org/">
+        <img class="logo" height="100" width="217" src="https://raw.github.com/getlantern/graphics/master/logo/email-header.png" alt="Lantern">
+      </a>
+    </div>
+    {% if (LANGS|length) > 1 %}
+    <div class="langbar">
+      <ul>
+        {% for lang in LANGS -%}
+<!--        <li><a href="#{{lang.code}}">{{lang.name}}</a> ∙ </li> -->
+        {%- endfor %}
+        <li><a href="https://github.com/getlantern/lantern/wiki/Translating-Lantern">Help Translate</a></li>
+      </ul>
+    </div>
+    {% endif %}
+
+    {% for lang in LANGS[0:1] %}   <!-- XXX: bring in translations -->
+    <div class="lang-container {{lang.dir}}" dir="{{lang.dir}}">
+      <div class="header">
+        <h1><a class="big-header" name="{{lang.code}}">{{'NEW_TRUST_NETWORK_HEADER'|trans(lang)}}</a></h1>
+        <h2>{{'NEW_TRUST_NETWORK_SUBHEADER'|trans(lang)}}</h2>
+      </div>
+      <div class="blurb"><p>{{'NEW_TRUST_NETWORK_INTRO'|trans(lang)}}</p></div>
+      <div class="blurb"><p>{{'NEW_TRUST_NETWORK_RESTRICTIONS'|trans(lang)}}</p></div>
+      <div class="blurb"><p>{{'NEW_TRUST_NETWORK_INVITING'|trans(lang)}}</p></div>
+
+      <!-- This is the same as NEW_TRUST_NETWORK_CLOSING with the addition of
+           ", our most trusted users, " -->
+      <div class="blurb"><p>We are counting on you, our most trusted users, to work with us to rebuild the network by adding only those you know and trust. We’re grateful to all of you for working with us to develop Lantern. We’ve learned so much in the last few months about making Lantern more and more resistant to blocking. The experience has helped us deal with vulnerabilities that will improve Lantern long into the future.</p></div>
+
+      <div class="blurb"><p>{{'NEW_TRUST_NETWORK_CLOSING'|trans(lang)}}</p></div>
+      <div class="blurb"><p>{{'NEW_TRUST_NETWORK_THANKS'|trans(lang)}}</p></div>
+      <div class="download-container">
+        <h2 class="download-header">{{'DOWNLOAD_HEADER'|trans(lang)}}</h2>
+        <h3 class="download-subheader">{{'DOWNLOAD_SUBHEADER'|trans(lang)}}</h3>
+        <ul class="download-links">
+          <li><a href="*|INSTALLER_URL_EXE|*">{{'MINVER_WINDOWS'|trans(lang)}}</a></li>
+          <li><a href="*|INSTALLER_URL_DMG|*">{{'MINVER_OS_X'|trans(lang)}}</a></li>
+          <li><a href="*|INSTALLER_URL_DEB|*">{{'MINVER_UBUNTU'|trans(lang)}}</a></li>
+        </ul>
+      </div>
+
+      <div class="details">
+        <div class="need">
+          <b>{{'PROMPT_HEADER_NEED'|trans(lang)}}</b>
+          {{'PROMPT_BODY_NEED'|trans(lang)}}
+        </div>
+
+        <div class="have">
+          <b>{{'PROMPT_HEADER_HAVE'|trans(lang)}}</b>
+          {{'PROMPT_BODY_HAVE'|trans(lang)}}
+        </div>
+
+        <div class="sponsor">
+          {{'PROMPT_SPONSOR'|trans(lang)}}
+        </div>
+
+        <div class="invite">
+          {{'PROMPT_INVITE'|trans(lang)}}
+        </div>
+
+        <div class="notes-header">
+          {{'PLEASE_NOTE'|trans(lang)}}
+        </div>
+
+        <div class="note beta">
+          <strong>{{'NOTE_HEADER_BETA'|trans(lang)}}</strong>
+          {{'NOTE_BODY_BETA'|trans(lang)}}
+        </div>
+
+        <div class="note closed">
+          <strong>{{'NOTE_HEADER_CLOSED'|trans(lang)}}</strong>
+          {{'NOTE_BODY_CLOSED'|trans(lang)}}
+        </div>
+
+        <div class="more-info">
+          <h4>{{'MORE_INFO'|trans(lang)}}</h4>
+          <ul>
+            <li><a href="https://github.com/getlantern/lantern/wiki/Installation">{{'INSTALLATION'|trans(lang)}}</a></li> ∙
+            <li><a href="https://github.com/getlantern/lantern/wiki/Setup">{{'SETUP'|trans(lang)}}</a></li> ∙
+            <li><a href="https://github.com/getlantern/lantern/wiki/Using-Lantern">{{'USAGE'|trans(lang)}}</a></li> ∙
+            <li><a href="https://github.com/getlantern/lantern/wiki/Questions-and-Answers">{{'Q&A'|trans(lang)}}</a></li>
+          </ul>
+        </div>
+
+        <div class="from-us-header">
+          {{'NOTE_HEADER_FROM_DEVS'|trans(lang)}}
+        </div>
+        <div class="from-us-body">
+          {{'NOTE_BODY_FROM_DEVS'|trans(lang)}}
+        </div>
+      </div>
+
+      <div class="footer">
+        <ul>
+          <li><a href="https://www.getlantern.org/">{{'HOMEPAGE'|trans(lang)}}</a></li> ∙
+          <li><a href="https://groups.google.com/group/lantern-users-en">{{'FORUMS'|trans(lang)}}</a></li> ∙
+          <li><a href="https://github.com/getlantern/lantern/wiki">{{'DOCS'|trans(lang)}}</a></li> ∙
+          <li><a href="https://github.com/getlantern/lantern">{{'DEVELOPERS'|trans(lang)}}</a></li>
+        </ul>
+      </div>
+    </div>
+    {% endfor -%}
+
+  </body>
+</html>

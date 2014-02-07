@@ -122,6 +122,23 @@ public class MandrillEmailer {
                                   m));
     }
 
+    //XXX: Ad hoc; remove after having sent them all.
+    public static void sendNewTrustNetworkInvite(String toEmail,
+                                                String configFolder)
+            throws IOException {
+        log.info("Sending new trust network invite to " + toEmail);
+        Map<String, String> m = new HashMap<String,String>();
+        populateInstallerUrls(m, configFolder);
+        sendEmail(jsonToSendEmail("new-trust-network-invite",
+                                  "Lantern Update Available",
+                                  null,
+                                  null,
+                                  toEmail,
+                                  null,
+                                  "updates@getlantern.org",
+                                  m));
+    }
+
     private static void populateInstallerUrls(Map<String, String> m,
                                               String configFolder) {
         //DRY: upload_wrappers.py at lantern_aws.

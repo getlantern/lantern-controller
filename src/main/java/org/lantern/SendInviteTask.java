@@ -31,12 +31,26 @@ public class SendInviteTask extends HttpServlet {
             inviterName = null;
         }
         String configFolder = request.getParameter("configFolder");
+        String template = request.getParameter("template");
+        // Prevent race conditions when deploying.
+        if (template == null) {
+            log.warning("No template");
+            template = "invite-notification";
+        }
         try {
-            MandrillEmailer.sendInvite(
-                inviterName,
-                inviterEmail,
-                inviteeEmail,
-                configFolder);
+            if (template.equals("invite-notification")) {
+                MandrillEmailer.sendInvite(
+                    inviterName,
+                    inviterEmail,
+                    inviteeEmail,
+                    configFolder);
+            } else if (template.equals("new-trust-network-invite")) {
+                MandrillEmailer.sendNewTrustNetworkInvite(
+                    inviteeEmail,
+                    configFolder);
+            } else {
+                throw new RuntimeException("Unknown template: " + template);
+            }
             new Dao().setInviteStatus(inviterEmail,
                                       inviteeEmail,
                                       Invite.Status.sent);
