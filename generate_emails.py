@@ -50,7 +50,7 @@ LANG_VI = Lang('vi', u'Tiếng Việt', 'ltr')
 LANG_ZH_CN = Lang('zh_CN', u'中文', 'ltr')
 LANG_DEFAULT = LANG_EN_US
 
-LANGS = [
+LANGS_DEFAULT = [
     LANG_EN_US,
     LANG_ZH_CN,
     LANG_FA_IR,
@@ -80,11 +80,16 @@ LANGS = [
 LOCALE_DIR = 'locale'
 LOCALE_EXT = 'json'
 TRANSLATIONS = dict()
-for lang in LANGS:
+for lang in LANGS_DEFAULT:
     lpath = join(LOCALE_DIR, lang.code + '.' + LOCALE_EXT)
     with open(lpath, encoding='utf-8') as fp:
         print('* Loading "%s"...' % lpath)
         TRANSLATIONS[lang.code] = load(fp)
+
+# allow overriding LANGS_DEFAULT on a per-template basis
+LANGS_BY_TMPL = {
+    'new-trust-network-invite.tmpl': [LANG_EN_US],  # XXX pull translations when available
+    }
 
 env = Environment(loader=FileSystemLoader(BASE_DIR))
 env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code][key]
@@ -97,7 +102,7 @@ templates = [env.get_template(i) for i in tmpl_filenames]
 
 rendered = [i.render(
     COMPILED_CSS=COMPILED_CSS,
-    LANGS=LANGS,
+    LANGS=LANGS_BY_TMPL.get(i.name) or LANGS_DEFAULT,
     ) for i in templates]
 
 transformed = [transform(i).replace('%7C', '|') for i in rendered]

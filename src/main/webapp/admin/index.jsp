@@ -71,5 +71,23 @@ Send to: <input type="text" name="to" value="test@getlantern.org">
 <%= AdminServlet.getCsrfTag() %>
 </form>
 
+<h2>Invite to new trust network</h2>
+<p>Invite users to new trust network and send an email to notify them that they need to upgrade Lantern.</p>
+<p>Provide the e-mail address of the inviter for the newly generated Invites.</p>
+<form method="POST" action="/admin/post/inviteToNewTrustNetwork">
+Inviter: <input type="text" name="inviter" value="afisk@getlantern.org">
+<br/>
+<br/>
+Invitees:
+<br/>
+<textarea rows="12" cols="80" name="invitees">
+euccastro@yahoo.com
+</textarea>
+<br/>
+<button type="submit" name="set" value="true">Invite to new trust network</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+<br/>
+<br/>
 </body>
 </html>

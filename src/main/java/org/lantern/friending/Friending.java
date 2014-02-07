@@ -320,7 +320,7 @@ public class Friending {
         log.info("Inviting friend");
         final Dao dao = new Dao();
         dao.addInviteAndApproveIfUnpaused(
-                friend.getUserEmail(), friend.getEmail(), null);
+                friend.getUserEmail(), friend.getEmail());
     }
 
     private static boolean haveBeenFriendedBy(final Friend friend) {

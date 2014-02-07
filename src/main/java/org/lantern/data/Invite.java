@@ -40,6 +40,9 @@ public class Invite {
     @Persistent
     private String fallbackProxyUser;
 
+    @Persistent
+    private String emailTemplate;
+
     // Status transitions only ever advance monotonically in the order in which
     // they are listed below.
     public enum Status {
@@ -61,12 +64,16 @@ public class Invite {
     public Invite() {
     };
 
-    public Invite(String inviter, String invitee, String fallbackProxyUser) {
+    public Invite(String inviter,
+                  String invitee,
+                  String fallbackProxyUser,
+                  String emailTemplate) {
         id = makeId(inviter, invitee);
         inviterKey = new Key<LanternUser>(LanternUser.class, id);
         this.inviter = inviter;
         this.invitee = invitee;
         this.fallbackProxyUser = fallbackProxyUser;
+        this.emailTemplate = emailTemplate;
     }
 
     public static String makeId(String inviterEmail, String inviteeEmail) {
@@ -99,5 +106,9 @@ public class Invite {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public String getEmailTemplate() {
+        return emailTemplate;
     }
 }
