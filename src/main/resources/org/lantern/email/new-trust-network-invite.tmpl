@@ -11,18 +11,16 @@
         <img class="logo" height="100" width="217" src="https://raw.github.com/getlantern/graphics/master/logo/email-header.png" alt="Lantern">
       </a>
     </div>
-    {% if (LANGS|length) > 1 %}
     <div class="langbar">
       <ul>
         {% for lang in LANGS -%}
-<!--        <li><a href="#{{lang.code}}">{{lang.name}}</a> ∙ </li> -->
+        <li><a href="#{{lang.code}}">{{lang.name}}</a> ∙ </li>
         {%- endfor %}
         <li><a href="https://github.com/getlantern/lantern/wiki/Translating-Lantern">Help Translate</a></li>
       </ul>
     </div>
-    {% endif %}
 
-    {% for lang in LANGS[0:1] %}   <!-- XXX: bring in translations -->
+    {% for lang in LANGS %}
     <div class="lang-container {{lang.dir}}" dir="{{lang.dir}}">
       <div class="header">
         <h1><a class="big-header" name="{{lang.code}}">{{'NEW_TRUST_NETWORK_HEADER'|trans(lang)}}</a></h1>
