@@ -5,6 +5,7 @@ import os.path
 import re
 import shutil
 import sys
+import ConfigParser
 from subprocess import call
 
 here = os.path.dirname(sys.argv[0])
@@ -41,16 +42,24 @@ contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
                   re.MULTILINE)
 
 bump = get_arg_or_ask(2, "Shall I bump version? (y/N) ").lower().startswith('y')
+
+# Versions for different controllers are tracked in the file versions
+versions = ConfigParser.ConfigParser()
+versions.read("versions")
+version = versions.getint('Versions', name)
 if bump:
-    contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
-                    (lambda s: str(int(s.group(0)) + 1)),
-                    contents,
-                    1,
-                    re.MULTILINE)
+    version += 1
+    versions.set('Versions', name, version)
+    versions.write("versions")
     print "Version bumped!"
 else:
     print "OK, version left alone."
 
+contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
+                    str(version),
+                    contents,
+                    1,
+                    re.MULTILINE)
 file(filename, 'w').write(contents)
 
 if bump and name == "lanternctrl":
