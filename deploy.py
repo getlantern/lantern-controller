@@ -29,10 +29,14 @@ def get_arg_or_ask(index, prompt):
     else:
         return raw_input(prompt)
 
-name = get_arg_or_ask(1, "Name of appengine app? (leave blank for 'lanternctrl') ").strip()
-if not name:
-    name = "lanternctrl"
-    print "Defaulting name to '%s'" % (name)
+while True:
+    name = get_arg_or_ask(1, "Name of appengine app? ").strip()
+    if name:
+        break
+    else:
+        print "Name can't be left blank!"
+        print "Enter lanternctrl1-2 if you want to deploy to the production",
+        print "controller."
 
 contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
                   name,
@@ -53,7 +57,7 @@ else:
 
 file(filename, 'w').write(contents)
 
-if bump and name == "lanternctrl":
+if bump and name == "lanternctrl1-2":
     assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
     assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
     assert call("git push origin master", shell=True) == 0, "Could not push new version"
