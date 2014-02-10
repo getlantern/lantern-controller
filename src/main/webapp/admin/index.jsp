@@ -84,6 +84,8 @@ Invitees:
 euccastro@yahoo.com
 </textarea>
 <br/>
+<input type="checkbox" name="friend" value="add">Add as a friend too<br/>
+<br/>
 <button type="submit" name="set" value="true">Invite to new trust network</button><br/>
 <%= AdminServlet.getCsrfTag() %>
 </form>

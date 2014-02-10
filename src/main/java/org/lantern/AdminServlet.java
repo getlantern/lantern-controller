@@ -269,9 +269,14 @@ public class AdminServlet extends HttpServlet {
         try {
             String inviter = checkAndTrim(request, "inviter");
             String emails = checkAndTrim(request, "invitees");
+            boolean doFriend = "add".equals(request.getParameter("friend"));
             for (String email : emails.split("\n")) {
                 email = email.trim();
                 if (!StringUtils.isBlank(email)) {
+                    if (doFriend) {
+                        log.info("Adding " + email + " as a friend.");
+                        dao.addFriend(inviter, email);
+                    }
                     log.info("Inviting " + email);
                     dao.addInviteAndApproveIfUnpaused(inviter,
                                                       email,

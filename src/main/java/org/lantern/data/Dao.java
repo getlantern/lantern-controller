@@ -21,6 +21,7 @@ import org.lantern.MandrillEmailer;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.loggly.LoggerFactory;
+import org.lantern.state.Friend;
 import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
@@ -1659,5 +1660,31 @@ public class Dao extends DAOBase {
                 TaskOptions.Builder
                 .withUrl("/upload_config_and_request_wrappers")
                 .param("userId", userId));
+    }
+
+    /**
+     * Add a friend entry, bypassing quota checks, unless there's one already.
+     */
+    public void addFriend(final String whose, final String friend) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                Key<FriendingQuota> ancestorKey = Key.create(FriendingQuota.class, whose);
+                Key<LanternFriend> key = Key.create(ancestorKey, LanternFriend.class, friend);
+                if (ofy.find(key) != null) {
+                    log.info("Friend already exists.");
+                    return null;
+                }
+                LanternFriend lf = new LanternFriend(friend);
+                lf.setUserEmail(whose);
+                lf.setStatus(Friend.Status.friend);
+                ofy.put(lf);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Transaction failed!");
+        }
     }
 }
