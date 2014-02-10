@@ -37,6 +37,9 @@ public class Friending {
                     public FriendResponse<List<Friend>> call(Objectify ofy) {
                         FriendingQuota quota = doGetOrCreateQuota(ofy,
                                 userEmail);
+                        if (quota == null) {
+                            return failure();
+                        }
                         List<Friend> friends = new ArrayList<Friend>(
                                 ofy.query(LanternFriend.class)
                                         .ancestor(quota)
@@ -88,6 +91,9 @@ public class Friending {
                     public FriendResponse<Friend> call(Objectify ofy) {
                         FriendingQuota quota = doGetOrCreateQuota(ofy,
                                 userEmail);
+                        if (quota == null) {
+                            return failure();
+                        }
                         Friend existing = getExistingFriendById(ofy, quota, id);
                         return success(quota, existing);
                     }
@@ -113,6 +119,9 @@ public class Friending {
                 friend.setUserEmail(userEmail);
 
                 FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
+                if (quota == null) {
+                    return failure();
+                }
                 Friend existing = getExistingFriendByEmail(ofy,
                         quota,
                         friendEmail);
@@ -159,6 +168,9 @@ public class Friending {
                 log.info("Updating friend...");
                 String userEmail = email(user);
                 FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
+                if (quota == null) {
+                    return failure();
+                }
                 Friend existing = getExistingFriendById(ofy,
                         quota,
                         friend.getId());
@@ -175,6 +187,9 @@ public class Friending {
             public FriendResponse<Void> call(Objectify ofy) {
                 String userEmail = email(user);
                 FriendingQuota quota = doGetOrCreateQuota(ofy, userEmail);
+                if (quota == null) {
+                    return failure();
+                }
                 LanternFriend existing = getExistingFriendById(ofy, quota, id);
                 ofy.delete(existing);
                 return success(quota, null);
@@ -282,6 +297,7 @@ public class Friending {
             // Create a new quota for this user
             LanternUser user = ofy.find(LanternUser.class, userEmail);
             if (user == null) {
+                log.info(String.format("User %s doesn't exist", userEmail));
                 return null;
             }
             int maxFriends = 0;
@@ -353,7 +369,11 @@ public class Friending {
         return new FriendResponse<P>(true, quota.getRemainingQuota(), payload);
     }
 
+    private static <P> FriendResponse<P> failure() {
+        return failure(null);
+    }
+    
     private static <P> FriendResponse<P> failure(FriendingQuota quota) {
-        return new FriendResponse<P>(false, quota.getRemainingQuota(), null);
+        return new FriendResponse<P>(false, quota != null ? quota.getRemainingQuota() : 0, null);
     }
 }
