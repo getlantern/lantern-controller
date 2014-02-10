@@ -44,13 +44,14 @@ contents = re.sub(r'(?<=<application>)[^<]+(?=</application>)',
 bump = get_arg_or_ask(2, "Shall I bump version? (y/N) ").lower().startswith('y')
 
 # Versions for different controllers are tracked in the file versions
-versions = ConfigParser.ConfigParser()
+versions = ConfigParser.RawConfigParser()
 versions.read("versions")
 version = versions.getint('Versions', name)
 if bump:
     version += 1
     versions.set('Versions', name, version)
-    versions.write("versions")
+    with open("versions", "wb") as versionsFile:
+        versions.write(versionsFile)
     print "Version bumped!"
 else:
     print "OK, version left alone."
