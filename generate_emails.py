@@ -31,7 +31,7 @@ LANG_DE = Lang('de', u'Deutsch', 'ltr')
 LANG_EN_US = Lang('en_US', u'English', 'ltr')
 LANG_ES = Lang('es', u'español', 'ltr')
 LANG_FA_IR = Lang('fa_IR', u'فارسی', 'rtl')
-LANG_FR_CA = Lang('fr_CA', u'françaisu\N{NO-BREAK SPACE}(Canada)', 'ltr')
+LANG_FR_CA = Lang('fr_CA', u'français\N{NO-BREAK SPACE}(Canada)', 'ltr')
 LANG_FR_FR = Lang('fr_FR', u'français\N{NO-BREAK SPACE}(France)', 'ltr')
 LANG_HE_IL = Lang('he_IL', u'עברית', 'rtl')
 LANG_HR = Lang('hr', u'Hrvatski', 'ltr')
@@ -88,7 +88,14 @@ for lang in LANGS_DEFAULT:
 
 # allow overriding LANGS_DEFAULT on a per-template basis
 LANGS_BY_TMPL = {
-    'new-trust-network-invite.tmpl': [LANG_EN_US],  # XXX pull translations when available
+    'new-trust-network-invite.tmpl': [  # XXX pull remaining translations when available
+        LANG_EN_US,
+        LANG_ZH_CN,
+        LANG_ES,
+        LANG_FR_CA,
+        LANG_FR_FR,
+        LANG_CA,
+        ]
     }
 
 env = Environment(loader=FileSystemLoader(BASE_DIR))
