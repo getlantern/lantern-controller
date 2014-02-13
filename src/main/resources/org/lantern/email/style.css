@@ -85,6 +85,28 @@ a.big-header {
   margin-bottom: 10px;
 }
 
+.summary-prelude {
+  color: #888888;
+  font-size: 15px;
+  margin-bottom: 15px;
+}
+.ltr .summary-prelude {
+  margin-left: 40px;
+}
+.rtl .summary-prelude {
+  margin-right: 40px;
+}
+
+.summary {
+  font-size: 15px;
+  margin: auto;
+  margin-bottom: 20px;
+  width: 430px;
+}
+.summary li {
+  margin-bottom: 10px;
+}
+
 .download-container * {
   text-align: center !important;
 }
