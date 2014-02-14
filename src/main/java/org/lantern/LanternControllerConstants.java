@@ -60,7 +60,7 @@ public class LanternControllerConstants {
     public static final String NOTIFY_ON_MAX_USERS = "admin@getlantern.org";
     public static final String MAILCHIMP_LIST_ID = "cdc1af284e";
     public static final String MAILCHIP_API_URL_BASE = "http://<dc>.api.mailchimp.com/1.3/?method=<method>";
-    public static final int DEFAULT_MAX_FRIENDS = 5;
+    public static final int DEFAULT_MAX_FRIENDS = 10;
     public static final int MIN_MAX_FRIENDS = 1;
     
     public static String getMandrillApiKey() {
