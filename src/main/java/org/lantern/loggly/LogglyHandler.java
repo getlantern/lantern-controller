@@ -8,7 +8,7 @@ import java.util.logging.LogRecord;
 import org.lantern.LanternControllerConstants;
 
 /**
- * MyCustomHandler outputs contents to a specified file
+ * LogglyHandler logs SEVERE messages to Loggly.
  */
 public class LogglyHandler extends Handler {
 
