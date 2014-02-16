@@ -500,27 +500,23 @@ public class Dao extends DAOBase {
     /**
      * Returns true if the invite was added, false if it wasn't (because it
      * already existed, for instance)
-     *
-     * @param sponsor
-     * @param inviteeEmail
-     * @return
      */
-    public boolean addInvite(final String inviterId, final String inviteeEmail,
+    public boolean addInvite(String inviterId, String inviteeEmail,
             final String emailTemplate) {
-        // We just add the invite object here. We create the invitee when the
-        // invite is sent in shouldSendInvite (and yes, that one needs
-        // a better name and/or some refactoring).
+
+        final String normInviterId = EmailAddressUtils.normalizedEmail(inviterId);
+        final String normInviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
 
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
-                LanternUser inviter = ofy.find(LanternUser.class, inviterId);
+                LanternUser inviter = ofy.find(LanternUser.class, normInviterId);
                 if (inviter == null) {
-                    log.warning("Could not find inviterId sending invite: " + inviterId);
+                    log.warning("Could not find inviterId sending invite: " + normInviterId);
                     return false;
                 }
 
-                if (alreadyInvitedBy(ofy, inviterId, inviteeEmail)) {
+                if (alreadyInvitedBy(ofy, normInviterId, normInviteeEmail)) {
                     log.info("Not re-sending e-mail since user is already invited");
                     return false;
                 }
@@ -532,7 +528,7 @@ public class Dao extends DAOBase {
                             "This should never be true anymore!");
                 }
 
-                Invite invite = new Invite(inviterId, inviteeEmail, fpuid, emailTemplate);
+                Invite invite = new Invite(normInviterId, normInviteeEmail, fpuid, emailTemplate);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
@@ -588,13 +584,8 @@ public class Dao extends DAOBase {
                                      final String fallbackInstanceId) {
         // Although the friends code should have made sure to normalize the
         // inviteeEmail, let's double-check this just to be on the safe side.
-        final String normalizedInviteeEmail;
-        try {
-            normalizedInviteeEmail
+        final String normalizedInviteeEmail
                 = EmailAddressUtils.normalizedEmail(inviteeEmail);
-        } catch (EmailAddressUtils.NormalizationException e) {
-            throw new RuntimeException(e);
-        }
 
         log.info("Making sure " + normalizedInviteeEmail
                  + ", invited by " + inviterId + ", has been created.");

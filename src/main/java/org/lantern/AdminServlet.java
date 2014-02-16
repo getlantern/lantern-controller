@@ -273,6 +273,7 @@ public class AdminServlet extends HttpServlet {
             for (String email : emails.split("\n")) {
                 email = email.trim();
                 if (!StringUtils.isBlank(email)) {
+                    email = EmailAddressUtils.normalizedEmail(email);
                     if (doFriend) {
                         log.info("Adding " + email + " as a friend.");
                         dao.addFriend(inviter, email);
