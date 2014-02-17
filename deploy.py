@@ -68,7 +68,7 @@ contents = re.sub(r'(?<=<version>)\d+(?=</version>)',
 file(filename, 'w').write(contents)
 
 if bump and name == "lanternctrl1-2":
-    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml", shell=True) == 0, "Could not add new version"
+    assert call("git add src/main/webapp/WEB-INF/appengine-web.xml versions", shell=True) == 0, "Could not add new version"
     assert call("git commit -m 'Adding bumped version'", shell=True) == 0, "Could not commit new version"
     assert call("git push origin master", shell=True) == 0, "Could not push new version"
 
