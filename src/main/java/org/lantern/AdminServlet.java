@@ -291,6 +291,16 @@ public class AdminServlet extends HttpServlet {
         }
     }
 
+    /*
+    public void triggerMaintenanceTask(HttpServletRequest request,
+                                       HttpServletResponse response,
+                                       String[] pathComponents) {
+        Dao dao = new Dao();
+        // Your hacks here...
+        LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+    */
+
     /**
      * Check that the request parameter is not blank, and return its value
      * trimmed.
