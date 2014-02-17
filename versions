@@ -1,5 +1,6 @@
 [Versions]
 lanternctrl = 255
-lanternctrl1-2 = 301
+lanternctrl1-2 = 302
 oxlanternctrl = 299
+lanternctrltest = 1
 
