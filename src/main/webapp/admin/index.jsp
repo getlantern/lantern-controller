@@ -92,21 +92,19 @@ euccastro@yahoo.com
 <br/>
 <br/>
 
-<!--
-    <h2>Trigger maintenance task</h2>
-    <p>RemoteApi-like thingy.  Don't touch this unless you added it.</p>
-    <form method="POST" action="/admin/post/triggerMaintenanceTask">
-    <textarea rows="12" cols="80" name="input">
-    Enter input for your hacks here...
-    </textarea>
-    <br/>
-    <button type="submit" name="set" value="true">Trigger</button><br/>
-    <%= AdminServlet.getCsrfTag() %>
-    </form>
+<h2>Trigger maintenance task</h2>
+<p>RemoteApi-like thingy.  Don't touch this unless you added it.  Disable it when done.</p>
+<form method="POST" action="/admin/post/triggerMaintenanceTask">
+<textarea rows="12" cols="80" name="input">
+Enter input for your hacks here...
+</textarea>
+<br/>
+<button type="submit" name="set" value="true">Trigger</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
 
-    <br/>
-    <br/>
--->
+<br/>
+<br/>
 
 </body>
 </html>

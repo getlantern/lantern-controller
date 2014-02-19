@@ -291,15 +291,18 @@ public class AdminServlet extends HttpServlet {
         }
     }
 
-    /*
     public void triggerMaintenanceTask(HttpServletRequest request,
                                        HttpServletResponse response,
                                        String[] pathComponents) {
         Dao dao = new Dao();
-        // Your hacks here...
-        LanternControllerUtils.populateOKResponse(response, "OK");
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl("/maintenance_task")
+               .param("input", "" + request.getParameter("input")));
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "Maintenance task enqueued.  Watch logs for completion.");
     }
-    */
 
     /**
      * Check that the request parameter is not blank, and return its value

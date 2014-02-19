@@ -106,6 +106,16 @@
   </servlet-mapping>
 
   <servlet>
+    <servlet-name>maintenanceTask</servlet-name>
+    <servlet-class>org.lantern.MaintenanceTask</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>maintenanceTask</servlet-name>
+    <url-pattern>/maintenance_task</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>subscribed</servlet-name>
     <servlet-class>org.lantern.XmppSubscribedServlet</servlet-class>
   </servlet>
@@ -175,6 +185,7 @@
       <url-pattern>/send_invite_task</url-pattern>
       <url-pattern>/upload_config_and_request_wrappers</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
+      <url-pattern>/maintenance_task</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
