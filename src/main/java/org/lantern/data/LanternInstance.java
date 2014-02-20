@@ -6,7 +6,6 @@ import java.util.logging.Logger;
 import javax.persistence.Id;
 
 import org.lantern.loggly.LoggerFactory;
-import org.lantern.state.Mode;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.annotation.Parent;
@@ -34,8 +33,6 @@ public class LanternInstance {
 
     /* The most recent resource id we have seen for this instance. */
     private String resource;
-
-    private Mode mode;
 
     private boolean isFallbackProxy;
 
@@ -134,14 +131,6 @@ public class LanternInstance {
 
     public void setCurrentCountry(String currentCountry) {
         this.currentCountry = currentCountry;
-    }
-
-    public Mode getMode() {
-        return mode;
-    }
-
-    public void setMode(Mode mode) {
-        this.mode = mode;
     }
 
     public String getResource() {

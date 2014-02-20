@@ -22,7 +22,6 @@ import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.loggly.LoggerFactory;
 import org.lantern.state.Friend;
-import org.lantern.state.Mode;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.QueryResultIterable;
@@ -30,15 +29,14 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
-
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 
 
 public class Dao extends DAOBase {
@@ -82,8 +80,6 @@ public class Dao extends DAOBase {
     private static final String NUSERS = "nusers";
     private static final String NPEERS = "npeers";
     private static final String EVER = "ever";
-    private static final String GIVE = Mode.give.toString();
-    private static final String GET = Mode.get.toString();
     private static final String BPS = "bps";
     private static final String GLOBAL = "global";
 
@@ -117,11 +113,9 @@ public class Dao extends DAOBase {
 
         counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
         counters.add(dottedPath(GLOBAL, NUSERS, EVER));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GET));
-        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GIVE));
-        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GET));
-
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE));
+        counters.add(dottedPath(GLOBAL, NPEERS, EVER));
+        
         timedCounters.add(dottedPath(GLOBAL,BPS));
 
         for (final String country : countries) {
@@ -129,10 +123,8 @@ public class Dao extends DAOBase {
             counters.add(dottedPath(country, NUSERS, ONLINE));
             counters.add(dottedPath(country, NUSERS, EVER));
 
-            counters.add(dottedPath(country, NPEERS, ONLINE, GIVE));
-            counters.add(dottedPath(country, NPEERS, ONLINE, GET));
-            counters.add(dottedPath(country, NPEERS, EVER, GIVE));
-            counters.add(dottedPath(country, NPEERS, EVER, GET));
+            counters.add(dottedPath(country, NPEERS, ONLINE));
+            counters.add(dottedPath(country, NPEERS, EVER));
             timedCounters.add(dottedPath(country, BPS));
         }
         new ShardedCounterManager().initCounters(timedCounters, counters);
@@ -143,7 +135,7 @@ public class Dao extends DAOBase {
     }
 
     public void setInstanceAvailable(final String userId,
-            final String instanceId, final String countryCode, final Mode mode,
+            final String instanceId, final String countryCode,
             final String resource, final String listenHostAndPort,
             final boolean isFallbackProxy) {
 
@@ -151,7 +143,7 @@ public class Dao extends DAOBase {
             @Override
             protected Boolean run(Objectify ofy) {
                 final List<String> countersToUpdate = setInstanceAvailable(
-                        ofy, userId, instanceId, countryCode, mode, resource,
+                        ofy, userId, instanceId, countryCode, resource,
                         listenHostAndPort, isFallbackProxy);
                 ofy.getTxn().commit();
                 // We only actually update the counters when we know the
@@ -197,10 +189,9 @@ public class Dao extends DAOBase {
      */
     public List<String> setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
-            final Mode mode, final String resource, String listenHostAndPort,
+            final String resource, String listenHostAndPort,
             boolean isFallbackProxy) {
 
-        String modeStr = mode.toString();
         LanternUser user = ofy.find(LanternUser.class, userId);
 
         Key<LanternUser> parentKey = new Key<LanternUser>(LanternUser.class,
@@ -231,27 +222,10 @@ public class Dao extends DAOBase {
 
         if (!isNewInstance) {
             log.info("Setting availability to true for " + userId + "/" + instanceId);
-            if (instance.isAvailable()) {
-                //handle mode changes
-                if (instance.getMode() != mode) {
-                    log.info("Mode change to " + modeStr);
-                    counters.add(dottedPath(countryCode, NPEERS, ONLINE,
-                                 modeStr));
-                    counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-                    //and decrement the old counters
-                    String oldModeStr = instance.getMode().toString();
-                    counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE,
-                                 oldModeStr));
-                    counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE,
-                                 oldModeStr));
-                    instance.setMode(mode);
-                    log.info("Finished updating datastore...");
-                }
-
-            } else {
+            if (!instance.isAvailable()) {
                 log.info("Instance exists but was unavailable.");
                 updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                        countryCode, mode, counters);
+                        countryCode, counters);
             }
         } else {
             log.info("Could not find instance!!");
@@ -259,9 +233,9 @@ public class Dao extends DAOBase {
             instance.setUser(userId);
             // The only counter that we need handling differently for new
             // instances is the global peers ever.
-            counters.add(dottedPath(GLOBAL, NPEERS, EVER, modeStr));
+            counters.add(dottedPath(GLOBAL, NPEERS, EVER));
             updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                    countryCode, mode, counters);
+                    countryCode, counters);
         }
 
         instance.setLastUpdated(new Date());
@@ -283,16 +257,15 @@ public class Dao extends DAOBase {
      */
     private void updateStatsForNewlyAvailableInstance(Objectify ofy,
             LanternUser user, LanternInstance instance,
-            final String countryCode, final Mode mode,
+            final String countryCode,
             ArrayList<String> counters) {
         //handle the online counters
-        String modeStr = mode.toString();
-        counters.add(dottedPath(countryCode, NPEERS, ONLINE, modeStr));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
+        counters.add(dottedPath(countryCode, NPEERS, ONLINE));
+        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE));
         //and the ever-seen
         if (!instance.getSeenFromCountry(countryCode)) {
             instance.addSeenFromCountry(countryCode);
-            counters.add(dottedPath(countryCode, NPEERS, EVER, modeStr));
+            counters.add(dottedPath(countryCode, NPEERS, EVER));
         }
         if (!user.countrySeen(countryCode)){
             counters.add(dottedPath(countryCode, NUSERS, EVER));
@@ -311,7 +284,6 @@ public class Dao extends DAOBase {
             counters.add(dottedPath(countryCode, NUSERS, ONLINE));
         }
         instance.setCurrentCountry(countryCode);
-        instance.setMode(mode);
         instance.setAvailable(true);
         ofy.put(user);
         log.info("Finished updating datastore...");
@@ -690,7 +662,7 @@ public class Dao extends DAOBase {
     public boolean updateUser(final String userId, final long directRequests,
             final long directBytes, final long requestsProxied,
             final long bytesProxied, final String countryCode,
-            final String name, final Mode mode) {
+            final String name) {
         log.info("Updating user with stats: dr: " + directRequests + " db: "
                 + directBytes + " bytesProxied: " + bytesProxied);
         Boolean result = new RetryingTransaction<Boolean>() {
@@ -766,10 +738,8 @@ public class Dao extends DAOBase {
         add(data, dottedPath(GLOBAL, NUSERS, ONLINE));
         add(data, dottedPath(GLOBAL, NUSERS, EVER));
 
-        add(data, dottedPath(GLOBAL, NPEERS, EVER, GIVE));
-        add(data, dottedPath(GLOBAL, NPEERS, EVER, GET));
-        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
-        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GET));
+        add(data, dottedPath(GLOBAL, NPEERS, EVER));
+        add(data, dottedPath(GLOBAL, NPEERS, ONLINE));
         add(data, dottedPath(GLOBAL, BPS));
         add(data, dottedPath(GLOBAL, BYTES_EVER));
 
@@ -780,10 +750,8 @@ public class Dao extends DAOBase {
             add(countriesData, dottedPath(country, NUSERS, ONLINE));
             add(countriesData, dottedPath(country, NUSERS, EVER));
 
-            add(countriesData, dottedPath(country, NPEERS, ONLINE, GIVE));
-            add(countriesData, dottedPath(country, NPEERS, ONLINE, GET));
-            add(countriesData, dottedPath(country, NPEERS, EVER, GIVE));
-            add(countriesData, dottedPath(country, NPEERS, EVER, GET));
+            add(countriesData, dottedPath(country, NPEERS, ONLINE));
+            add(countriesData, dottedPath(country, NPEERS, EVER));
         }
         data.put("countries", countriesData);
         return JsonUtils.jsonify(data);
@@ -921,11 +889,10 @@ public class Dao extends DAOBase {
             log.info("Decrementing online count");
             instance.setAvailable(false);
 
-            String modeStr = instance.getMode().toString();
             String countryCode = instance.getCurrentCountry();
 
-            counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-            counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE, modeStr));
+            counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE));
+            counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE));
 
             Query<LanternInstance> query = signedInInstanceQuery(ofy, userId);
 

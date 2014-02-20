@@ -17,7 +17,6 @@ import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
 import org.lantern.loggly.LoggerFactory;
-import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
 import com.google.appengine.api.xmpp.Message;
@@ -97,19 +96,6 @@ public class XmppAvailableServlet extends HttpServlet {
 
         //handleFriendsSync(doc, presence.getFromJid(), xmpp);
 
-        String modeStr = LanternControllerUtils.getProperty(doc, "mode");
-        Mode mode;
-        if ("give".equals(modeStr)) {
-            mode = Mode.give;
-        } else if ("get".equals(modeStr)) {
-            mode = Mode.get;
-        } else {
-            // We don't believe the controller should ever get unknown mode
-            // presences.
-            log.warning("Ignoring presence in '" + modeStr + "' mode.");
-            return;
-        }
-
         final String stats =
             LanternControllerUtils.getProperty(doc, "stats");
 
@@ -117,7 +103,7 @@ public class XmppAvailableServlet extends HttpServlet {
                 LanternControllerUtils.getProperty(doc, "name");
 
         processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource, hostAndPort, fallbackHostAndPort,
+                name, resource, hostAndPort, fallbackHostAndPort,
                 isFallbackProxy);
 
         handleVersionUpdate(doc, responseJson);
@@ -203,7 +189,7 @@ public class XmppAvailableServlet extends HttpServlet {
 
     private void processClientInfo(final Presence presence,
         final String stats, final String idToUse, final String instanceId,
-        final String name, final Mode mode, final String resource,
+        final String name, final String resource,
         final String hostAndPort, final String fallbackHostAndPort,
         final boolean isFallbackProxy) {
 
@@ -232,8 +218,7 @@ public class XmppAvailableServlet extends HttpServlet {
             if (StringUtils.isBlank(countryCode)) {
                 countryCode = "XX";
             }
-            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
-                                     resource, hostAndPort, isFallbackProxy);
+            dao.setInstanceAvailable(idToUse, instanceId, countryCode, resource, hostAndPort, isFallbackProxy);
             if (isFallbackProxy) {
                 dao.transitionInstallerLocation(idToUse, instanceId);
             } else {
@@ -241,7 +226,7 @@ public class XmppAvailableServlet extends HttpServlet {
                         idToUse, fallbackHostAndPort);
             }
             try {
-                updateStats(data, idToUse, instanceId, name, mode);
+                updateStats(data, idToUse, instanceId, name);
             } catch (final UnsupportedOperationException e) {
                 log.severe("Error updating stats: "+e.getMessage());
             }
@@ -266,7 +251,7 @@ public class XmppAvailableServlet extends HttpServlet {
     }
 
     private void updateStats(final Stats data, final String idToUse,
-            final String instanceId, final String name, final Mode mode) {
+            final String instanceId, final String name) {
 
         final Dao dao = new Dao();
 
@@ -278,6 +263,6 @@ public class XmppAvailableServlet extends HttpServlet {
         dao.updateUser(idToUse, data.getDirectRequests(),
             data.getDirectBytes(), data.getTotalProxiedRequests(),
             data.getTotalBytesProxied(),
-            countryCode, name, mode);
+            countryCode, name);
     }
 }
