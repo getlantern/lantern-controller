@@ -103,27 +103,6 @@ public class S3Config {
         enqueueWrapperUploadRequest(user.getId(), user.getConfigFolder());
     }
 
-    /**
-     * Utility.
-     *
-     * *WARNING*: If you call this from RemoteApi make sure to hardcode
-     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
-     * initialized to null by default in a RemoteApi context.
-     */
-    public static void refreshAllWrappers() {
-        for (LanternUser user : dao.ofy().query(LanternUser.class)) {
-            try {
-                if (user.getConfigFolder() != null) {
-                    enqueueWrapperUploadRequest(user.getId(),
-                                                user.getConfigFolder());
-                }
-            } catch (Exception e) {
-                // This will happen for the root user.
-                log.warning("Exception trying to refresh config: " + e);
-            }
-        }
-    }
-
     public static String generateConfigFolder() {
         SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder();
