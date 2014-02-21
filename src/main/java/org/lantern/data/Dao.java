@@ -980,7 +980,7 @@ public class Dao extends DAOBase {
 
     public Collection<Invite> getAuthorizedInvitesForFallbackProxyUserId(
             String userId) {
-        int maxInvites = settingsManager.getInteger("maxInvitesPerProxy");
+        int maxInvites = getMaxInvitesPerProxy();
         return ofy().query(Invite.class)
                     .filter("status", Invite.Status.authorized)
                     .filter("fallbackProxyUser", userId)
