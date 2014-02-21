@@ -54,7 +54,7 @@ public class RemoteApi {
         try {
             final Dao dao = new Dao();
             /* Trigger your hacks here.*/
-            //dao.createInitialUser("insertmyaccount@getlantern.org");
+            dao.createInitialUser("ox@getlantern.org");
             S3Config.refreshAllWrappers();
         } finally {
             installer.uninstall();
