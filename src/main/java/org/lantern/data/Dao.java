@@ -18,6 +18,7 @@ import org.lantern.FallbackProxyLauncher;
 import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
+import org.lantern.S3Config;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.loggly.LoggerFactory;
@@ -1300,7 +1301,7 @@ public class Dao extends DAOBase {
         return new Key<LanternUser>(LanternUser.class, userId);
     }
 
-    private Key<LanternInstance> getInstanceKey(String userId, String instanceId) {
+    public Key<LanternInstance> getInstanceKey(String userId, String instanceId) {
         return new Key<LanternInstance>(getUserKey(userId),
                                         LanternInstance.class,
                                         instanceId);
@@ -1676,6 +1677,34 @@ public class Dao extends DAOBase {
         t.run();
         if (t.failed()) {
             log.severe("Transaction failed!");
+        }
+    }
+
+    public void moveToNewFallback(final String userId,
+                                  final String fallbackProxyUserId,
+                                  final String fallbackInstanceId) {
+        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
+            protected Void run(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user == null) {
+                    log.severe("User not found: " + userId);
+                    return null;
+                }
+                log.info("Moving user " + userId
+                        + " to fallback " + fallbackInstanceId);
+                user.setFallbackProxyUserId(fallbackProxyUserId);
+                user.setFallbackProxy(getInstanceKey(fallbackProxyUserId,
+                                                     fallbackInstanceId));
+                ofy.put(user);
+                ofy.getTxn().commit();
+                return null;
+            }
+        };
+        t.run();
+        if (t.failed()) {
+            log.severe("Transaction failed!");
+        } else {
+            S3Config.refreshConfig(userId);
         }
     }
 }

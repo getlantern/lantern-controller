@@ -2,22 +2,27 @@ package org.lantern;
 
 import java.net.URL;
 import java.util.logging.Logger;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.apphosting.api.DeadlineExceededException;
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 
+import com.googlecode.objectify.Objectify;
 
 @SuppressWarnings("serial")
 public class MaintenanceTask extends HttpServlet {
@@ -34,13 +39,79 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            //refreshAllWrappers();
             log.info("Maintenance tasks are disabled currently.");
+            /*if (input.startsWith("all from ")) {
+                String[] parts = input.split(" ");
+                moveToNewFallback(parts[2], parts[3]);
+            } else {
+                moveToNewFallback(new HashSet<String>(Arrays.asList(input.split(" "))));
+            }*/
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private void moveToNewFallback(String oldFpuId, String oldFallbackId) {
+        Dao dao = new Dao();
+        Set<String> users = new HashSet<String>();
+        for (LanternUser user : dao.ofy().query(LanternUser.class)
+                                   .filter("fallbackProxy",
+                                           dao.getInstanceKey(oldFpuId,
+                                                              oldFallbackId))
+                                   .list()) {
+            users.add(user.getId());
+        }
+        moveToNewFallback(users);
+    }
+
+    private void moveToNewFallback() {
+        Dao dao = new Dao();
+        Objectify ofy = dao.ofy();
+        Set<String> toMove = new HashSet<String>();
+        // So we add this one to the trusted fallback, but not its invitees...
+        toMove.add("overinviter@gmail.com");
+        Set<String> frontier = new HashSet<String>();
+        // Here we would add the root sponsor, plus any invitees of the
+        // overinviter that we want to preserve in the trusted fallback.
+        frontier.add("example@getlantern.org");
+        while (!frontier.isEmpty()) {
+            String next = frontier.iterator().next();
+            toMove.add(next);
+            frontier.remove(next);
+            for (LanternUser user : ofy.query(LanternUser.class).filter("sponsor", next).list()) {
+                String userId = user.getId();
+                if (!toMove.contains(userId)) {
+                    frontier.add(userId);
+                }
+            }
+        }
+        moveToNewFallback(toMove);
+    }
+
+    public void moveToNewFallback(Set<String> toMove) {
+        Dao dao = new Dao();
+        while (!toMove.isEmpty()) {
+            String userId = toMove.iterator().next();
+            try {
+                dao.moveToNewFallback(
+                        userId,
+                        "some-fallback-proxy-user-id@getlantern.org",
+                        "instance-id-of-the-fallback");
+            } catch (DeadlineExceededException e) {
+                log.warning("Got DEE; requeuing...");
+                QueueFactory.getDefaultQueue().add(
+                        TaskOptions.Builder
+                        .withUrl("/maintenance_task")
+                        .param("input", StringUtils.join(toMove, ' ')));
+                return;
+            } catch (Exception e) {
+                log.severe("Error trying to move " + userId
+                           + " to new fallback: " + e);
+            }
+            toMove.remove(userId);
+        }
     }
 
     private void refreshAllWrappers() {

@@ -130,7 +130,7 @@ public class S3Config {
         if (accessData == null) {
             throw new RuntimeException("Fallback has no access data");
         }
-        return "{ \"serial_no\": 1"
+        return "{ \"serial_no\": 2"
             + ", \"controller\": \""
                 + LanternControllerConstants.CONTROLLER_ID + "\""
             + ", \"minpoll\": " + MIN_POLL_MINUTES
