@@ -64,7 +64,8 @@ public class Friending {
                                     }
                                 });
                         for (Friend friend : reverseFriends) {
-                            Friend friendSuggestion = LanternFriend.reverseOf(friend);
+                            Friend friendSuggestion = LanternFriend
+                                    .reverseOf(friend);
                             Friend originalFriend = uniqueFriends
                                     .get(friendSuggestion.getEmail());
                             if (originalFriend == null
@@ -303,16 +304,29 @@ public class Friending {
             int maxFriends = 0;
             if (user.getGeneration() >= 1) {
                 // Gen 1 and over users get some allowed friending ops
-                maxFriends = LanternControllerConstants.DEFAULT_MAX_FRIENDS
-                        - user.getDegree();
-                // Everyone gets at least MIN_MAX_FRIENDS friends
-                maxFriends = Math.max(maxFriends,
-                        LanternControllerConstants.MIN_MAX_FRIENDS);
+                maxFriends = maxFriendsForDegree(user.getDegree());
             }
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
         }
         return quota;
+    }
+
+    /**
+     * Calculates the maximum friends for a given degree using the formula <a
+     * href
+     * ="https://www.wolframalpha.com/input/?i=plot+20%2F%28x%2B1%29%5E1.25">
+     * 20/(x+1)^1.25</a>.
+     * 
+     * @param degree
+     * @return
+     */
+    static int maxFriendsForDegree(int degree) {
+        double M = LanternControllerConstants.MAX_MAX_FRIENDS;
+        double x = degree;
+        double f = LanternControllerConstants.MAX_FRIENDS_FACTOR;
+        double max = M / (Math.pow((x + 1), f));
+        return (int) Math.round(max);
     }
 
     /**
@@ -372,8 +386,9 @@ public class Friending {
     private static <P> FriendResponse<P> failure() {
         return failure(null);
     }
-    
+
     private static <P> FriendResponse<P> failure(FriendingQuota quota) {
-        return new FriendResponse<P>(false, quota != null ? quota.getRemainingQuota() : 0, null);
+        return new FriendResponse<P>(false,
+                quota != null ? quota.getRemainingQuota() : 0, null);
     }
 }
