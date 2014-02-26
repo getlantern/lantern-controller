@@ -226,6 +226,7 @@ public class Friending {
             Friend existing) {
         if (existing == null) {
             log.warning("Didn't find existing friend to update");
+            return success(quota, friend);
         } else {
             log.info("Found existing friend to update");
             Status priorStatus = existing.getStatus();
@@ -247,8 +248,8 @@ public class Friending {
             if (newlyFriended) {
                 invite(friend);
             }
+            return success(quota, existing);
         }
-        return success(quota, friend);
     }
 
     /**
