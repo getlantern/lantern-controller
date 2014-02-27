@@ -4,6 +4,7 @@ import javax.persistence.Id;
 import javax.persistence.Transient;
 
 import org.lantern.state.Friend;
+import org.lantern.EmailAddressUtils;
 
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -45,7 +46,7 @@ public class LanternFriend implements Friend {
     }
 
     public LanternFriend(String email) {
-        this.email = email;
+        this.email = EmailAddressUtils.normalizedEmail(email);
     }
 
     public static LanternFriend reverseOf(Friend friendedBy) {
@@ -84,7 +85,7 @@ public class LanternFriend implements Friend {
 
     @Override
     public void setEmail(String email) {
-        this.email = email;
+        this.email = EmailAddressUtils.normalizedEmail(email);
     }
 
     @Override
@@ -114,7 +115,7 @@ public class LanternFriend implements Friend {
 
     @Override
     public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail.trim().toLowerCase();
+        this.userEmail = EmailAddressUtils.normalizedEmail(userEmail);
         // Derive the FriendingQuota key from the user email
         if (this.userEmail.length() > 0) {
             this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
@@ -190,4 +191,8 @@ public class LanternFriend implements Friend {
         return true;
     }
 
+    public void normalizeEmails() {
+        email = EmailAddressUtils.normalizedEmail(email);
+        userEmail = EmailAddressUtils.normalizedEmail(userEmail);
+    }
 }
