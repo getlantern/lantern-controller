@@ -19,10 +19,15 @@ import com.google.apphosting.api.DeadlineExceededException;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
+import org.lantern.data.Dao.DbCall;
+import org.lantern.data.FriendingQuota;
+import org.lantern.data.LanternFriend;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 
+import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
+
 
 @SuppressWarnings("serial")
 public class MaintenanceTask extends HttpServlet {
@@ -39,7 +44,8 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            log.info("Maintenance tasks are disabled currently.");
+            //log.info("Maintenance tasks are disabled currently.");
+            normalizeFriendEmails();
             /*if (input.startsWith("all from ")) {
                 String[] parts = input.split(" ");
                 moveToNewFallback(parts[2], parts[3]);
@@ -51,6 +57,36 @@ public class MaintenanceTask extends HttpServlet {
             log.severe("" + e);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private void normalizeFriendEmails() {
+        Dao dao = new Dao();
+        for (LanternFriend friend : dao.ofy().query(LanternFriend.class).list()) {
+            String userId = EmailAddressUtils.normalizedEmail(friend.getUserEmail());
+            String id = EmailAddressUtils.normalizedEmail(friend.getEmail());
+            if (!friend.getEmail().equals(id)
+                || !friend.getUserEmail().equals(userId)) {
+                log.info("Normalizing " + friend.getUserEmail() + "'s friend " + friend.getEmail());
+                normalizeFriendEmails(userId, friend.getId());
+            }
+        }
+    }
+
+    private void normalizeFriendEmails(final String userId, final long friendId) {
+        new Dao().withTransaction(new DbCall<Void>() {
+            @Override
+            public Void call(Objectify ofy) {
+                LanternFriend friend = ofy.find(Key.create(Key.create(FriendingQuota.class, userId),
+                                                           LanternFriend.class, friendId));
+                if (friend == null) {
+                    log.severe("Found no friend with id " + friendId);
+                    return null;
+                }
+                friend.normalizeEmails();
+                ofy.put(friend);
+                return null;
+            }
+        });
     }
 
     private void moveToNewFallback(String oldFpuId, String oldFallbackId) {
