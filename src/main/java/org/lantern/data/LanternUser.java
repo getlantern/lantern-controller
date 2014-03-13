@@ -15,14 +15,8 @@ public class LanternUser implements Serializable {
 
     @Id
     private String id;
-
-    private long directBytes;
-
-    private long bytesProxied;
-
-    private long directRequests;
-
-    private long requestsProxied;
+    
+    private String guid;
 
     private Date created = new Date();
 
@@ -120,45 +114,21 @@ public class LanternUser implements Serializable {
     public String getId() {
         return id;
     }
+    
+    public String getGuid() {
+        return guid;
+    }
 
+    public void setGuid(String guid) {
+        this.guid = guid;
+    }
+    
     public void setCreated(final Date created) {
         this.created = created;
     }
 
     public Date getCreated() {
         return created;
-    }
-
-    public long getBytesProxied() {
-        return bytesProxied;
-    }
-
-    public void setBytesProxied(final long bytesProxied) {
-        this.bytesProxied = bytesProxied;
-    }
-
-    public long getDirectBytes() {
-        return directBytes;
-    }
-
-    public void setDirectBytes(long directBytes) {
-        this.directBytes = directBytes;
-    }
-
-    public long getDirectRequests() {
-        return directRequests;
-    }
-
-    public void setDirectRequests(long directRequests) {
-        this.directRequests = directRequests;
-    }
-
-    public long getRequestsProxied() {
-        return requestsProxied;
-    }
-
-    public void setRequestsProxied(long requestsProxied) {
-        this.requestsProxied = requestsProxied;
     }
 
     public void setDegree(int degree) {

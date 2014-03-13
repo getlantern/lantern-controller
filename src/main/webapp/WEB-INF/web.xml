@@ -16,14 +16,6 @@
     <url-pattern>/stats</url-pattern>
   </servlet-mapping>
   <servlet>
-    <servlet-name>persistController</servlet-name>
-    <servlet-class>org.lantern.PersistController</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>persistController</servlet-name>
-    <url-pattern>/persist</url-pattern>
-  </servlet-mapping>
-  <servlet>
     <servlet-name>sqsChecker</servlet-name>
     <servlet-class>org.lantern.SQSChecker</servlet-class>
   </servlet>
