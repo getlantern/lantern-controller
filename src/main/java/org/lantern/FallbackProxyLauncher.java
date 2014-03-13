@@ -44,8 +44,10 @@ public class FallbackProxyLauncher {
      * 
      * @return true if invite was newly authorized
      */
-    public static boolean authorizeInvite(final String inviterEmail,
-                                       final String inviteeEmail) {
+    public static boolean authorizeInvite(String inviterEmail,
+                                          String inviteeEmail) {
+        inviterEmail = EmailAddressUtils.normalizedEmail(inviterEmail);
+        inviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
         log.info(String.format("Authorizing invite from %1$s to %2$s", inviterEmail, inviteeEmail));
 
         final Dao dao = new Dao();
@@ -66,6 +68,8 @@ public class FallbackProxyLauncher {
 
     public static boolean processAuthorizedInvite(String inviterEmail,
                                                   String inviteeEmail) {
+        inviterEmail = EmailAddressUtils.normalizedEmail(inviterEmail);
+        inviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
         final Dao dao = new Dao();
         String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
         if (fpuid == null) {

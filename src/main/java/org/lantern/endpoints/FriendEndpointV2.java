@@ -76,6 +76,7 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
+        friend.normalizeEmails();
         return Friending.insertFriend(friend, user);
     }
 
@@ -96,6 +97,7 @@ public class FriendEndpointV2 extends BaseFriendEndpoint {
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
         checkAuthorization(user);
+        friend.normalizeEmails();
         return Friending.updateFriend(friend, user);
     }
 
