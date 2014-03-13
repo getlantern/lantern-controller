@@ -45,14 +45,7 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            //log.info("Maintenance tasks are disabled currently.");
-            normalizeFriendEmails();
-            /*if (input.startsWith("all from ")) {
-                String[] parts = input.split(" ");
-                moveToNewFallback(parts[2], parts[3]);
-            } else {
-                moveToNewFallback(new HashSet<String>(Arrays.asList(input.split(" "))));
-            }*/
+            log.info("Maintenance tasks are disabled currently.");
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
