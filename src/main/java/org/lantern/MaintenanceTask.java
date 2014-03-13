@@ -62,10 +62,6 @@ public class MaintenanceTask extends HttpServlet {
 
     private void normalizeFriendEmails() {
         Dao dao = new Dao();
-        // Lest we treat his invitees as a special case forever.
-        dao.moveToNewFallback("lannnnone@gmail.com",
-                              "invite@getlantern.org",
-                              "fp-invite-at-getlantern-dot-org-7600-1-2014-2-17");
         for (LanternFriend friend : dao.ofy().query(LanternFriend.class).list()) {
             String userId = EmailAddressUtils.normalizedEmail(friend.getUserEmail());
             String id = EmailAddressUtils.normalizedEmail(friend.getEmail());
@@ -73,7 +69,7 @@ public class MaintenanceTask extends HttpServlet {
                 || !friend.getUserEmail().equals(userId)) {
                 log.info("Normalizing " + friend.getUserEmail() + "'s friend " + friend.getEmail());
                 normalizeFriendEmails(userId, friend.getId());
-                Invite invite = dao.getInvite(dao.ofy(), userId, id);
+                Invite invite = dao.getInvite(dao.ofy(), friend.getUserEmail(), id);
                 if (invite != null
                     && invite.getStatus() == Invite.Status.authorized) {
                     log.info("Processing invite...");
@@ -93,6 +89,7 @@ public class MaintenanceTask extends HttpServlet {
                     log.severe("Found no friend with id " + friendId);
                     return null;
                 }
+                friend.setQuota(Key.create(FriendingQuota.class, EmailAddressUtils.normalizedEmail(userId)));
                 friend.normalizeEmails();
                 ofy.put(friend);
                 return null;
