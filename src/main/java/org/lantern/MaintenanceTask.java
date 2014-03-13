@@ -68,8 +68,8 @@ public class MaintenanceTask extends HttpServlet {
             if (!friend.getEmail().equals(id)
                 || !friend.getUserEmail().equals(userId)) {
                 log.info("Normalizing " + friend.getUserEmail() + "'s friend " + friend.getEmail());
-                normalizeFriendEmails(userId, friend.getId());
-                Invite invite = dao.getInvite(dao.ofy(), friend.getUserEmail(), id);
+                normalizeFriendEmails(friend.getUserEmail(), friend.getId());
+                Invite invite = dao.getInvite(dao.ofy(), userId, id);
                 if (invite != null
                     && invite.getStatus() == Invite.Status.authorized) {
                     log.info("Processing invite...");
@@ -89,6 +89,7 @@ public class MaintenanceTask extends HttpServlet {
                     log.severe("Found no friend with id " + friendId);
                     return null;
                 }
+                ofy.delete(friend);
                 friend.setQuota(Key.create(FriendingQuota.class, EmailAddressUtils.normalizedEmail(userId)));
                 friend.normalizeEmails();
                 ofy.put(friend);
