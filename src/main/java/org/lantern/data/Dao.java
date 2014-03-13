@@ -641,7 +641,7 @@ public class Dao extends DAOBase {
         return invite != null;
     }
 
-    private Invite getInvite(Objectify ofy, final String inviterEmail,
+    public Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
         // We try this first not for performance, but to get integrity guarantees
         // on new invites.

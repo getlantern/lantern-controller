@@ -21,6 +21,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
 import org.lantern.data.Dao.DbCall;
 import org.lantern.data.FriendingQuota;
+import org.lantern.data.Invite;
 import org.lantern.data.LanternFriend;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
@@ -61,6 +62,10 @@ public class MaintenanceTask extends HttpServlet {
 
     private void normalizeFriendEmails() {
         Dao dao = new Dao();
+        // Lest we treat his invitees as a special case forever.
+        dao.moveToNewFallback("lannnnone@gmail.com",
+                              "invite@getlantern.org",
+                              "fp-invite-at-getlantern-dot-org-7600-1-2014-2-17");
         for (LanternFriend friend : dao.ofy().query(LanternFriend.class).list()) {
             String userId = EmailAddressUtils.normalizedEmail(friend.getUserEmail());
             String id = EmailAddressUtils.normalizedEmail(friend.getEmail());
@@ -68,6 +73,12 @@ public class MaintenanceTask extends HttpServlet {
                 || !friend.getUserEmail().equals(userId)) {
                 log.info("Normalizing " + friend.getUserEmail() + "'s friend " + friend.getEmail());
                 normalizeFriendEmails(userId, friend.getId());
+                Invite invite = dao.getInvite(dao.ofy(), userId, id);
+                if (invite != null
+                    && invite.getStatus() == Invite.Status.authorized) {
+                    log.info("Processing invite...");
+                    FallbackProxyLauncher.processAuthorizedInvite(userId, id);
+                }
             }
         }
     }
