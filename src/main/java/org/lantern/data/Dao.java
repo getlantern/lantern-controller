@@ -641,27 +641,12 @@ public class Dao extends DAOBase {
         return invite != null;
     }
 
-    private Invite getInvite(Objectify ofy, final String inviterEmail,
+    public Invite getInvite(Objectify ofy, final String inviterEmail,
             final String inviteeEmail) {
-        // We try this first not for performance, but to get integrity guarantees
-        // on new invites.
         String id = Invite.makeId(inviterEmail, inviteeEmail);
         Key<LanternUser> bogusParentKey
             = new Key<LanternUser>(LanternUser.class, id);
-        Invite ret = ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
-        if (ret != null) {
-            return ret;
-        }
-        // Transition: we may have old invites with an ancestor.
-        Objectify otherOfy = ofy();
-        try {
-            return otherOfy.query(Invite.class)
-                           .filter("inviter", inviterEmail)
-                           .filter("invitee", inviteeEmail)
-                           .get();
-        } catch (NotFoundException e) {
-            return null;
-        }
+        return ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
     }
 
     public boolean isInvited(final String email) {
@@ -1226,30 +1211,38 @@ public class Dao extends DAOBase {
         }
         return result;
     }
-    
+
     public int deletePendingInvites(final String[] ids) {
+        int totalDeleted = 0;
+        for (String id : ids) {
+            totalDeleted += deletePendingInvite(id);
+        }
+        return totalDeleted;
+    }
+
+    private int deletePendingInvite(final String id) {
         return new RetryingTransaction<Integer>() {
             @Override
             protected Integer run(Objectify ofy) {
-                int totalDeleted = 0;
-                for (String id : ids) {
-                    String[] parsedId = Invite.parseId(id);
-                    Invite invite = getInvite(ofy, parsedId[0], parsedId[1]);
-                    if (invite != null) {
-                        if (invite.getStatus() == Status.queued) {
-                            ofy.delete(invite);
-                            totalDeleted += 1;
-                        } else {
-                            log.info(String
-                                    .format("Refusing to delete invite %1$s in status %2$s",
-                                            id, invite.getStatus()));
-                        }
+                int deleted = 0;
+                String[] parsedId = Invite.parseId(id);
+                Invite invite = getInvite(ofy, parsedId[0], parsedId[1]);
+                if (invite != null) {
+                    if (invite.getStatus() == Status.queued) {
+                        ofy.delete(invite);
+                        deleted = 1;
                     } else {
-                        log.info(String.format("Unable to find invite: %1$s", id));
+                        log.info(
+                            String.format(
+                                "Refusing to delete invite %1$s in status %2$s",
+                                id, invite.getStatus()));
                     }
+                } else {
+                    log.info(String.format("Unable to find invite: %1$s",
+                                           id));
                 }
                 ofy.getTxn().commit();
-                return totalDeleted;
+                return deleted;
             }
         }.run();
     }
