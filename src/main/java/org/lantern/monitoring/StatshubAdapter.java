@@ -6,8 +6,9 @@ import java.util.logging.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.lantern.loggly.LoggerFactory;
-import org.lantern.monitoring.Stats.CounterKey;
-import org.lantern.monitoring.Stats.GaugeKey;
+import org.lantern.monitoring.Stats.Counters;
+import org.lantern.monitoring.Stats.Gauges;
+import org.lantern.monitoring.Stats.Members;
 import org.lantern.state.Mode;
 
 public class StatshubAdapter {
@@ -34,34 +35,41 @@ public class StatshubAdapter {
                     org.lantern.Stats.class);
             Stats instanceStats = new Stats();
             if (Mode.give == mode) {
-                instanceStats.setCounter(CounterKey.bytesGiven,
+                instanceStats.setCounter(Counters.bytesGiven,
                         oldStats.getTotalBytesProxied());
                 if (isFallback) {
-                    instanceStats.setCounter(CounterKey.bytesGivenByFallback,
+                    instanceStats.setCounter(Counters.bytesGivenByFallback,
                             oldStats.getTotalBytesProxied());
                 } else {
-                    instanceStats.setCounter(CounterKey.bytesGivenByPeer,
+                    instanceStats.setCounter(Counters.bytesGivenByPeer,
                             oldStats.getTotalBytesProxied());
                 }
                 instanceStats.setGauge(
-                        GaugeKey.bpsGiven,
+                        Gauges.bpsGiven,
                         oldStats.getUpBytesPerSecond()
                                 + oldStats.getDownBytesPerSecond());
             } else {
-                instanceStats.setCounter(CounterKey.bytesGotten,
+                instanceStats.setCounter(Counters.bytesGotten,
                         oldStats.getTotalBytesProxied());
                 instanceStats.setGauge(
-                        GaugeKey.bpsGotten,
+                        Gauges.bpsGotten,
                         oldStats.getDownBytesPerSecond()
                                 + oldStats.getUpBytesPerSecond());
             }
+            statshub.postInstanceStats(
+                    instanceId,
+                    userGuid,
+                    countryCode,
+                    isFallback,
+                    instanceStats);
 
             Stats userStats = new Stats();
-            userStats.setCounter(instanceStats.getCounter());
-            userStats.setGauge(GaugeKey.online, isOnline ? 1 : 0);
+            userStats.setGauge(Gauges.online, isOnline ? 1 : 0);
+            if (isOnline) {
+                userStats.setMember(Members.everOnline, userGuid);
+            }
 
-            statshub.postStats(instanceId, countryCode, instanceStats);
-            statshub.postStats(Stats.idForUser(userGuid), countryCode, userStats);
+            statshub.postUserStats(userGuid, countryCode, userStats);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Unable to forward stats to Statshub: "
                     + e.getMessage(), e);
