@@ -318,128 +318,9 @@ public class Dao extends DAOBase {
         log.info("Finished updating datastore...");
     }
 
-    /**
-     * Update fallbackProxyUserId and fallbackProxy if we got a non-default
-     * fallbackProxyHostAndPort.
-     */
-    public void processFallbackProxyHostAndPort(final String userId,
-                                                final String hostAndPort) {
-        log.info("Processing host:port for " + userId);
-        if (StringUtils.isBlank(hostAndPort)) {
-            log.info("No hostAndPort.");
-            return;
-        }
-        if (LanternControllerConstants.DEFAULT_FALLBACK_HOST_AND_PORT
-                .equals(hostAndPort)) {
-            // This may be caused by a wiped ~/.lantern folder.  Don't
-            // treat this as a valid fallbackProxyUserId.
-            log.info("Ignoring default fallback.");
-            return;
-        }
-
-        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
-            @Override
-            protected Void run(Objectify txnOfy) {
-                LanternUser user = txnOfy.find(LanternUser.class, userId);
-
-                // The only point of the transaction is to protect the read
-                // and write of the user entry, and to make sure that we only
-                // update invites once.  We don't need to include the query
-                // in the transaction for this.
-                Objectify queryOfy = ofy();
-                List<LanternInstance> matches
-                    = queryOfy.query(LanternInstance.class)
-                        .filter("listenHostAndPort =", hostAndPort).list();
-                if (matches.size() == 0) {
-                    logPermanently("fallbackNotFound:" + userId,
-                                   userId + "'s fallback host and port "
-                                   + hostAndPort
-                                   + " don't match any fallback proxy.");
-                    return null;
-                } else if (matches.size() > 1) {
-                    log.severe(matches.size() + "instances found with ip:port"
-                               + hostAndPort + "!");
-                    // Bail rather than pair user with someone they don't
-                    // trust.
-                    return null;
-                }
-
-                LanternInstance instance = matches.get(0);
-
-                if (instance.isFallbackProxyShutdown()) {
-                    logPermanently("obsoleteHostPort:" + userId,
-                                   userId + " has obsolete fallback proxy "
-                                   + instance.getId() + " of user "
-                                   + instance.getUser());
-                    return null;
-                }
-
-                String oldFpuid = user.getFallbackProxyUserId();
-                String newFpuid = instance.getUser();
-                boolean fpUserChanged = !newFpuid.equals(oldFpuid)
-                                        // If a user is their own fallback
-                                        // user, we don't override that.
-                                        && !userId.equals(oldFpuid);
-                if (fpUserChanged) {
-                    user.setFallbackProxyUserId(newFpuid);
-                    log.info("Set " + userId + "'s fallbackProxyUserId to "
-                             + newFpuid + " (was " + oldFpuid + ")");
-                }
-
-                Key<LanternInstance> oldFpKey = user.getFallbackProxy();
-                Key<LanternInstance> newFpKey
-                    = getInstanceKey(newFpuid, instance.getId());
-                boolean fpChanged = !newFpKey.equals(oldFpKey);
-                if (fpChanged) {
-                    user.setFallbackProxy(newFpKey);
-                    log.info("Set " + userId + "'s fallbackProxy to "
-                             + newFpKey + " (was " + oldFpKey + ")");
-                }
-
-                if (fpUserChanged || fpChanged) {
-                    txnOfy.put(user);
-                    txnOfy.getTxn().commit();
-                }
-
-                return null;
-            }
-        };
-        txn.run();
-        if (txn.failed()) {
-            log.warning("Transaction failed!");
-        }
-    }
-
-
-    /**
-     * Allow user to start fallback proxies.
-     *
-     * If the user is already a fallbackProxyUserId this does nothing.
-     * Otherwise, a proxy will be launched next time we approve an invite by
-     * this user.
-     */
-    //XXX: as of this writing nobody is calling this.  This is meant to be
-    // called from some admin page.
-    public void makeFallbackProxyUser(final String userId) {
-        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
-            protected Void run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setFallbackProxyUserId(userId);
-                ofy.put(user);
-                ofy.getTxn().commit();
-                return null;
-            }
-        };
-        txn.run();
-        if (txn.failed()) {
-            throw new RuntimeException("Transaction failed!");
-        }
-    }
-
     private static String dottedPath(String ... strings) {
         return StringUtils.join(strings, ".");
     }
-
 
     public boolean alreadyInvitedBy(String sponsor, String guest) {
         Objectify ofy = ofy();
@@ -522,14 +403,7 @@ public class Dao extends DAOBase {
                     return false;
                 }
 
-                String fpuid = inviter.getFallbackProxyUserId();
-
-                if (fpuid == null) {
-                    throw new RuntimeException(
-                            "This should never be true anymore!");
-                }
-
-                Invite invite = new Invite(normInviterId, normInviteeEmail, fpuid, emailTemplate);
+                Invite invite = new Invite(normInviterId, normInviteeEmail, emailTemplate);
                 ofy.put(invite);
 
                 ofy.getTxn().commit();
@@ -581,8 +455,7 @@ public class Dao extends DAOBase {
 
     public LanternUser createInvitee(final String inviteeEmail,
                                      final String inviterId,
-                                     final String fallbackProxyUserId,
-                                     final String fallbackInstanceId) {
+                                     final String fallbackId) {
         // Although the friends code should have made sure to normalize the
         // inviteeEmail, let's double-check this just to be on the safe side.
         final String normalizedInviteeEmail
@@ -603,10 +476,8 @@ public class Dao extends DAOBase {
                     invitee = new LanternUser(normalizedInviteeEmail);
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
-                    invitee.setFallbackProxyUserId(fallbackProxyUserId);
-                    invitee.setFallbackProxy(
-                            getInstanceKey(fallbackProxyUserId,
-                                           fallbackInstanceId));
+                    invitee.setFallback(Key.create(FallbackProxy.class,
+                                                   fallbackId));
                     // Not bothering with a constant because any non-null value
                     // will do.
                     log.info("Successfully committed attempt to add invitee.");
@@ -964,16 +835,6 @@ public class Dao extends DAOBase {
         return old;
     }
 
-    public Collection<Invite> getAuthorizedInvitesForFallbackProxyUserId(
-            String userId) {
-        int maxInvites = getMaxInvitesPerProxy();
-        return ofy().query(Invite.class)
-                    .filter("status", Invite.Status.authorized)
-                    .filter("fallbackProxyUser", userId)
-                    .limit(maxInvites)
-                    .list();
-    }
-
     private boolean emailsMatch(final String one, final String other) {
         return one.trim().equalsIgnoreCase(other.trim());
     }
@@ -1301,176 +1162,6 @@ public class Dao extends DAOBase {
     }
 
     /**
-     * Find or create the instance and set its accessData.
-     */
-    public void registerFallbackProxy(final String userId,
-                                      final String instanceId,
-                                      final String accessData,
-                                      final String ip,
-                                      final String port) {
-        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
-            protected Void run(Objectify ofy) {
-                LanternInstance instance = findInstance(ofy,
-                                                        userId,
-                                                        instanceId);
-                if (instance == null) {
-                    // This may happen if we receive the fallback-proxy-up SQS
-                    // notification before the first Available presence from
-                    // the proxy.  Seems unlikely but there's nothing logically
-                    // preventing that.
-                    log.warning("Setting location for new instance!");
-                    instance = new LanternInstance(instanceId,
-                                                   getUserKey(userId));
-                }
-                instance.setFallbackProxy(true);
-                instance.setAccessData(accessData);
-                instance.setListenHostAndPort(ip + ":" + port);
-                instance.setUser(userId);
-                ofy.put(instance);
-
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setFallbackProxyUserId(userId);
-                String old = user.getFallbackForNewInvitees();
-                // We don't set it unconditionally because a user may have
-                // more than one proxy running and nothing guarantees that
-                // this is the one to which we're currently directing new
-                // invitees.
-                //
-                // For example, if installer wrappers are rebuilt in the
-                // fallback proxies, they will report themselves as running
-                // again, in whatever order.
-                if (StringUtils.isBlank(old)
-                    || old.equals(
-                        LanternControllerConstants.FALLBACK_PROXY_LAUNCHING)) {
-                    user.setFallbackForNewInvitees(instanceId);
-                }
-                ofy.put(user);
-
-                ofy.getTxn().commit();
-                return null;
-            }
-        };
-        txn.run();
-        if (txn.failed()) {
-            throw new RuntimeException("Too much contention!");
-        }
-    }
-
-    /**
-     * Increment the number of invites assigned to the current fallback proxy for
-     * this user.
-     *
-     * @return the new number of invites, or null if the current fallback proxy
-     * is being launched.
-     */
-    public Integer incrementFallbackInvites(final String userId,
-                                            int increment) {
-        final int STAT_QUANTUM = 10;
-        if (increment == 1) {
-            // We're getting spammed by these and this whole system is
-            // stochastic anyway, so let's do statistical increments.
-            if (new Random().nextInt(STAT_QUANTUM) == 0) {
-                increment = STAT_QUANTUM;
-            } else {
-                // XXX HACK: don't launch a new proxy.
-                //
-                // Actual figures will be returned next time we roll a zero.
-                // Ten more or less invites assigned to a proxy don't matter,
-                // esp. when we're overloaded.
-                return 0;
-            }
-        }
-        final int inc = increment;
-        RetryingTransaction<Integer> txn = new RetryingTransaction<Integer>() {
-            protected Integer run(Objectify ofy) {
-                String instanceId = ofy.find(LanternUser.class, userId)
-                                       .getFallbackForNewInvitees();
-                if (LanternControllerConstants.FALLBACK_PROXY_LAUNCHING
-                                              .equals(instanceId)) {
-                    return null;
-                }
-                LanternInstance instance = findInstance(ofy,
-                                                        userId,
-                                                        instanceId);
-                instance.incrementNumberOfInvitesForFallback(inc);
-                ofy.put(instance);
-                ofy.getTxn().commit();
-                return instance.getNumberOfInvitesForFallback();
-            }
-        };
-        Integer ret = txn.run();
-        if (txn.failed()) {
-            log.severe("Too much contention!");
-            if (increment > STAT_QUANTUM) {
-                // We're handling a proxy-up notification.  We don't want to
-                // hold the sending of invite emails to users that are waiting
-                // for this proxy to come up, so the best we can do without
-                // a bigger revamp of this system is to log this and at least
-                // return the right value.
-                logPermanently(UUID.randomUUID().toString(),
-                               "Failed to record " + increment
-                               + " invites for " + userId);
-                return increment;
-            }
-            return 0;
-        }
-        return ret;
-    }
-
-    /**
-     * Move installerLocation from user to fallbackProxy if necessary.
-     *
-     * TRANSITION: In the old scheme installerLocation was set by user.  This
-     * code is for porting proxies that predate the fallback-balancing scheme.
-     */
-    public void transitionInstallerLocation(final String userId,
-                                            final String instanceId) {
-        RetryingTransaction<Void> txn = new RetryingTransaction<Void>() {
-            protected Void run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                String insloc = user.getInstallerLocation();
-                if (insloc == null) {
-                    return null;
-                }
-                log.info("Moving legacy installer location from " + userId
-                         + " to fallback proxy " + instanceId);
-                user.setInstallerLocation(null);
-                ofy.put(user);
-                LanternInstance instance = findInstance(ofy,
-                                                        userId,
-                                                        instanceId);
-                instance.setInstallerLocation(insloc);
-                ofy.put(instance);
-                ofy.getTxn().commit();
-                return null;
-            }
-        };
-        txn.run();
-        if (txn.failed()) {
-            log.severe("Transaction failed!");
-        }
-    }
-
-    public int incrementFallbackSerialNumber(final String userId) {
-        RetryingTransaction<Integer> txn = new RetryingTransaction<Integer>() {
-            protected Integer run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                int ret = user.incrementFallbackSerialNumber();
-                ofy.put(user);
-                ofy.getTxn().commit();
-                return ret;
-            }
-        };
-        int ret = txn.run();
-        if (txn.failed()) {
-            throw new RuntimeException("Transaction failed!");
-        }
-        log.info("Incremented " + userId + "'s fallbackSerialNumber to "
-                 + ret);
-        return ret;
-    }
-
-    /**
      * RemoteApi script.
      */
     private static final boolean MASS_AUTHORIZE_INVITES_ENABLED = false;
@@ -1674,8 +1365,7 @@ public class Dao extends DAOBase {
     }
 
     public void moveToNewFallback(final String userId,
-                                  final String fallbackProxyUserId,
-                                  final String fallbackInstanceId) {
+                                  final String fallbackId) {
         RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
             protected Void run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, userId);
@@ -1684,10 +1374,9 @@ public class Dao extends DAOBase {
                     return null;
                 }
                 log.info("Moving user " + userId
-                        + " to fallback " + fallbackInstanceId);
-                user.setFallbackProxyUserId(fallbackProxyUserId);
-                user.setFallbackProxy(getInstanceKey(fallbackProxyUserId,
-                                                     fallbackInstanceId));
+                        + " to fallback " + fallbackId);
+                user.setFallback(Key.create(FallbackProxy.class,
+                							fallbackId));
                 ofy.put(user);
                 ofy.getTxn().commit();
                 return null;

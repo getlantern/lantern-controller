@@ -63,35 +63,28 @@ public class LanternUser implements Serializable {
     private String fallbackProxyUserId;
 
     /**
-     * The fallback proxy we believe this user is using.
-     *
-     * A user may actually be using different fallback proxies from different
-     * installations of Lantern, but any of them is good for our purposes.
+     * The fallback proxy configured for this user.
+     */
+    private Key<FallbackProxy> fallback;
+
+    /**
+     * Transitioning out of this...
      */
     private Key<LanternInstance> fallbackProxy;
 
     /**
-     * instanceId of the fallback proxy to use for new invitees.
-     *
-     * null if we have never launched a fallback proxy to run as this user.
-     *
-     * LanternControllerConstants.FALLBACK_PROXY_LAUNCHING if we are currently
-     * launching a fallback proxy to run as this user.
+     * Transitioning out of this...
      */
     private String fallbackForNewInvitees;
 
     /**
-     * A counter we keep to provide a unique serial number to all fallback launch
-     * requests for this user.
-     *
-     * The cloudmaster needs this in the SQS message we send them in order to
-     * make sure that for each SQS message it spawns one, and only one,
-     * fallback proxy.
+     * Transitioning out of this...
      */
     private int fallbackSerialNumber = 0;
 
-    // TRANSITION: we use this to initialize the installerLocation of fallback
-    // proxies that predate the fallback-balancing scheme.
+    /**
+     * Transitioning out of this...
+     */
     private String installerLocation;
     
     private int generation = 0;
@@ -291,6 +284,14 @@ public class LanternUser implements Serializable {
     public int incrementFallbackSerialNumber() {
         fallbackSerialNumber += 1;
         return fallbackSerialNumber;
+    }
+
+    public Key<FallbackProxy> getFallback() {
+        return fallback;
+    }
+
+    public void setFallback(Key<FallbackProxy> fallback) {
+        this.fallback = fallback;
     }
 
     public Key<LanternInstance> getFallbackProxy() {

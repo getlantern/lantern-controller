@@ -38,9 +38,6 @@ public class Invite {
     private String invitee;
 
     @Persistent
-    private String fallbackProxyUser;
-
-    @Persistent
     private String emailTemplate;
 
     // Status transitions only ever advance monotonically in the order in which
@@ -66,13 +63,11 @@ public class Invite {
 
     public Invite(String inviter,
                   String invitee,
-                  String fallbackProxyUser,
                   String emailTemplate) {
         id = makeId(inviter, invitee);
         inviterKey = new Key<LanternUser>(LanternUser.class, id);
         this.inviter = inviter;
         this.invitee = invitee;
-        this.fallbackProxyUser = fallbackProxyUser;
         this.emailTemplate = emailTemplate;
     }
 
@@ -94,10 +89,6 @@ public class Invite {
 
     public String getInvitee() {
         return invitee;
-    }
-
-    public String getFallbackProxyUser() {
-        return fallbackProxyUser;
     }
 
     public Status getStatus() {

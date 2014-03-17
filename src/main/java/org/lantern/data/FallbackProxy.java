@@ -8,6 +8,10 @@ public class FallbackProxy {
     @Id
     private String id;
 
+    private String family;
+
+    private String parent;
+
     /**
      * To allow looking a fallback up by IP.
      */
@@ -15,42 +19,55 @@ public class FallbackProxy {
 
     private String accessData;
 
+    /**
+     * Comments on this fallback, for the benefit of human admins.
+     *
+     * E.g. we may use this to why this fallback was retired.
+     */
+    private String notes;
+
     public enum Status {
+        /**
+         * Fallback is still being launched.
+         */
+        launching,
         /**
          * Fallback is accepting users.
          */
         active,
         /**
-         * Fallback is not accepting users because it's in the process of
-         * being split.
+         * This fallback is full or blocked and its successors are being
+         * launched.
+         */
+        launchingSuccessors,
+        /**
+         * Users of this fallback are being reassigned to its successors.
          */
         splitting,
         /**
-         * Fallback is retired because it's become full.
+         * Fallback is retired, probably because it got full or blocked.
          *
-         * It has already been split.
+         * All its users have been moved to other fallbacks.
          */
-        full,
-        /**
-         * Fallback is retired because it's been blocked.
-         *
-         * If we split it as a result of blocking, that is done.
-         */
-        blocked
+        retired,
     }
 
-    private Status status = Status.active;
+    private Status status = Status.launching;
 
-    public FallbackProxy () {};
+    public FallbackProxy() {};
 
-    public FallbackProxy(String id, String ip, String accessData) {
+    public FallbackProxy(String id, String parent, String family) {
         this.id = id;
-        this.ip = ip;
-        this.accessData = accessData;
+        this.parent = parent;
+        this.family = family;
     }
 
     public String getId() {
         return id;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 
     public String getIp() {
@@ -71,5 +88,29 @@ public class FallbackProxy {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public void setFamily(String family) {
+        this.family = family;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void addNote(String note) {
+        if (notes == null) {
+            notes = note;
+        } else {
+            notes += "\n" + note;
+        }
+    }
+    
+    public String getParent() {
+    	return parent;
     }
 }

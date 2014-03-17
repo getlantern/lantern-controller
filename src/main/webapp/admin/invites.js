@@ -61,8 +61,8 @@ angular.module('InvitesApp', [])
         // Organize them into a tree grouped by inviters
         // Below is some sample data for testing locally
 //        invites = [
-//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}},
-//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"hasFallback":false,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox2@getlantern.org","degree":null,"hasFallback":null,"countries":null,"sponsor":null}}
+//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox@getlantern.org","degree":null,"countries":null,"sponsor":null}},
+//                   {"id":"lanternfriend@gmail.com\u0001ox@getlantern.org","inviter":{"id":"lanternfriend@gmail.com","degree":2,"countries":["US"],"sponsor":"lanternfriend@gmail.com"},"invitee":{"id":"ox2@getlantern.org","degree":null,"countries":null,"sponsor":null}}
 //                   ];
 
         var inviters = {};

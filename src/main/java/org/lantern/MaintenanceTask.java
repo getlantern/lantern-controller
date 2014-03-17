@@ -135,8 +135,7 @@ public class MaintenanceTask extends HttpServlet {
             try {
                 dao.moveToNewFallback(
                         userId,
-                        "some-fallback-proxy-user-id@getlantern.org",
-                        "instance-id-of-the-fallback");
+                        "fallback-id");
             } catch (DeadlineExceededException e) {
                 log.warning("Got DEE; requeuing...");
                 QueueFactory.getDefaultQueue().add(

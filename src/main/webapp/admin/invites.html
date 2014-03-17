@@ -45,7 +45,6 @@
                  ng-disabled="!inviters || inviters.length == 0">
         </th>
         <th>Inviter/Invitee(s)</th>
-        <th>Has fallback</th>
         <th>Degree</th>
         <th>Countries</th>
         <th>Sponsor</th>
@@ -58,7 +57,6 @@
             {{inviter.id}}
           </label>
         </td>
-        <td>{{inviter.hasFallback}}</td>
         <td>{{inviter.degree}}</td>
         <td>{{inviter.countries|json}}</td>
         <td>{{inviter.sponsor}}</td>

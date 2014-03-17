@@ -99,14 +99,12 @@ public class InvitesResource {
     public static class User {
         private String id;
         private Integer degree;
-        private Boolean hasFallback;
         private Collection<String> countries;
         private String sponsor;
 
         public User(LanternUser lanternUser) {
             this.id = lanternUser.getId();
             this.degree = lanternUser.getDegree();
-            this.hasFallback = lanternUser.getFallbackForNewInvitees() != null;
             this.countries = lanternUser.getCountryCodes();
             this.sponsor = lanternUser.getSponsor();
         }
@@ -121,10 +119,6 @@ public class InvitesResource {
 
         public Integer getDegree() {
             return degree;
-        }
-
-        public Boolean getHasFallback() {
-            return hasFallback;
         }
 
         public Collection<String> getCountries() {
