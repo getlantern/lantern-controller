@@ -8,14 +8,6 @@
     <url-pattern>/lantern_controller_java</url-pattern>
   </servlet-mapping>
   <servlet>
-    <servlet-name>statsController</servlet-name>
-    <servlet-class>org.lantern.StatsController</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>statsController</servlet-name>
-    <url-pattern>/stats</url-pattern>
-  </servlet-mapping>
-  <servlet>
     <servlet-name>sqsChecker</servlet-name>
     <servlet-class>org.lantern.SQSChecker</servlet-class>
   </servlet>
