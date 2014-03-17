@@ -123,7 +123,7 @@ public class XmppAvailableServlet extends HttpServlet {
             responseJson.put(LanternConstants.USER_GUID, user.getGuid());
         }
 
-        handleVersionUpdate(doc, responseJson);
+        //handleVersionUpdate(doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
