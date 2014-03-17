@@ -98,6 +98,16 @@
     <servlet-name>maintenanceTask</servlet-name>
     <url-pattern>/maintenance_task</url-pattern>
   </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>exportBaselineStats</servlet-name>
+    <servlet-class>org.lantern.ExportBaselineStats</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>exportBaselineStats</servlet-name>
+    <url-pattern>/exportBaselineStats</url-pattern>
+  </servlet-mapping>
 
   <servlet>
     <servlet-name>subscribed</servlet-name>

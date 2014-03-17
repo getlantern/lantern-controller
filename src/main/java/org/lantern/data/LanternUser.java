@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.persistence.Id;
 
@@ -17,6 +18,8 @@ public class LanternUser implements Serializable {
     private String id;
     
     private String guid;
+
+    private long bytesProxied;
 
     private Date created = new Date();
 
@@ -128,6 +131,27 @@ public class LanternUser implements Serializable {
 
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+    
+    public long getBytesProxied() {
+        return bytesProxied;
+    }
+    
+    public void setBytesProxied(long bytesProxied) {
+        this.bytesProxied = bytesProxied;
+    }
+    
+    /**
+     * Initializes the guid field if necessary.
+     * 
+     * @return true if the guid had to be initialized
+     */
+    public boolean initializeGuidIfNecessary() {
+        if (guid == null) {
+            guid = UUID.randomUUID().toString();
+            return true;
+        }
+        return false;
     }
     
     public void setCreated(final Date created) {

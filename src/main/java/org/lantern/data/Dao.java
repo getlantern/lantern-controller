@@ -586,9 +586,7 @@ public class Dao extends DAOBase {
                     user = new LanternUser(userId);
                     user.setName(name);
                 }
-                if (user.getGuid() == null) {
-                    user.setGuid(UUID.randomUUID().toString());
-                }
+                user.initializeGuidIfNecessary();
 
                 ofy.put(user);
                 ofy.getTxn().commit();
