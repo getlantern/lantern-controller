@@ -64,9 +64,15 @@ public class StatshubAdapter {
                     instanceStats);
 
             Stats userStats = new Stats();
-            userStats.setGauge(Gauges.online, isOnline ? 1 : 0);
+            userStats.setGauge(Gauges.userOnline, isOnline ? 1 : 0);
             if (isOnline) {
-                userStats.setMember(Members.everOnline, userGuid);
+                boolean inGiveMode = Mode.give == mode;
+                if (inGiveMode) {
+                    userStats.setGauge(Gauges.userOnlineGiving, 1);
+                } else {
+                    userStats.setGauge(Gauges.userOnlineGetting, 1);
+                }
+                userStats.setMember(Members.userOnlineEver, userGuid);
             }
 
             statshub.postUserStats(userGuid, countryCode, userStats);
