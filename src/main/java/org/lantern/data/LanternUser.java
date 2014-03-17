@@ -115,6 +115,13 @@ public class LanternUser implements Serializable {
         return id;
     }
     
+    /**
+     * GUID identifying this user (primarily used for statistics purposes).
+     * 
+     * This is a type 4 guid which has a very low collision rate, but as with
+     * any GUID, collisions are possible.
+     * @return
+     */
     public String getGuid() {
         return guid;
     }
