@@ -100,7 +100,7 @@ public class Friending {
                     }
                 });
 
-        if (!resp.payload().getUserEmail().toLowerCase().equals(userEmail)) {
+        if (!EmailAddressUtils.normalizedEmail(resp.payload().getUserEmail()).equals(userEmail)) {
             log.warning("Emails don't match?");
             throw new UnauthorizedException("Unauthorized");
         }
@@ -338,20 +338,16 @@ public class Friending {
      * @return The normalized address.
      */
     private static String email(final User user) {
-        try {
-            return EmailAddressUtils.normalizedEmail(user.getEmail());
-        } catch (EmailAddressUtils.NormalizationException e) {
-            throw new RuntimeException(e);
-        }
+        return EmailAddressUtils.normalizedEmail(user.getEmail());
     }
 
     private static void invite(Friend friend) {
-        // TODO: we shoudl probably pop something on a task queue for processing
+        // TODO: we should probably pop something on a task queue for processing
         // the invite after this transaction has succeeded
         log.info("Inviting friend");
         final Dao dao = new Dao();
-        dao.addInviteAndApproveIfUnpaused(
-                friend.getUserEmail(), friend.getEmail());
+        dao.addInviteAndApproveIfUnpaused(friend.getUserEmail(),
+                                          friend.getEmail());
     }
 
     private static boolean haveBeenFriendedBy(final Friend friend) {
