@@ -121,13 +121,13 @@ public class LanternFriend implements Friend {
     @Override
     public void setUserEmail(String userEmail) {
         try {
-        this.userEmail = EmailAddressUtils.normalizedEmail(userEmail);
-        // Derive the FriendingQuota key from the user email
-        if (this.userEmail.length() > 0) {
-            this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
-        } else {
-            this.setQuota(null);
-        }
+            this.userEmail = EmailAddressUtils.normalizedEmail(userEmail);
+            // Derive the FriendingQuota key from the user email
+            if (this.userEmail.length() > 0) {
+                this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
+            } else {
+                this.setQuota(null);
+            }
         } catch (RuntimeException e) {
             LOGGER.log(Level.SEVERE,
                     String.format("Unable to set userEmail: %s, exception: %s",
