@@ -92,6 +92,19 @@ euccastro@yahoo.com
 <br/>
 <br/>
 
+<h2>Export Baseline Stats</h2>
+<p>To facilitate migration to statshub for tracking stats, we need to export baseline
+statistics from the controller.  This operation is idempotent, so you can run it
+as often as you like, but it's not cheap, so you should not run it very often.
+Really the only reason to run it again is if the stats in statshub have been
+cleared since the last run (e.g. for testing).</p>
+<form method="POST" action="/admin/post/exportBaselineStats">
+    <%= AdminServlet.getCsrfTag() %>
+    <input type="submit" value="Export Baseline Stats" />
+</form>
+<br/>
+<br/>
+
 <h2>Trigger maintenance task</h2>
 <p>RemoteApi-like thingy.  Don't touch this unless you added it.  Disable it when done.</p>
 <form method="POST" action="/admin/post/triggerMaintenanceTask">

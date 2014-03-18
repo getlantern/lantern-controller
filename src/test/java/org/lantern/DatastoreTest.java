@@ -1,6 +1,6 @@
 package org.lantern;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -11,7 +11,6 @@ import org.lantern.data.Dao;
 import org.lantern.data.LegacyFriend;
 import org.lantern.data.LegacyFriend.Status;
 import org.lantern.data.LegacyFriends;
-import org.lantern.data.ShardedCounterManager;
 import org.lantern.state.Mode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +57,10 @@ public class DatastoreTest {
 
     @Test
     public void testEventuallyConsistentGlobalQueryResult() throws Exception {
-        ShardedCounterManager.disable();
         final Dao dao = new Dao();
         final String id = "id-7777";
         final String name = "testuser";
-        dao.updateUser(id, 0L, 0L, 0L, 0L, "US", name, Mode.get);
+        dao.updateUser(id, name, Mode.get);
         
         final LegacyFriend friend1 = new LegacyFriend("test1@test.com");
         final LegacyFriend friend2 = new LegacyFriend("test2@test.com");

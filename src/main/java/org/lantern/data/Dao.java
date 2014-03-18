@@ -12,10 +12,8 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
-import org.lantern.CensoredUtils;
 import org.lantern.EmailAddressUtils;
 import org.lantern.FallbackProxyLauncher;
-import org.lantern.JsonUtils;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
 import org.lantern.S3Config;
@@ -31,15 +29,14 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.memcache.Expiration;
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.NotFoundException;
 import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.Query;
 import com.googlecode.objectify.util.DAOBase;
-
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 
 
 public class Dao extends DAOBase {
@@ -88,8 +85,6 @@ public class Dao extends DAOBase {
     private static final String BPS = "bps";
     private static final String GLOBAL = "global";
 
-    private final ShardedCounterManager counterManager = new ShardedCounterManager();
-
     private final SettingsManager settingsManager = new SettingsManager();
 
     static final int TXN_RETRIES = 10;
@@ -103,40 +98,6 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LatestLanternVersion.class);
         ObjectifyService.register(LanternFriend.class);
         ObjectifyService.register(FriendingQuota.class);
-
-        // Precreate all counters, if necessary
-        ArrayList<String> counters = new ArrayList<String>();
-        ArrayList<String> timedCounters = new ArrayList<String>();
-
-        counters.add(dottedPath(GLOBAL, BYTES_EVER));
-        counters.add(REQUESTS_PROXIED);
-        counters.add(DIRECT_BYTES);
-        counters.add(DIRECT_REQUESTS);
-        counters.add(CENSORED_USERS);
-        counters.add(UNCENSORED_USERS);
-        counters.add(TOTAL_USERS);
-
-        counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
-        counters.add(dottedPath(GLOBAL, NUSERS, EVER));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, GET));
-        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GIVE));
-        counters.add(dottedPath(GLOBAL, NPEERS, EVER, GET));
-
-        timedCounters.add(dottedPath(GLOBAL,BPS));
-
-        for (final String country : countries) {
-            counters.add(dottedPath(country, BYTES_EVER));
-            counters.add(dottedPath(country, NUSERS, ONLINE));
-            counters.add(dottedPath(country, NUSERS, EVER));
-
-            counters.add(dottedPath(country, NPEERS, ONLINE, GIVE));
-            counters.add(dottedPath(country, NPEERS, ONLINE, GET));
-            counters.add(dottedPath(country, NPEERS, EVER, GIVE));
-            counters.add(dottedPath(country, NPEERS, EVER, GET));
-            timedCounters.add(dottedPath(country, BPS));
-        }
-        new ShardedCounterManager().initCounters(timedCounters, counters);
     }
 
     public Iterable<LanternUser> getAllUsers() {
@@ -151,25 +112,11 @@ public class Dao extends DAOBase {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             protected Boolean run(Objectify ofy) {
-                final List<String> countersToUpdate = setInstanceAvailable(
+                setInstanceAvailable(
                         ofy, userId, instanceId, countryCode, mode, resource,
                         listenHostAndPort, isFallbackProxy);
                 ofy.getTxn().commit();
-                // We only actually update the counters when we know the
-                // transaction succeeded.  Since these affect the memcache
-                // rather than the Datastore, there would be no way to roll
-                // them back should this transaction fail.
                 log.info("Transaction successful.");
-                for (String counter : countersToUpdate) {
-                    if (counter.startsWith("-")) {
-                        counter = counter.substring(1);
-                        log.info("Decrementing counter " + counter);
-                        decrementCounter(counter);
-                    } else {
-                        log.info("Incrementing counter " + counter);
-                        incrementCounter(counter);
-                    }
-                }
                 return true;
             }
         }.run();
@@ -192,11 +139,7 @@ public class Dao extends DAOBase {
         ofy().put(lanternVersion);
     }
 
-    /**
-     * @return a list of the counters that should be incremented as a
-     * result of this instance having become available.
-     */
-    public List<String> setInstanceAvailable(Objectify ofy,
+    public void setInstanceAvailable(Objectify ofy,
             String userId, final String instanceId, final String countryCode,
             final Mode mode, final String resource, String listenHostAndPort,
             boolean isFallbackProxy) {
@@ -216,10 +159,9 @@ public class Dao extends DAOBase {
             && StringUtils.equals(instance.getResource(), resource)) {
             log.info(String.format("We already knew '%1$s' was available",
                                    instanceId));
-            return Collections.emptyList();
+            return;
         }
 
-        ArrayList<String> counters = new ArrayList<String>();
         boolean isNewInstance = instance == null;
         if (isNewInstance) {
             instance = new LanternInstance(instanceId, parentKey);
@@ -235,40 +177,25 @@ public class Dao extends DAOBase {
             if (instance.isAvailable()) {
                 //handle mode changes
                 if (instance.getMode() != mode) {
-                    log.info("Mode change to " + modeStr);
-                    counters.add(dottedPath(countryCode, NPEERS, ONLINE,
-                                 modeStr));
-                    counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-                    //and decrement the old counters
-                    String oldModeStr = instance.getMode().toString();
-                    counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE,
-                                 oldModeStr));
-                    counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE,
-                                 oldModeStr));
                     instance.setMode(mode);
                     log.info("Finished updating datastore...");
                 }
 
             } else {
                 log.info("Instance exists but was unavailable.");
-                updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                        countryCode, mode, counters);
+                updateNewlyAvailableInstance(ofy, user, instance,
+                        countryCode, mode);
             }
         } else {
             log.info("Could not find instance!!");
 
             instance.setUser(userId);
-            // The only counter that we need handling differently for new
-            // instances is the global peers ever.
-            counters.add(dottedPath(GLOBAL, NPEERS, EVER, modeStr));
-            updateStatsForNewlyAvailableInstance(ofy, user, instance,
-                    countryCode, mode, counters);
+            updateNewlyAvailableInstance(ofy, user, instance,
+                    countryCode, mode);
         }
 
         instance.setLastUpdated(new Date());
         ofy.put(instance);
-
-        return counters;
     }
 
     /**
@@ -282,35 +209,9 @@ public class Dao extends DAOBase {
      * handled by the calling function.
      * </p>
      */
-    private void updateStatsForNewlyAvailableInstance(Objectify ofy,
+    private void updateNewlyAvailableInstance(Objectify ofy,
             LanternUser user, LanternInstance instance,
-            final String countryCode, final Mode mode,
-            ArrayList<String> counters) {
-        //handle the online counters
-        String modeStr = mode.toString();
-        counters.add(dottedPath(countryCode, NPEERS, ONLINE, modeStr));
-        counters.add(dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-        //and the ever-seen
-        if (!instance.getSeenFromCountry(countryCode)) {
-            instance.addSeenFromCountry(countryCode);
-            counters.add(dottedPath(countryCode, NPEERS, EVER, modeStr));
-        }
-        if (!user.countrySeen(countryCode)){
-            counters.add(dottedPath(countryCode, NUSERS, EVER));
-        }
-        //notice that we check for any signed in before we set this instance
-        //available
-
-        //we can do an ancestor query to figure out how many remaining
-        //instances there are
-
-        Query<LanternInstance> query = signedInInstanceQuery(ofy, user.getId());
-        boolean anyInstancesSignedIn = query.count() > 0;
-
-        if (!anyInstancesSignedIn) {
-            counters.add(dottedPath(GLOBAL, NUSERS, ONLINE));
-            counters.add(dottedPath(countryCode, NUSERS, ONLINE));
-        }
+            final String countryCode, final Mode mode) {
         instance.setCurrentCountry(countryCode);
         instance.setMode(mode);
         instance.setAvailable(true);
@@ -673,15 +574,11 @@ public class Dao extends DAOBase {
         }
     }
 
-    public boolean updateUser(final String userId, final long directRequests,
-            final long directBytes, final long requestsProxied,
-            final long bytesProxied, final String countryCode,
-            final String name, final Mode mode) {
-        log.info("Updating user with stats: dr: " + directRequests + " db: "
-                + directBytes + " bytesProxied: " + bytesProxied);
-        Boolean result = new RetryingTransaction<Boolean>() {
+    public LanternUser updateUser(final String userId, final String name, final Mode mode) {
+        log.info("Updating user");
+        LanternUser result = new RetryingTransaction<LanternUser>() {
             @Override
-            public Boolean run(Objectify ofy) {
+            public LanternUser run(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, userId);
                 boolean isUserNew = (user == null);
                 if (isUserNew) {
@@ -689,38 +586,13 @@ public class Dao extends DAOBase {
                     user = new LanternUser(userId);
                     user.setName(name);
                 }
-                user.setBytesProxied(user.getBytesProxied() + bytesProxied);
-                user.setRequestsProxied(user.getRequestsProxied()
-                        + requestsProxied);
-                user.setDirectBytes(user.getDirectBytes() + directBytes);
-                user.setDirectRequests(user.getDirectRequests()
-                        + directRequests);
+                user.initializeGuidIfNecessary();
 
                 ofy.put(user);
                 ofy.getTxn().commit();
                 log.info("Transaction successful.");
 
-                // Only increment counters on success.
-                incrementCounter(dottedPath(countryCode, BYTES_EVER), bytesProxied);
-                incrementCounter(dottedPath(GLOBAL, BYTES_EVER), bytesProxied);
-
-                incrementCounter(dottedPath(countryCode, BPS), bytesProxied);
-                incrementCounter(dottedPath(GLOBAL, BPS), bytesProxied);
-
-                incrementCounter(REQUESTS_PROXIED, requestsProxied);
-                incrementCounter(DIRECT_BYTES, directBytes);
-                incrementCounter(DIRECT_REQUESTS, directRequests);
-                if (isUserNew) {
-                    counterManager.increment(TOTAL_USERS);
-                    if (CensoredUtils.isCensored(countryCode)) {
-                        incrementCounter(CENSORED_USERS);
-                    } else {
-                        log.info("Incrementing uncensored count");
-                        incrementCounter(UNCENSORED_USERS);
-                    }
-                    incrementCounter(countryCode + ".nusers.ever");
-                }
-                return isUserNew;
+                return user;
             }
         }.run();
         if (result == null) {
@@ -728,85 +600,6 @@ public class Dao extends DAOBase {
             throw new RuntimeException("Too much contention!");
         }
         return result;
-    }
-
-    private void decrementCounter(String counter) {
-        counterManager.decrement(counter);
-    }
-
-    private void incrementCounter(String counter) {
-        counterManager.increment(counter);
-    }
-
-    private void incrementCounter(String counter, long count) {
-        counterManager.increment(counter, count);
-    }
-
-    public String getStats() {
-        final Map<String, Object> data = new HashMap<String, Object>();
-        add(data, REQUESTS_PROXIED);
-        add(data, DIRECT_BYTES);
-        add(data, DIRECT_REQUESTS);
-        add(data, CENSORED_USERS);
-        add(data, UNCENSORED_USERS);
-        add(data, dottedPath(GLOBAL, NUSERS, ONLINE));
-        add(data, dottedPath(GLOBAL, NUSERS, EVER));
-
-        add(data, dottedPath(GLOBAL, NPEERS, EVER, GIVE));
-        add(data, dottedPath(GLOBAL, NPEERS, EVER, GET));
-        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GIVE));
-        add(data, dottedPath(GLOBAL, NPEERS, ONLINE, GET));
-        add(data, dottedPath(GLOBAL, BPS));
-        add(data, dottedPath(GLOBAL, BYTES_EVER));
-
-        final Map<String, Object> countriesData = new HashMap<String, Object>();
-        for (final String country : countries) {
-            add(countriesData, dottedPath(country, BPS));
-            add(countriesData, dottedPath(country, BYTES_EVER));
-            add(countriesData, dottedPath(country, NUSERS, ONLINE));
-            add(countriesData, dottedPath(country, NUSERS, EVER));
-
-            add(countriesData, dottedPath(country, NPEERS, ONLINE, GIVE));
-            add(countriesData, dottedPath(country, NPEERS, ONLINE, GET));
-            add(countriesData, dottedPath(country, NPEERS, EVER, GIVE));
-            add(countriesData, dottedPath(country, NPEERS, EVER, GET));
-        }
-        data.put("countries", countriesData);
-        return JsonUtils.jsonify(data);
-    }
-
-    /**
-     * Take a counter name of the form a.b.c...y.z, and add it to data
-     * recursively, so that data will contain an entry for a which contains an
-     * entry for b, and so on down to the last level. The value of the counter
-     * with the full dotted name will be put into z entry of the y container.
-     *
-     * @param data
-     * @param key a counter name in the form a.b.c...
-     */
-    private void add(final Map<String, Object> data, final String key) {
-        add(data, key, key);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void add(final Map<String, Object> data, final String key, final String counterName) {
-        if (key.contains(".")) {
-            String[] parts = key.split("\\.", 2);
-            String containerName = parts[0];
-            String remainder = parts[1];
-            Object existing = data.get(containerName);
-            Map<String, Object> container;
-            if (existing == null) {
-                container = new HashMap<String, Object>();
-                data.put(containerName, container);
-            } else {
-                container = (Map<String, Object>) existing;
-            }
-            add(container, remainder, counterName);
-        } else {
-            long count = counterManager.getCount(counterName);
-            data.put(key, count);
-        }
     }
 
     public void whitelistAdditions(final Collection<String> whitelistAdditions,
@@ -843,10 +636,6 @@ public class Dao extends DAOBase {
                     user.setEverSignedIn(true);
                     ofy.put(user);
                     ofy.getTxn().commit();
-                    // Increment after committing, because memcache is not
-                    // rolled back if the transaction fails.
-                    log.info("Incrementing global.nusers.ever.");
-                    incrementCounter(dottedPath(GLOBAL, NUSERS, EVER));
                     return true;
                 }
                 return false;
@@ -863,22 +652,8 @@ public class Dao extends DAOBase {
         Boolean result = new RetryingTransaction<Boolean>() {
             @Override
             public Boolean run(Objectify ofy) {
-                final ArrayList<String> countersToUpdate = setInstanceUnavailable(
-                        ofy, userId, resource);
+                setInstanceUnavailable(ofy, userId, resource);
                 ofy.getTxn().commit();
-                // We only actually update the counters when we know the
-                // transaction succeeded. Since these affect the memcache
-                // rather than the Datastore, there would be no way to roll
-                // them back should this transaction fail.
-                for (String counter : countersToUpdate) {
-                    if (counter.startsWith("-")) {
-                        log.info("Decrementing counter " + counter);
-                        decrementCounter(counter.substring(1));
-                    } else {
-                        log.info("Incrementing counter " + counter);
-                        incrementCounter(counter);
-                    }
-                }
                 return true;
             }
         }.run();
@@ -887,10 +662,8 @@ public class Dao extends DAOBase {
         }
     }
 
-    public ArrayList<String> setInstanceUnavailable(final Objectify ofy,
+    public void setInstanceUnavailable(final Objectify ofy,
             final String userId, final String resource) {
-        ArrayList<String> counters = new ArrayList<String>();
-
         final Key<LanternUser> parent = new Key<LanternUser>(LanternUser.class, userId);
 
         // for unavailable, we search by resource, because we do not have the
@@ -901,33 +674,12 @@ public class Dao extends DAOBase {
         final LanternInstance instance = searchByResource.get();
         if (instance == null) {
             log.warning("Instance " + userId + "/" + resource + " not found.");
-            return counters;
+            return;
         }
         if (instance.isAvailable()) {
-            log.info("Decrementing online count");
             instance.setAvailable(false);
-
-            String modeStr = instance.getMode().toString();
-            String countryCode = instance.getCurrentCountry();
-
-            counters.add("-" + dottedPath(GLOBAL, NPEERS, ONLINE, modeStr));
-            counters.add("-" + dottedPath(countryCode, NPEERS, ONLINE, modeStr));
-
-            Query<LanternInstance> query = signedInInstanceQuery(ofy, userId);
-
-            //we compare against 1 here because we have not yet
-            //saved the current instance
-            boolean anyInstancesSignedIn = query.count() > 1;
-
-            if (!anyInstancesSignedIn) {
-                log.info("Decrementing online user count");
-                counters.add("-" + dottedPath(GLOBAL, NUSERS, ONLINE));
-                counters.add("-" + dottedPath(countryCode, NUSERS, ONLINE));
-            }
-
             ofy.put(instance);
         }
-        return counters;
     }
 
     private Query<LanternInstance> signedInInstanceQuery(Objectify ofy,
@@ -981,27 +733,6 @@ public class Dao extends DAOBase {
     public int getUserCount() {
         Objectify ofy = ofy();
         return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
-    }
-
-    public void forgetEveryoneSignedIn() {
-        // One-shot job so lantern-controller reckons old users in the global
-        // ever counter.  Uncomment and run from RemoteAPI for fun and evil.
-        // You need to uncomment additional methods in LanternUser.java for
-        // this to work.
-        log.warning("The Button is disabled!"
-                    + "  Uncomment and redeploy if you really mean it.");
-        /*
-        Objectify ofy = ofy();
-        for (LanternUser user : ofy.query(LanternUser.class)) {
-            user.resetInstancesSignedIn();
-            user.setEverSignedIn(false);
-            // Uncomment this method in LanternUsers too.
-            user.resetCountryCodes();
-            ofy.put(user);
-        }
-        ofy.delete(ofy.query(LanternInstance.class));
-        log.warning("Sign-in data reset.");
-        */
     }
 
     public void logPermanently(String key, String contents) {

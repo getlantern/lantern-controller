@@ -8,22 +8,6 @@
     <url-pattern>/lantern_controller_java</url-pattern>
   </servlet-mapping>
   <servlet>
-    <servlet-name>statsController</servlet-name>
-    <servlet-class>org.lantern.StatsController</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>statsController</servlet-name>
-    <url-pattern>/stats</url-pattern>
-  </servlet-mapping>
-  <servlet>
-    <servlet-name>persistController</servlet-name>
-    <servlet-class>org.lantern.PersistController</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>persistController</servlet-name>
-    <url-pattern>/persist</url-pattern>
-  </servlet-mapping>
-  <servlet>
     <servlet-name>sqsChecker</servlet-name>
     <servlet-class>org.lantern.SQSChecker</servlet-class>
   </servlet>
@@ -113,6 +97,16 @@
   <servlet-mapping>
     <servlet-name>maintenanceTask</servlet-name>
     <url-pattern>/maintenance_task</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>exportBaselineStats</servlet-name>
+    <servlet-class>org.lantern.ExportBaselineStats</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>exportBaselineStats</servlet-name>
+    <url-pattern>/exportBaselineStats</url-pattern>
   </servlet-mapping>
 
   <servlet>
