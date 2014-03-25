@@ -52,24 +52,18 @@ pages like /admin/latest.html from that point forward.
  1. Set up a appengine instance
  2. Add an entry with your controller id to [versions](versions)
  3. In `Dao.java`, flip the boolean guard in `createInitialUser`.
- 4. Deploy your app using `deploy.py` (make sure to specify the right instance
-    name).
- 5. Open `org.lantern.RemoteApi.java` and edit it to call
+ 4. Open `org.lantern.RemoteApi.java` and edit it to call
     dao.createInitialUser() - this will set up a seed user with which you can
     run Lantern
- 6. Set up a remoteapi.properties in your root folder with the following:
- 
-        username=<your google username>
-        password=<your google password (Strongly recommend using app-specific password)>
-        controller=<name of your controller>
-
- 7. `./call-remote-api.bash`
- 8. Revert `Dao.java`
- 9. Revert `RemoteApi.java`
- 10. Open /admin/index.jsp of your app in a browser
- 11. Click "Pause Invites"
- 12. Visit `https://<your app id>.appspot.com/admin/invites.html` (this is just to get a CSRF cookie, as in the section **CSRF Protection** above.)
- 13. Visit `https://<your app id>.appspot.com/admin/latest.html` and enter details for the latest version that this controller knows about.
+ 5. Open `org.lantern.MaintenanceTask.java` and edit the doPost to call `new Dao().createInitialUser()` 
+ 6. Launch up a cloudmaster using launch_cloudmaster.py per the instructions [here](https://github.com/getlantern/lantern_aws)
+ 7. Deploy your app using `deploy.py` (make sure to specify the right instance
+    name).
+ 8. Go to /admin/index.jsp of your app in a browser and run your maintenance task, specifying the email address for your initial user
+ 9. Revert `Dao.java`
+ 10. Revert `RemoteApi.java`
+ 11. Visit `https://<your app id>.appspot.com/admin/invites.html` (this is just to get a CSRF cookie, as in the section **CSRF Protection** above.)
+ 12. Visit `https://<your app id>.appspot.com/admin/latest.html` and enter details for the latest version that this controller knows about.
 
 ## i18n
 

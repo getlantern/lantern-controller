@@ -467,11 +467,11 @@ public class Dao extends DAOBase {
      * See https://github.com/getlantern/lantern-controller#setting-up-a-test-lantern-controller
      */
     public void createInitialUser(final String email) {
-        if (false) {
+        if (true) {
             log.info("Flip the condition above if you really mean to run this.");
         } else {
             final Objectify ofy = ofy();
-            final LanternUser user = new LanternUser("_pants@getlantern.org");
+            final LanternUser user = new LanternUser(email);
             user.setDegree(1);
             user.setEverSignedIn(true);
             user.setSponsor("lanternfriend@gmail.com");
