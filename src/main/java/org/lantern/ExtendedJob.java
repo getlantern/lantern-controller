@@ -65,7 +65,8 @@ public class ExtendedJob extends HttpServlet {
                 customizeTaskOptions(
                     TaskOptions.Builder.withUrl(PATH)
                                        .param(PHASE, CONTINUE)
-                                       .param(ARGS, serializeArgs(args))));
+                                       .param(ARGS, serializeArgs(args)),
+                    request));
             populateOKResponse(response);
         }
     }
@@ -108,6 +109,10 @@ public class ExtendedJob extends HttpServlet {
             processOneArg(args.get(0), argPusher);
             args.remove(0);
         }
+        finalize(request);
+    }
+
+    protected void finalize(HttpServletRequest request) {
     }
 
     protected void populateOKResponse(HttpServletResponse response) {
@@ -118,7 +123,8 @@ public class ExtendedJob extends HttpServlet {
         populateOKResponse(response);
     }
 
-    protected TaskOptions customizeTaskOptions(TaskOptions to) {
+    protected TaskOptions customizeTaskOptions(TaskOptions to,
+                                               HttpServletRequest request) {
         return to;
     }
 }

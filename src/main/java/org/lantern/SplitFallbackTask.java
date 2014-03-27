@@ -57,14 +57,16 @@ public class SplitFallbackTask extends ExtendedJob {
     @Override
     protected void start(HttpServletRequest request,
                          List<String> args) {
-        String fallbackId = request.getParameter("fallbackId");
+        String fallbackId = request.getParameter("fallback_id");
+        Key<FallbackProxy> fallbackKey = Key.create(FallbackProxy.class,
+                                                    fallbackId);
         log.info("Splitting fallback " + fallbackId);
         Dao dao = new Dao();
         Map<String, UserNode> usersById
             = new HashMap<String, UserNode>();
         for (LanternUser user
              : dao.ofy().query(LanternUser.class)
-                        .filter("fallbackProxy", fallbackId)) {
+                        .filter("fallback", fallbackKey)) {
             UserNode node = new UserNode();
             node.id = user.getId();
             node.sponsorId = user.getSponsor();
@@ -83,7 +85,7 @@ public class SplitFallbackTask extends ExtendedJob {
             initializeWeights(root);
         }
         Set<UserNode> minRoots = new HashSet<UserNode>();
-        double oldBalance = 0.0;
+        double oldBalance = -1.0;
         for (;;) {
             int minSum = sumWeights(minRoots);
             int maxSum = sumWeights(maxRoots);
@@ -108,18 +110,21 @@ public class SplitFallbackTask extends ExtendedJob {
                                .list();
                 feedUsers(minRoots, successors.get(0).getId(), args);
                 feedUsers(maxRoots, successors.get(1).getId(), args);
-                doContinue(null, args);
+                doContinue(request, args);
                 return;
             }
-            if (balance < oldBalance) {
+            if (balance <= oldBalance) {
                 UserNode toSplit = heaviestUser(maxRoots);
+                log.info("Splitting " + (toSplit == null ? "null"
+                                                         : (toSplit.id + ", with " + toSplit.children + " children")));
                 UserNode toExtract = bestToChange(toSplit.children,
                                                   minSum,
                                                   maxSum);
+                log.info("Extracting " + (toExtract == null ? "null" : toExtract.id));
                 toSplit.children.remove(toExtract);
                 toSplit.weight -= toExtract.weight;
                 minRoots.add(toExtract);
-                oldBalance = 0.0;
+                oldBalance = -1.0;
             } else {
                 UserNode bestUser = bestToChange(maxRoots, minSum, maxSum);
                 maxRoots.remove(bestUser);
@@ -150,10 +155,10 @@ public class SplitFallbackTask extends ExtendedJob {
     @Override
     protected void doContinue(HttpServletRequest request,
                               List<String> args) {
-        if (request != null) {
+        String allRootsStr = request.getParameter("allRoots");
+        if (allRootsStr != null) {
             allRoots = new HashSet<String>(
-                    Arrays.asList(
-                        request.getParameter("allRoots").trim().split(" ")));
+                    Arrays.asList(allRootsStr.trim().split(" ")));
         }
         super.doContinue(request, args);
     }
@@ -212,7 +217,32 @@ public class SplitFallbackTask extends ExtendedJob {
     }
 
     @Override
-    protected TaskOptions customizeTaskOptions(TaskOptions to) {
-        return to.param("allRoots", StringUtils.join(allRoots, ' '));
+    protected TaskOptions customizeTaskOptions(TaskOptions to, HttpServletRequest request) {
+        return to.param("allRoots", StringUtils.join(allRoots, ' '))
+                 .param("fallback_id", request.getParameter("fallback_id"));
+    }
+
+    @Override
+    protected void finalize(HttpServletRequest request) {
+        final String fallbackId = request.getParameter("fallback_id");
+        if (fallbackId == null) {
+            log.severe("No fallback to mark as retired?");
+            return;
+        }
+        Dao dao = new Dao();
+        dao.withTransaction(new DbCall<Void>() {
+            @Override
+            public Void call(Objectify ofy) {
+                FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
+                if (fp.getStatus() == FallbackProxy.Status.splitting) {
+                    fp.setStatus(FallbackProxy.Status.retired);
+                    ofy.put(fp);
+                    log.info("Fallback " + fallbackId + " marked as retired.");
+                } else {
+                    log.warning("Fallback in unexpected state: " + fp.getStatus());
+                }
+                return null;
+            }
+        });
     }
 }

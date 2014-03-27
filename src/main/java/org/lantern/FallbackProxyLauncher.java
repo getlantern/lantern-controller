@@ -115,7 +115,7 @@ public class FallbackProxyLauncher {
             @Override
             public Void call(Objectify ofy) {
                 FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
-                if (fp.getStatus() == FallbackProxy.Status.active) {
+                if (fp.getStatus() == FallbackProxy.Status.launchingSuccessors) {
                     fp.setStatus(FallbackProxy.Status.splitting);
                     ofy.put(fp);
                     QueueFactory.getDefaultQueue().add(

@@ -55,7 +55,7 @@ public class CheckFallbacksJob extends ExtendedJob {
                 public Void call(Objectify ofy) {
                     FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
                     if (fp.getStatus() == FallbackProxy.Status.active) {
-                        fp.setStatus(FallbackProxy.Status.splitting);
+                        fp.setStatus(FallbackProxy.Status.launchingSuccessors);
                         ofy.put(fp);
                         QueueFactory.getDefaultQueue().add(
                             TaskOptions.Builder
