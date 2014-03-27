@@ -10,13 +10,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.mrbean.MrBeanModule;
 import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
+import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
+import org.lantern.monitoring.StatshubAdapter;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -110,22 +110,40 @@ public class XmppAvailableServlet extends HttpServlet {
             return;
         }
 
-        final String stats =
-            LanternControllerUtils.getProperty(doc, "stats");
-
+        final String countryCode =
+            LanternControllerUtils.getProperty(doc, "countryCode");
+        
         final String name =
                 LanternControllerUtils.getProperty(doc, "name");
 
-        processClientInfo(presence, stats, userId, instanceId,
-                name, mode, resource, hostAndPort, fallbackHostAndPort,
-                isFallbackProxy);
+        LanternUser user = processClientInfo(presence, countryCode, userId,
+                instanceId, name, mode, resource, hostAndPort,
+                fallbackHostAndPort, isFallbackProxy);
+        if (user != null) {
+            responseJson.put(LanternConstants.USER_GUID, user.getGuid());
+        }
 
         handleVersionUpdate(doc, responseJson);
         sendUpdateTime(presence, xmpp, responseJson);
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
-
+        
+        if (user != null) {
+            final String stats =
+                    LanternControllerUtils.getProperty(doc, "stats");
+            if (stats != null) {
+                StatshubAdapter.forwardStats(
+                        instanceId,
+                        user.getGuid(),
+                        countryCode,
+                        mode,
+                        presence.isAvailable(),
+                        isFallbackProxy,
+                        stats);
+            }
+        }
+        
         dao.signedIn(from, language);
     }
 
@@ -201,53 +219,46 @@ public class XmppAvailableServlet extends HttpServlet {
         sendResponse(presence, xmpp, responseJson);
     }
 
-    private void processClientInfo(final Presence presence,
-        final String stats, final String idToUse, final String instanceId,
+    private LanternUser processClientInfo(final Presence presence,
+        String countryCode, final String idToUse, final String instanceId,
         final String name, final Mode mode, final String resource,
         final String hostAndPort, final String fallbackHostAndPort,
         final boolean isFallbackProxy) {
 
-        if (StringUtils.isBlank(stats)) {
-            log.info("No stats to process!");
-            return;
-        }
         if (StringUtils.isBlank(instanceId)) {
             log.info("Old client; not tracking stats");
-            return;
+            return null;
         }
 
         log.info("Processing stats!");
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new MrBeanModule());
+        // The following will delete the instance if it's not available,
+        // updating all counters.
+        // (aranhoide: XXX is the comment above still accurate?  I remember
+        // at some point available/unavailable events were being handled
+        // together up to here, but not anymore.)
+        log.info("Setting instance availability");
+        final Dao dao = new Dao();
+        if (StringUtils.isBlank(countryCode)) {
+            countryCode = "XX";
+        }
+        dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
+                                 resource, hostAndPort, isFallbackProxy);
+        if (isFallbackProxy) {
+            dao.transitionInstallerLocation(idToUse, instanceId);
+        } else {
+            dao.processFallbackProxyHostAndPort(
+                    idToUse, fallbackHostAndPort);
+        }
         try {
-            final Stats data = mapper.readValue(stats, Stats.class);
-            // The following will delete the instance if it's not available,
-            // updating all counters.
-            // (aranhoide: XXX is the comment above still accurate?  I remember
-            // at some point available/unavailable events were being handled
-            // together up to here, but not anymore.)
-            log.info("Setting instance availability");
-            final Dao dao = new Dao();
-            String countryCode = data.getCountryCode();
-            if (StringUtils.isBlank(countryCode)) {
-                countryCode = "XX";
-            }
-            dao.setInstanceAvailable(idToUse, instanceId, countryCode, mode,
-                                     resource, hostAndPort, isFallbackProxy);
-            try {
-                updateStats(data, idToUse, instanceId, name, mode);
-            } catch (final UnsupportedOperationException e) {
-                log.severe("Error updating stats: "+e.getMessage());
-            }
-        } catch (final JsonParseException e) {
-            log.severe("Error parsing stats: "+e.getMessage());
-        } catch (final JsonMappingException e) {
-            log.severe("Error parsing stats: "+e.getMessage());
-        } catch (final IOException e) {
-            log.severe("Error parsing stats: "+e.getMessage());
+            return updateStats(idToUse, instanceId, name, mode);
+        } catch (final UnsupportedOperationException e) {
+            log.severe("Error updating stats: "+e.getMessage());
+            return null;
         }
     }
-
+    
     private void sendResponse(final Presence presence, final XMPPService xmpp,
         final Map<String, Object> responseJson) {
         final String serversBody = JsonUtils.jsonify(responseJson);
@@ -259,19 +270,12 @@ public class XmppAvailableServlet extends HttpServlet {
         xmpp.sendMessage(msg);
     }
 
-    private void updateStats(final Stats data, final String idToUse,
+    private LanternUser updateStats(final String idToUse,
             final String instanceId, final String name, final Mode mode) {
 
         final Dao dao = new Dao();
 
-        log.info("Updating stats");
-        String countryCode = data.getCountryCode();
-        if (StringUtils.isBlank(countryCode)) {
-            countryCode = "XX";
-        }
-        dao.updateUser(idToUse, data.getDirectRequests(),
-            data.getDirectBytes(), data.getTotalProxiedRequests(),
-            data.getTotalBytesProxied(),
-            countryCode, name, mode);
+        log.info("Updating user");
+        return dao.updateUser(idToUse, name, mode);
     }
 }

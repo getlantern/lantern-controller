@@ -1,10 +1,14 @@
 package org.lantern.data;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javax.persistence.Id;
 import javax.persistence.Transient;
 
-import org.lantern.state.Friend;
 import org.lantern.EmailAddressUtils;
+import org.lantern.loggly.LoggerFactory;
+import org.lantern.state.Friend;
 
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnore;
 import com.google.appengine.repackaged.org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -25,6 +29,7 @@ import com.googlecode.objectify.annotation.Parent;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @org.codehaus.jackson.annotate.JsonIgnoreProperties(ignoreUnknown = true)
 public class LanternFriend implements Friend {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LanternFriend.class);
 
     @Parent
     @JsonIgnore
@@ -115,12 +120,19 @@ public class LanternFriend implements Friend {
 
     @Override
     public void setUserEmail(String userEmail) {
-        this.userEmail = EmailAddressUtils.normalizedEmail(userEmail);
-        // Derive the FriendingQuota key from the user email
-        if (this.userEmail.length() > 0) {
-            this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
-        } else {
-            this.setQuota(null);
+        try {
+            this.userEmail = EmailAddressUtils.normalizedEmail(userEmail);
+            // Derive the FriendingQuota key from the user email
+            if (this.userEmail.length() > 0) {
+                this.setQuota(Key.create(FriendingQuota.class, this.userEmail));
+            } else {
+                this.setQuota(null);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.log(Level.SEVERE,
+                    String.format("Unable to set userEmail: %s, exception: %s",
+                            userEmail, e.getMessage()), e);
+            throw e;
         }
     }
 

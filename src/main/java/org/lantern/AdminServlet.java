@@ -20,7 +20,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
+import org.lantern.monitoring.Stats.Members;
 
+import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.users.User;
@@ -265,7 +267,6 @@ public class AdminServlet extends HttpServlet {
     public void triggerMaintenanceTask(HttpServletRequest request,
                                        HttpServletResponse response,
                                        String[] pathComponents) {
-        Dao dao = new Dao();
         QueueFactory.getDefaultQueue().add(
             TaskOptions.Builder
                .withUrl("/maintenance_task")
@@ -273,6 +274,23 @@ public class AdminServlet extends HttpServlet {
         LanternControllerUtils.populateOKResponse(
                 response,
                 "Maintenance task enqueued.  Watch logs for completion.");
+    }
+    
+    public void exportBaselineStats(HttpServletRequest request,
+            HttpServletResponse response,
+            String[] pathComponents) {
+        Dao dao = new Dao();
+        Queue defaultQueue = QueueFactory.getDefaultQueue();
+        for (LanternUser user : dao.getAllUsers()) {
+            if (user.isEverSignedIn()) {
+                defaultQueue.add(TaskOptions.Builder
+                        .withUrl("/exportBaselineStats")
+                        .param("userId", user.getId()));
+            }
+        }
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "ExportBaselineStats task enqueued.  Watch logs for completion.");
     }
 
     /**

@@ -27,5 +27,8 @@ public class EmailAddressUtilsTest {
         String googleAppsAddr = "abc@googleappsdomain.net";
         String transformed = EmailAddressUtils.normalizedEmail(googleAppsAddr);
         assertTrue(StringUtils.equals(transformed, googleAppsAddr));
+        
+        assertNull(EmailAddressUtils.normalizedEmail(null));
+        assertEquals("", EmailAddressUtils.normalizedEmail(""));
     }
 }
