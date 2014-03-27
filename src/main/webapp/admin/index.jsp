@@ -48,17 +48,6 @@ Invites are unpaused.  <button type="submit" name="paused" value="true">Pause in
 <br/>
 <br/>
 
-<h2>Promote Fallback User</h2>
-<p>Promote someone so we'll run fallback proxies as them when they invite someone.</p>
-<form method="POST" action="/admin/post/promoteFallbackProxyUser">
-<input type="text" name="user" value="user@example.com">
-<button type="submit" name="set" value="true">Promote Fallback User</button><br/>
-<%= AdminServlet.getCsrfTag() %>
-</form>
-
-<br/>
-<br/>
-
 <h2>Send version update email</h2>
 <p>Send an email to notify users that a new Lantern version is up for download.</p>
 <p>The version number will only be used for display purposes.  The invite e-mails always point to the latest Lantern version.</p>

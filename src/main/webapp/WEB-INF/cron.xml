@@ -11,4 +11,9 @@
     <description>Check the incoming SQS queue for notifications.</description>
     <schedule>every 1 minutes</schedule>
   </cron>
+  <cron>
+    <url>/check_fallbacks_job</url>
+    <description>Check active fallbacks for overpopulation.</description>
+    <schedule>every 60 minutes</schedule>
+  </cron>
 </cronentries>

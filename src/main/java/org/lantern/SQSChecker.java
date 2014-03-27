@@ -40,7 +40,7 @@ public class SQSChecker extends HttpServlet {
          * because they are shared with Python code (just grep for them in
          * the lantern_aws project source).
          */
-       if (msg.containsKey("fp-up-user")) {
+       if (msg.containsKey("fp-up-id")) {
            handleFallbackProxyUp(msg);
        } else if (msg.containsKey("fp-alarm")) {
            handleFallbackProxyAlarm(msg);
@@ -52,40 +52,26 @@ public class SQSChecker extends HttpServlet {
     }
 
     private void handleFallbackProxyUp(Map<String, Object> msg) {
-        String fallbackProxyUserId = (String)msg.get("fp-up-user");
-        if (fallbackProxyUserId == null) {
-            log.severe("fp-up with null fallbackProxyUserId.");
-            return;
-        }
-        String instanceId = (String)msg.get("fp-up-instance");
-        if (instanceId == null) {
-            log.severe(fallbackProxyUserId
-                       + " sent fp-up with no instance ID.");
+        String fallbackId = (String)msg.get("fp-up-id");
+        if (fallbackId == null) {
+            log.severe("fp-up with null fallbackId.");
             return;
         }
         String accessData = (String)msg.get("fp-up-access-data");
         if (accessData == null) {
-            log.severe(instanceId
+            log.severe(fallbackId
                        + " sent fp-up with no access data.");
             return;
         }
         String ip = (String)msg.get("fp-up-ip");
         if (ip == null) {
-            log.severe(instanceId
+            log.severe(fallbackId
                        + " sent fp-up with no ip.");
             return;
         }
-        String port = (String)msg.get("fp-up-port");
-        if (port == null) {
-            log.severe(instanceId
-                       + " sent fp-up with no port.");
-            return;
-        }
-        FallbackProxyLauncher.onFallbackProxyUp(fallbackProxyUserId,
-                                                instanceId,
+        FallbackProxyLauncher.onFallbackProxyUp(fallbackId,
                                                 accessData,
-                                                ip,
-                                                port);
+                                                ip);
     }
 
     private void handleFallbackProxyAlarm(Map<String, Object> sqs) {
@@ -109,7 +95,6 @@ public class SQSChecker extends HttpServlet {
                 mail.setText("instanceId: " + sqs.get("instance-id")
                              + "\nip address: " + sqs.get("ip")
                              + "\nport: " + sqs.get("port")
-                             + "\nrunning as user: " + sqs.get("user")
                              + "\ndetails: " + sqs.get("fp-alarm"));
                 Transport.send(mail);
                 log.info("Sent warning mail.");

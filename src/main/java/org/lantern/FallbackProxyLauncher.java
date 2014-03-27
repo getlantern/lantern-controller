@@ -1,11 +1,15 @@
 package org.lantern;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.lantern.data.Dao;
+import org.lantern.data.Dao.DbCall;
+import org.lantern.data.FallbackProxy;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
@@ -13,11 +17,11 @@ import org.lantern.loggly.LoggerFactory;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 
+import com.googlecode.objectify.Objectify;
+
 
 /**
- * Process authorized invites, launch fallback proxies as required, and match
- * invitees to such proxies.
- */
+ * Process authorized invites, split fallback proxies as required. */
 public class FallbackProxyLauncher {
 
     private static final transient Logger log =
@@ -25,17 +29,14 @@ public class FallbackProxyLauncher {
 
     public static int authorizeInvites(String[] ids) {
         int totalAuthorized = 0;
-        
         for (String id : ids) {
             String[] parsed = Invite.parseId(id);
             if (authorizeInvite(parsed[0], parsed[1])) {
                 totalAuthorized += 1;
             }
         }
-        
         return totalAuthorized;
     }
-    
     /**
      * Process invite authorization.
      *
@@ -58,126 +59,132 @@ public class FallbackProxyLauncher {
                                                     inviteeEmail,
                                                     Invite.Status.queued,
                                                     Invite.Status.authorized);
-        
         if (!statusUpdated) {
             log.info("Declining to authorize invite that is not currently queued");
             return false;
         }
-        return processAuthorizedInvite(inviterEmail, inviteeEmail);
-    }
-
-    public static boolean processAuthorizedInvite(String inviterEmail,
-                                                  String inviteeEmail) {
-        inviterEmail = EmailAddressUtils.normalizedEmail(inviterEmail);
-        inviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
-        final Dao dao = new Dao();
-        String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
-        if (fpuid == null) {
-            log.warning("Old invite; we'll process this when the user gets"
-                        + " a fallbackProxyUserId");
-            return true;
-        }
-        String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
-        if (instanceId == null) {
-            log.info("Launching first proxy for " + fpuid);
-            launchNewProxy(fpuid);
-        } else if (instanceId.equals(
-                    LanternControllerConstants.FALLBACK_PROXY_LAUNCHING)) {
-            log.info("Proxy is still starting up; holding invite.");
-        } else if (incrementFallbackInvites(fpuid, 1)) {
-            log.info("Proxy is full; launching a new one.");
-        } else {
-            dao.createInvitee(inviteeEmail,
-                              inviterEmail,
-                              fpuid,
-                              instanceId);
-        }
+        processAuthorizedInvite(inviterEmail, inviteeEmail);
         return true;
     }
 
-    public static void onFallbackProxyUp(String fallbackProxyUserId,
-                                         String instanceId,
-                                         String accessData,
-                                         String ip,
-                                         String port) {
+    public static void processAuthorizedInvite(String inviterEmail,
+                                               String inviteeEmail) {
+        inviterEmail = EmailAddressUtils.normalizedEmail(inviterEmail);
+        inviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
         final Dao dao = new Dao();
-        dao.registerFallbackProxy(fallbackProxyUserId,
-                                  instanceId,
-                                  accessData,
-                                  ip,
-                                  port);
-        dao.setFallbackForNewInvitees(fallbackProxyUserId, instanceId);
-        final Collection<Invite> invites =
-            dao.getAuthorizedInvitesForFallbackProxyUserId(
-                    fallbackProxyUserId);
-        incrementFallbackInvites(fallbackProxyUserId,
-                                 invites.size());
-        // Currently we're only having one fallback per user.  In the
-        // future we may want to wait for all of a user's fallbacks to come up.
-        for (Invite invite : invites) {
-            dao.createInvitee(invite.getInvitee(),
-                              invite.getInviter(),
-                              fallbackProxyUserId,
-                              instanceId);
+        dao.createInvitee(inviteeEmail,
+                          inviterEmail);
+    }
+
+    public static void onFallbackProxyUp(final String fallbackId,
+                                         final String accessData,
+                                         final String ip) {
+        Dao dao = new Dao();
+        String parentId = dao.withTransaction(new DbCall<String>() {
+            @Override
+            public String call(Objectify ofy) {
+                FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
+                fp.setAccessData(accessData);
+                fp.setIp(ip);
+                fp.setStatus(FallbackProxy.Status.active);
+                ofy.put(fp);
+                return fp.getParent();
+            }
+        });
+        if (parentId == null) {
+            log.info("No parent to split.");
+        } else {
+            splitFallbackIfReady(parentId);
         }
     }
 
-    /** Increment number of invites for the currently filling fallback proxy
-     * for this user, launching a new one if necessary.
-     *
-     * @return whether a new proxy has started launching since making this
-     * call.
-     */
-    private static boolean incrementFallbackInvites(String userId,
-                                                    int increment) {
+    private static void splitFallbackIfReady(final String fallbackId) {
         Dao dao = new Dao();
-        Integer newInvites = dao.incrementFallbackInvites(userId,
-                                                          increment);
-        log.info("New invite count is " + newInvites);
-        if (newInvites == null) {
-            // Because of a race condition, someone managed to start a new proxy
-            // while we were trying to increment the invites for the old one.
-            return true;
-        // We start a new proxy as soon as we hit the maximum, without waiting
-        // to exceed it, because this simplifies the logic slightly and these
-        // numbers are gross approximations anyway.
-        } else if (newInvites >= dao.getMaxInvitesPerProxy()) {
-            launchNewProxy(userId);
-            return true;
-        } else {
-            return false;
+        int numFallbacksUp = dao.ofy().query(FallbackProxy.class)
+                                      .filter("parent", fallbackId)
+                                      .filter("status", FallbackProxy.Status.active)
+                                      .count();
+        if (numFallbacksUp < 2) {
+            log.info("Only " + numFallbacksUp + " fallbacks so far.  Not ready to split parent yet.");
+            return;
         }
+        log.info("Splitting fallback " + fallbackId);
+        // Transaction to ensure we only ever enqueue this once for this
+        // fallback.
+        dao.withTransaction(new DbCall<Void>() {
+            @Override
+            public Void call(Objectify ofy) {
+                FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
+                if (fp.getStatus() == FallbackProxy.Status.launchingSuccessors) {
+                    fp.setStatus(FallbackProxy.Status.splitting);
+                    ofy.put(fp);
+                    QueueFactory.getDefaultQueue().add(
+                        TaskOptions.Builder
+                           .withUrl(SplitFallbackTask.PATH)
+                           .param("fallback_id", fallbackId));
+                } else {
+                    log.warning("Fallback in unexpected state: " + fp.getStatus());
+                }
+                return null;
+            }
+        });
     }
 
     /**
-     * Order a new fallback proxy to be launched.
+     * Create a fallback proxy entry in the datastore.
      *
-     * The proxy will run as the given user.
+     * The serial number is a hint; a new one may be created in the unlikely
+     * event that another proxy with the same one already exists.
      */
-    private static void launchNewProxy(String userId) {
+    public static String createProxy(final String parentId,
+                                     final int serialNo) {
         Dao dao = new Dao();
-        String refreshToken = dao.findUser(userId).getRefreshToken();
-        if (refreshToken == null) {
-            refreshToken = "__bogus__";
+        final String family;
+        if (parentId == null) {
+            family = null;
+        } else {
+            FallbackProxy parent
+                = dao.ofy().find(FallbackProxy.class, parentId);
+            family = parent == null ? null : parent.getFamily();
         }
-        String launching = LanternControllerConstants.FALLBACK_PROXY_LAUNCHING;
-        if (launching.equals(dao.setFallbackForNewInvitees(
-                        userId, launching))) {
-            log.warning("We were already launching a proxy for this user.");
-            return;
-        }
-        Integer serial = dao.incrementFallbackSerialNumber(userId);
-        // Grammar be damned :).
-        log.info("Ordering launch of " + serial + "th fallback proxy for "
-                 + userId);
+        final String familyStr = family == null ? "" : family + "-";
+        final String date = new SimpleDateFormat("yyyy-MM-dd").format(
+                Calendar.getInstance().getTime());
+        return dao.withTransaction(new DbCall<String>() {
+            @Override
+            public String call(Objectify ofy) {
+                for (int serial = serialNo;
+                     /* run until return */;
+                     serial += 2 /* maintain parity */) {
+                    // DRY: The "fp-" prefix is important.  The lantern_aws
+                    // scripts assume that minion names match this.  I tried
+                    // maintaining that invariant purely in the lantern_aws
+                    // end, but that created a more annoying and error-prone
+                    // distinction between fallback id and minion name
+                    // ("fp-" + fallback_id).
+                    String id = "fp-" + familyStr + date + "-" + serial;
+                    FallbackProxy fp = ofy.find(FallbackProxy.class, id);
+                    if (fp != null) {
+                        continue;
+                    }
+                    log.info("Creating proxy: id=" + id
+                             + "; parentId=" + parentId
+                             + "; family=" + family);
+                    ofy.put(new FallbackProxy(id, parentId, family));
+                    return id;
+                }
+            }
+        });
+    }
+
+    public static void requestProxyLaunch(String fallbackId) {
         Map<String, Object> map = new HashMap<String, Object>();
-        /* These aren't in LanternConstants because they are not handled
+        /*
+         * This isn't in LanternConstants because they are not handled
          * by the client, but by a Python bot.
          * (salt/cloudmaster/cloudmaster.py)
          */
-        map.put("launch-fp-as", userId);
-        map.put("launch-refrtok", refreshToken);
-        map.put("launch-serial", serial);
+        map.put("launch-id", fallbackId);
         new SQSUtil().send(map);
     }
 }

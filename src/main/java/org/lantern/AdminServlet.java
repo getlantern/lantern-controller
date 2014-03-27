@@ -167,35 +167,6 @@ public class AdminServlet extends HttpServlet {
         }
     }
 
-    public void promoteFallbackProxyUser(
-            final HttpServletRequest request,
-            final HttpServletResponse response,
-            String[] pathComponents) {
-        try {
-            String userId = checkAndTrim(request, "user");
-            Dao dao = new Dao();
-            if (dao.findUser(userId) == null) {
-                throw new IOException("no such user: " + userId);
-            }
-            if (isFallbackProxyUser(dao, userId)) {
-                throw new IOException(
-                        userId + " is already a fallback proxy user.");
-            }
-            dao.makeFallbackProxyUser(userId);
-            LanternControllerUtils.populateOKResponse(
-                    response,
-                    "A proxy will run as " + userId
-                    + " next time they invite someone.");
-        } catch (IOException e) {
-            LanternControllerUtils.populateErrorResponse(
-                    response, e.getMessage());
-        }
-    }
-
-    private boolean isFallbackProxyUser(Dao dao, String userId) {
-        return userId.equals(dao.findUser(userId).getFallbackProxyUserId());
-    }
-
     public void setInvitesPaused(final HttpServletRequest request,
             final HttpServletResponse response, String[] pathComponents) {
 

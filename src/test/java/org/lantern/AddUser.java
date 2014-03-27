@@ -58,11 +58,8 @@ public class AddUser {
             
             // SPECIFY THE INVITER HERE!
             final String inviterEmail = "aranhoide@gmail.com";
-            final String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
-            final String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
-            
             // SPECIFY THE INVITEE HERE!!
-            dao.createInvitee("myles@getlantern.org", inviterEmail, fpuid, instanceId);
+            dao.createInvitee("myles@getlantern.org", inviterEmail);
             
         } finally {
             installer.uninstall();
