@@ -1,5 +1,7 @@
 package org.lantern;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,10 +23,6 @@ import com.googlecode.objectify.Objectify;
 /**
  * Process authorized invites, split fallback proxies as required. */
 public class FallbackProxyLauncher {
-
-    //XXX: "launcher" is a misnomer now that launching itself is performed
-    // in a task queue elsewhere.  A more thorough refactoring is probably
-    // needed anyway, so I won't mess with this just yet. - aranhoide
 
     private static final transient Logger log =
         LoggerFactory.getLogger(FallbackProxyLauncher.class);
@@ -74,12 +72,8 @@ public class FallbackProxyLauncher {
         inviterEmail = EmailAddressUtils.normalizedEmail(inviterEmail);
         inviteeEmail = EmailAddressUtils.normalizedEmail(inviteeEmail);
         final Dao dao = new Dao();
-        dao.findUser(inviterEmail).getFallbackProxy().getName();
         dao.createInvitee(inviteeEmail,
-                          inviterEmail,
-                          dao.findUser(inviterEmail)
-                             .getFallbackProxy()
-                             .getName());
+                          inviterEmail);
     }
 
     public static void onFallbackProxyUp(final String fallbackId,
@@ -97,7 +91,11 @@ public class FallbackProxyLauncher {
                 return fp.getParent();
             }
         });
-        splitFallbackIfReady(parentId);
+        if (parentId == null) {
+            log.info("No parent to split.");
+        } else {
+            splitFallbackIfReady(parentId);
+        }
     }
 
     private static void splitFallbackIfReady(final String fallbackId) {
@@ -107,8 +105,10 @@ public class FallbackProxyLauncher {
                                       .filter("status", FallbackProxy.Status.active)
                                       .count();
         if (numFallbacksUp < 2) {
+            log.info("Only " + numFallbacksUp + " fallbacks so far.  Not ready to split parent yet.");
             return;
         }
+        log.info("Splitting fallback " + fallbackId);
         // Transaction to ensure we only ever enqueue this once for this
         // fallback.
         dao.withTransaction(new DbCall<Void>() {
@@ -130,4 +130,61 @@ public class FallbackProxyLauncher {
         });
     }
 
+    /**
+     * Create a fallback proxy entry in the datastore.
+     *
+     * The serial number is a hint; a new one may be created in the unlikely
+     * event that another proxy with the same one already exists.
+     */
+    public static String createProxy(final String parentId,
+                                     final int serialNo) {
+        Dao dao = new Dao();
+        final String family;
+        if (parentId == null) {
+            family = null;
+        } else {
+            FallbackProxy parent
+                = dao.ofy().find(FallbackProxy.class, parentId);
+            family = parent == null ? null : parent.getFamily();
+        }
+        final String familyStr = family == null ? "" : family + "-";
+        final String date = new SimpleDateFormat("yyyy-MM-dd").format(
+                Calendar.getInstance().getTime());
+        return dao.withTransaction(new DbCall<String>() {
+            @Override
+            public String call(Objectify ofy) {
+                for (int serial = serialNo;
+                     /* run until return */;
+                     serial += 2 /* maintain parity */) {
+                    // DRY: The "fp-" prefix is important.  The lantern_aws
+                    // scripts assume that minion names match this.  I tried
+                    // maintaining that invariant purely in the lantern_aws
+                    // end, but that created a more annoying and error-prone
+                    // distinction between fallback id and minion name
+                    // ("fp-" + fallback_id).
+                    String id = "fp-" + familyStr + date + "-" + serial;
+                    FallbackProxy fp = ofy.find(FallbackProxy.class, id);
+                    if (fp != null) {
+                        continue;
+                    }
+                    log.info("Creating proxy: id=" + id
+                             + "; parentId=" + parentId
+                             + "; family=" + family);
+                    ofy.put(new FallbackProxy(id, parentId, family));
+                    return id;
+                }
+            }
+        });
+    }
+
+    public static void requestProxyLaunch(String fallbackId) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        /*
+         * This isn't in LanternConstants because they are not handled
+         * by the client, but by a Python bot.
+         * (salt/cloudmaster/cloudmaster.py)
+         */
+        map.put("launch-id", fallbackId);
+        new SQSUtil().send(map);
+    }
 }

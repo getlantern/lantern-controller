@@ -11,7 +11,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import org.lantern.data.Dao;
-import org.lantern.data.LanternInstance;
+import org.lantern.data.FallbackProxy;
 import org.lantern.data.LanternUser;
 
 
@@ -119,10 +119,10 @@ public class S3Config {
         if (user == null) {
             throw new RuntimeException("User doesn't exist");
         }
-        if (user.getFallbackProxy() == null) {
+        if (user.getFallback() == null) {
             throw new RuntimeException("No fallback proxy");
         }
-        LanternInstance fallback = dao.ofy().get(user.getFallbackProxy());
+        FallbackProxy fallback = dao.ofy().get(user.getFallback());
         if (fallback == null) {
            throw new RuntimeException("Fallback not found");
         }

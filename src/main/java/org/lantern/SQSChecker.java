@@ -40,7 +40,7 @@ public class SQSChecker extends HttpServlet {
          * because they are shared with Python code (just grep for them in
          * the lantern_aws project source).
          */
-       if (msg.containsKey("fp-up-user")) {
+       if (msg.containsKey("fp-up-id")) {
            handleFallbackProxyUp(msg);
        } else if (msg.containsKey("fp-alarm")) {
            handleFallbackProxyAlarm(msg);
@@ -95,7 +95,6 @@ public class SQSChecker extends HttpServlet {
                 mail.setText("instanceId: " + sqs.get("instance-id")
                              + "\nip address: " + sqs.get("ip")
                              + "\nport: " + sqs.get("port")
-                             + "\nrunning as user: " + sqs.get("user")
                              + "\ndetails: " + sqs.get("fp-alarm"));
                 Transport.send(mail);
                 log.info("Sent warning mail.");

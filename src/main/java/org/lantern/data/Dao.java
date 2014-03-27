@@ -103,6 +103,7 @@ public class Dao extends DAOBase {
         ObjectifyService.register(LatestLanternVersion.class);
         ObjectifyService.register(LanternFriend.class);
         ObjectifyService.register(FriendingQuota.class);
+        ObjectifyService.register(FallbackProxy.class);
 
         // Precreate all counters, if necessary
         ArrayList<String> counters = new ArrayList<String>();
@@ -454,8 +455,7 @@ public class Dao extends DAOBase {
     }
 
     public LanternUser createInvitee(final String inviteeEmail,
-                                     final String inviterId,
-                                     final String fallbackId) {
+                                     final String inviterId) {
         // Although the friends code should have made sure to normalize the
         // inviteeEmail, let's double-check this just to be on the safe side.
         final String normalizedInviteeEmail
@@ -476,8 +476,7 @@ public class Dao extends DAOBase {
                     invitee = new LanternUser(normalizedInviteeEmail);
                     invitee.setDegree(inviter.getDegree() + 1);
                     invitee.setSponsor(inviter.getId());
-                    invitee.setFallback(Key.create(FallbackProxy.class,
-                                                   fallbackId));
+                    invitee.setFallback(inviter.getFallback());
                     // Not bothering with a constant because any non-null value
                     // will do.
                     log.info("Successfully committed attempt to add invitee.");

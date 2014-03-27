@@ -58,9 +58,8 @@ public class AddUser {
             
             // SPECIFY THE INVITER HERE!
             final String inviterEmail = "aranhoide@gmail.com";
-            final String fpid = dao.findUser(inviterEmail).getFallbackProxy().getName();            
             // SPECIFY THE INVITEE HERE!!
-            dao.createInvitee("myles@getlantern.org", inviterEmail, fpid);
+            dao.createInvitee("myles@getlantern.org", inviterEmail);
             
         } finally {
             installer.uninstall();

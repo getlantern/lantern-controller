@@ -20,9 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.data.Dao;
 import org.lantern.data.Dao.DbCall;
+import org.lantern.data.FallbackProxy;
 import org.lantern.data.FriendingQuota;
 import org.lantern.data.Invite;
 import org.lantern.data.LanternFriend;
+import org.lantern.data.LanternInstance;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 
@@ -51,6 +53,66 @@ public class MaintenanceTask extends HttpServlet {
             log.severe("" + e);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private void checkFallbacks() {
+        QueueFactory.getDefaultQueue().add(
+                TaskOptions.Builder
+                .withUrl("/check_fallbacks_job"));
+    }
+
+    private void portUsers() {
+        Objectify ofy = new Dao().ofy();
+        for (LanternUser user : ofy.query(LanternUser.class).list()) {
+            Key<LanternInstance> k = user.getFallbackProxy();
+            if (k == null) {
+                log.severe("Null key for " + user.getId());
+                continue;
+            }
+            user.setFallback(Key.create(FallbackProxy.class,
+                                        k.getName()));
+            ofy.put(user);
+        }
+    }
+
+    private void launchFallback(String fallbackId) {
+        if (StringUtils.isBlank(fallbackId)) {
+            FallbackProxyLauncher.createProxy(null, 1);
+        } else {
+            FallbackProxyLauncher.requestProxyLaunch(fallbackId.trim());
+        }
+    }
+
+    private void portFallbacks() {
+        Dao dao = new Dao();
+        Objectify ofy = dao.ofy();
+        for (LanternInstance instance : ofy.query(LanternInstance.class)
+                                           .filter("isFallbackProxy", true)
+                                           .list()) {
+            String fallbackId = instance.getId();
+            // Not filtering this in the query because I'm afraid that may filter out
+            // instances that don't have the attribute at all.
+            if (instance.isFallbackProxyShutdown()) {
+                log.info("Skipping shut down fallback: " + fallbackId);
+                continue;
+            }
+            FallbackProxy fp = ofy.find(FallbackProxy.class, fallbackId);
+            if (fp != null) {
+                log.info("Skipping already existing fallback: " + fallbackId);
+                continue;
+            }
+            log.info("Adding new fallback: " + fallbackId);
+            fp = new FallbackProxy(fallbackId, null, null);
+            String hostAndPort = instance.getListenHostAndPort();
+            if (hostAndPort != null) {
+                String ip = hostAndPort.split(":")[0];
+                fp.setIp(ip);
+            }
+            fp.setAccessData(instance.getAccessData());
+            fp.addNote("Ported from a LanternInstance.");
+            fp.setStatus(FallbackProxy.Status.active);
+            ofy.put(fp);
+        }
     }
 
     private void normalizeFriendEmails() {

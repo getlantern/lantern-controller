@@ -2,6 +2,8 @@ package org.lantern.data;
 
 import javax.persistence.Id;
 
+import com.googlecode.objectify.annotation.Unindexed;
+
 
 public class FallbackProxy {
 
@@ -24,6 +26,7 @@ public class FallbackProxy {
      *
      * E.g. we may use this to why this fallback was retired.
      */
+    @Unindexed
     private String notes;
 
     public enum Status {
