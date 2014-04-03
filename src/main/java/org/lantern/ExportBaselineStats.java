@@ -54,7 +54,7 @@ public class ExportBaselineStats extends HttpServlet {
     @Override
     public void doPost(final HttpServletRequest request,
             final HttpServletResponse response) throws ServletException {
-        final String userId = request.getParameter("input");
+        final String userId = request.getParameter("userId");
         LOGGER.info("Exporting baseline stats for user: " + userId);
         Dao dao = new Dao();
         LanternUser user = dao.withTransaction(new DbCall<LanternUser>() {
