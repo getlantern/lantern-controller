@@ -58,6 +58,10 @@ public class LanternControllerConstants {
     public static final String TEAM_EMAIL = "team@getlantern.org";
     public static final String ADMIN_EMAIL = "admin@getlantern.org";
     public static final String NOTIFY_ON_MAX_USERS = "admin@getlantern.org";
+    public static final String FALLBACK_ALARM_FROM_EMAIL
+        = "team@getlantern.org";
+    public static final String FALLBACK_ALARM_TO_EMAIL
+        = "fallback-alarms@getlantern.org";
     public static final String MAILCHIMP_LIST_ID = "cdc1af284e";
     public static final String MAILCHIP_API_URL_BASE = "http://<dc>.api.mailchimp.com/1.3/?method=<method>";
     public static final double MAX_MAX_FRIENDS = 20;

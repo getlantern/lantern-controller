@@ -1,5 +1,6 @@
 package org.lantern;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -90,30 +91,21 @@ public class SQSChecker extends HttpServlet {
 
     private void handleFallbackProxyAlarm(Map<String, Object> sqs) {
         String key = UUID.randomUUID().toString();
-        String summary = "ALARM from " + sqs.get("instance-id")
-                          + "(" + sqs.get("ip") + "): "
-                          + sqs.get("fp-alarm");
+        /* Forward compatibility: we're changing this soon. */
+        String fallbackId = (String)sqs.get("fallback-id");
+        if (fallbackId == null) {
+            fallbackId = (String)sqs.get("instance-id");
+        }
+        String ip = (String)sqs.get("ip");
+        String details = (String)sqs.get("fp-alarm");
+        String summary = "ALARM from " + fallbackId
+                          + "(" + ip + "): "
+                          + details;
         new Dao().logPermanently(key, summary);
         if ((Boolean)sqs.get("send-email")) {
             try {
-                Message mail = new MimeMessage(
-                        Session.getDefaultInstance(new Properties(), null));
-                //XXX: create a user for this.
-                mail.setFrom(new InternetAddress("aranhoide@gmail.com",
-                                                "Fallback Proxy Alarms"));
-                //XXX: create a google group to receive these.
-                mail.addRecipient(Message.RecipientType.TO,
-                        new InternetAddress("aranhoide@gmail.com",
-                                            "Fallback Proxy Alarms"));
-                mail.setSubject(summary);
-                mail.setText("instanceId: " + sqs.get("instance-id")
-                             + "\nip address: " + sqs.get("ip")
-                             + "\nport: " + sqs.get("port")
-                             + "\nrunning as user: " + sqs.get("user")
-                             + "\ndetails: " + sqs.get("fp-alarm"));
-                Transport.send(mail);
-                log.info("Sent warning mail.");
-            } catch (Exception e) {
+                MandrillEmailer.sendFallbackAlarm(fallbackId, ip, details);
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         } else {

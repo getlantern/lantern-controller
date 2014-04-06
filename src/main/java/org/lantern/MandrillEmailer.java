@@ -139,6 +139,27 @@ public class MandrillEmailer {
                                   m));
     }
 
+    public static void sendFallbackAlarm(String fallbackId,
+                                         String ip,
+                                         String details)
+            throws IOException {
+        log.info("Sending ALARM from " + fallbackId);
+        Map<String, String> m = new HashMap<String,String>();
+        m.put("FALLBACKID", fallbackId);
+        m.put("IP", ip);
+        m.put("DETAILS", details);
+        sendEmail(
+            jsonToSendEmail(
+                "alarm",
+                "ALARM from " + fallbackId,
+                null,
+                LanternControllerConstants.FALLBACK_ALARM_FROM_EMAIL,
+                LanternControllerConstants.FALLBACK_ALARM_TO_EMAIL,
+                null,
+                "aranhoide@gmail.com",
+                m));
+    }
+
     private static void populateInstallerUrls(Map<String, String> m,
                                               String configFolder) {
         //DRY: upload_wrappers.py at lantern_aws.
