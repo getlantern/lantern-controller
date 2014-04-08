@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
     <application>lanternctrl1-2</application>
-    <version>319</version>
+    <version>320</version>
     <threadsafe>true</threadsafe>
     <!--<precompilation-enabled>false</precompilation-enabled>-->
     
