@@ -10,9 +10,6 @@ import org.lantern.data.Invite;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
-
 
 /**
  * Process authorized invites, launch fallback proxies as required, and match

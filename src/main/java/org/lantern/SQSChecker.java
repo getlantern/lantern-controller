@@ -16,6 +16,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+
 import org.lantern.data.Dao;
 import org.lantern.loggly.LoggerFactory;
 
@@ -47,9 +50,18 @@ public class SQSChecker extends HttpServlet {
            handleFallbackProxyAlarm(msg);
        } else if (msg.containsKey("wrappers-uploaded-for")) {
            handleWrappersUploaded(msg);
+       } else if (msg.containsKey("port-users")) {
+           portUsers(msg);
        } else {
            log.severe("I don't understand this message: " + msg);
-        }
+       }
+    }
+
+    private void portUsers(Map<String, Object> msg) {
+        QueueFactory.getDefaultQueue().add(
+            TaskOptions.Builder
+               .withUrl(PortUsersTask.PATH)
+               .param(PortUsersTask.ARGS, (String)msg.get("port-users")));
     }
 
     private void handleFallbackProxyUp(Map<String, Object> msg) {
