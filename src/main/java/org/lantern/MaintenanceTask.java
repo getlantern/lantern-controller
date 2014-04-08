@@ -45,12 +45,24 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            log.info("Maintenance tasks are disabled currently.");
+            //log.info("Maintenance tasks are disabled currently.");
+            launchOneHundredFallbacks();
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private void launchOneHundredFallbacks() {
+        Objectify ofy = new Dao().ofy();
+        for (int i=0; i<100; i++) {
+            String fpuid = "from-old-controller-" + i + "@getlantern.org";
+            LanternUser u = new LanternUser(fpuid);
+            u.setFallbackProxyUserId(fpuid);
+            ofy.put(u);
+            FallbackProxyLauncher.launchNewProxy(fpuid);
+        }
     }
 
     private void normalizeFriendEmails() {

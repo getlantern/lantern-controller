@@ -154,7 +154,7 @@ public class FallbackProxyLauncher {
      *
      * The proxy will run as the given user.
      */
-    private static void launchNewProxy(String userId) {
+    public static void launchNewProxy(String userId) {
         Dao dao = new Dao();
         String refreshToken = dao.findUser(userId).getRefreshToken();
         if (refreshToken == null) {
