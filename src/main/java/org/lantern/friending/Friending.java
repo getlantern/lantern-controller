@@ -292,7 +292,7 @@ public class Friending {
      */
     private static FriendingQuota doGetOrCreateQuota(Objectify ofy,
             String userEmail) {
-        return doGetOrCreateQuota(ofy, userEmail, false);
+        return doGetOrCreateQuota(ofy, userEmail, null);
     }
     
     /**
@@ -300,13 +300,13 @@ public class Friending {
      * 
      * @param ofy
      * @param userEmail
-     * @param recalculate - if true, the quota will be updated to reflect the
+     * @param degree - if specified, the quota will be updated to reflect the
      * higher of its current value or the calculated value based on
-     * {@link #maxFriendsForDegree(int)}
+     * {@link #maxFriendsForDegree(int)} using this degree
      * @return
      */
     private static FriendingQuota doGetOrCreateQuota(Objectify ofy,
-            String userEmail, boolean recalculate) {
+            String userEmail, Integer degree) {
         Key<FriendingQuota> quotaKey =
                 Key.create(FriendingQuota.class, userEmail);
         FriendingQuota quota = ofy.find(quotaKey);
@@ -320,13 +320,12 @@ public class Friending {
             int maxFriends = 0;
             if (user.getGeneration() >= 1) {
                 // Gen 1 and over users get some allowed friending ops
-                maxFriends = maxFriendsForDegree(user.getDegree());
+                maxFriends = maxFriendsForDegree(degree != null ? degree : user.getDegree());
             }
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
-        } else if (recalculate) {
-            LanternUser user = ofy.find(LanternUser.class, userEmail);
-            int maxFriends = maxFriendsForDegree(user.getDegree());
+        } else if (degree != null) {
+            int maxFriends = maxFriendsForDegree(degree);
             if (maxFriends > quota.getMaxAllowed()) {
                 log.info(String
                         .format("Calculated quota for %1$s is higher than current, increasing to %2$s",
@@ -335,7 +334,7 @@ public class Friending {
                 ofy.put(quota);
             } else {
                 log.info(String
-                        .format("Existing quota for %1$s is high enough, leaving alone"));
+                        .format("Existing quota for %1$s is high enough, leaving alone", userEmail));
             }
         }
         return quota;
@@ -346,9 +345,10 @@ public class Friending {
      * 
      * @param ofy
      * @param userEmail
+     * @param degree
      */
-    public static void recalculateQuota(Objectify ofy, String userEmail) {
-        doGetOrCreateQuota(ofy, userEmail, true);
+    public static void recalculateQuota(Objectify ofy, String userEmail, int degree) {
+        doGetOrCreateQuota(ofy, userEmail, degree);
     }
 
     /**

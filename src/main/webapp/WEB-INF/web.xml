@@ -125,8 +125,18 @@
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>exportBaselineStats</servlet-name>
-    <url-pattern>/exportBaselineStats</url-pattern>
+    <servlet-name>increaseUntrustedInvites</servlet-name>
+    <url-pattern>/increaseUntrustedInvites</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>recalculateFriendingQuota</servlet-name>
+    <servlet-class>org.lantern.RecalculateFriendingQuota</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>recalculateFriendingQuota</servlet-name>
+    <url-pattern>/recalculateFriendingQuota</url-pattern>
   </servlet-mapping>
 
   <servlet>

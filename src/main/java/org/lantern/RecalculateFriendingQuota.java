@@ -16,14 +16,16 @@ import org.lantern.loggly.LoggerFactory;
 import com.googlecode.objectify.Objectify;
 
 /**
- * This task increases the invites for the untrusted user identified by the
- * param userId, decreasing that user's degree by the param degreeDelta.
+ * This task recalculates a user's friending quota based on their current
+ * degree and the current formula for determining max friends.  If the user
+ * already has a higher quota than what is determined by the formula, the
+ * existing quota is left alone.
  */
 @SuppressWarnings("serial")
-public class IncreaseUntrustedInvites extends HttpServlet {
+public class RecalculateFriendingQuota extends HttpServlet {
 
     private static final transient Logger LOGGER = LoggerFactory
-            .getLogger(IncreaseUntrustedInvites.class);
+            .getLogger(RecalculateFriendingQuota.class);
     
     public static final String USER_ID = "userId";
     public static final String DEGREE_DELTA = "degreeDelta";
@@ -32,17 +34,13 @@ public class IncreaseUntrustedInvites extends HttpServlet {
     public void doPost(final HttpServletRequest request,
             final HttpServletResponse response) throws ServletException {
         final String userId = request.getParameter(USER_ID);
-        final int degreeDelta = Integer.parseInt(request.getParameter(DEGREE_DELTA));
-        LOGGER.info("Increasing invites for user: " + userId);
+        LOGGER.info("Recalculating friending quota for user: " + userId);
         Dao dao = new Dao();
         dao.withTransaction(new DbCall<Void>() {
             @Override
             public Void call(Objectify ofy) {
                 LanternUser user = ofy.find(LanternUser.class, userId);
-                int newDegree = Math.max(1, user.getDegree() - degreeDelta);
-                user.setDegree(newDegree);
-                ofy.put(user);
-                Friending.recalculateQuota(ofy, userId, newDegree);
+                Friending.recalculateQuota(ofy, userId, user.getDegree());
                 return null;
             }
         });

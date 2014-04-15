@@ -105,7 +105,7 @@ cleared since the last run (e.g. for testing).</p>
 <br/>
 <br/>
 
-<h2>Increase Friending Quota</h2>
+<h2>Increase Untrusted Invites</h2>
 <p>A bunch of users were invited at degrees exceeding 1000, which resulted in
 them not having any invites.  Push the button below to find all users at degree
 over 1000 and increase their friending quota.  This is done by:</p>
@@ -115,9 +115,22 @@ over 1000 and increase their friending quota.  This is done by:</p>
 <li>Recalculating their quota based on their new degree</li>
 </ol>
 
-<form method="POST" action="/admin/post/increasingFriendingQuota">
+<form method="POST" action="/admin/post/increaseUntrustedInvites">
     <%= AdminServlet.getCsrfTag() %>
-    <input type="submit" value="Increase Friending Quota" />
+    <input type="submit" value="Increase Untrusted Invites" />
+</form>
+<br/>
+<br/>
+
+<h2>Recalculate Friending Quotas</h2>
+<p>Push the button below to recalculate the friending quota for all users in the
+system based on their current degree and the current formula for calculating
+friending quotas.  If the user's existing quota is higher than the newly
+calculated value, the existing quota is left alone.</p>
+
+<form method="POST" action="/admin/post/recalculateFriendingQuotas">
+    <%= AdminServlet.getCsrfTag() %>
+    <input type="submit" value="Recalculate Friending Quotas" />
 </form>
 <br/>
 <br/>
