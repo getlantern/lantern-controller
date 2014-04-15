@@ -292,6 +292,21 @@ public class Friending {
      */
     private static FriendingQuota doGetOrCreateQuota(Objectify ofy,
             String userEmail) {
+        return doGetOrCreateQuota(ofy, userEmail, false);
+    }
+    
+    /**
+     * Gets or creates a FriendingQuota for the given userEmail.
+     * 
+     * @param ofy
+     * @param userEmail
+     * @param recalculate - if true, the quota will be updated to reflect the
+     * higher of its current value or the calculated value based on
+     * {@link #maxFriendsForDegree(int)}
+     * @return
+     */
+    private static FriendingQuota doGetOrCreateQuota(Objectify ofy,
+            String userEmail, boolean recalculate) {
         Key<FriendingQuota> quotaKey =
                 Key.create(FriendingQuota.class, userEmail);
         FriendingQuota quota = ofy.find(quotaKey);
@@ -309,8 +324,31 @@ public class Friending {
             }
             quota = new FriendingQuota(userEmail, maxFriends);
             ofy.put(quota);
+        } else if (recalculate) {
+            LanternUser user = ofy.find(LanternUser.class, userEmail);
+            int maxFriends = maxFriendsForDegree(user.getDegree());
+            if (maxFriends > quota.getMaxAllowed()) {
+                log.info(String
+                        .format("Calculated quota for %1$s is higher than current, increasing to %2$s",
+                                userEmail, maxFriends));
+                quota.setMaxAllowed(maxFriends);
+                ofy.put(quota);
+            } else {
+                log.info(String
+                        .format("Existing quota for %1$s is high enough, leaving alone"));
+            }
         }
         return quota;
+    }
+    
+    /**
+     * Recalculates the maxAllowed friending quota for a given userEmail.
+     * 
+     * @param ofy
+     * @param userEmail
+     */
+    public static void recalculateQuota(Objectify ofy, String userEmail) {
+        doGetOrCreateQuota(ofy, userEmail, true);
     }
 
     /**

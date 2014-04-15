@@ -105,6 +105,23 @@ cleared since the last run (e.g. for testing).</p>
 <br/>
 <br/>
 
+<h2>Increase Friending Quota</h2>
+<p>A bunch of users were invited at degrees exceeding 1000, which resulted in
+them not having any invites.  Push the button below to find all users at degree
+over 1000 and increase their friending quota.  This is done by:</p>
+
+<ol>
+<li>Lowering their degree by 999 (e.g. 1001 - 999 = 2)</li>
+<li>Recalculating their quota based on their new degree</li>
+</ol>
+
+<form method="POST" action="/admin/post/increasingFriendingQuota">
+    <%= AdminServlet.getCsrfTag() %>
+    <input type="submit" value="Increase Friending Quota" />
+</form>
+<br/>
+<br/>
+
 <h2>Trigger maintenance task</h2>
 <p>RemoteApi-like thingy.  Don't touch this unless you added it.  Disable it when done.</p>
 <form method="POST" action="/admin/post/triggerMaintenanceTask">

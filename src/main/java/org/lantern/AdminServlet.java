@@ -321,6 +321,26 @@ public class AdminServlet extends HttpServlet {
                 response,
                 "ExportBaselineStats task enqueued.  Watch logs for completion.");
     }
+    
+    public void increaseUntrustedInvites(HttpServletRequest request,
+            HttpServletResponse response,
+            String[] pathComponents) {
+        Dao dao = new Dao();
+        Queue defaultQueue = QueueFactory.getDefaultQueue();
+        for (LanternUser user : dao.getAllUsers()) {
+            if (user.getDegree() > 1000) {
+                log.info(String.format("Increasing invites for: %s", user.getId()));
+                defaultQueue.add(TaskOptions.Builder
+                        .withUrl("/increaseUntrustedInvites")
+                        .param(IncreaseUntrustedInvites.USER_ID, user.getId())
+                        .param(IncreaseUntrustedInvites.DEGREE_DELTA, "999"));
+                break;
+            }
+        }
+        LanternControllerUtils.populateOKResponse(
+                response,
+                "IncreaseUntrustedInvites task enqueued.  Watch logs for completion.");
+    }
 
     /**
      * Check that the request parameter is not blank, and return its value

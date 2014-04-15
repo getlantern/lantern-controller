@@ -118,6 +118,16 @@
     <servlet-name>exportBaselineStats</servlet-name>
     <url-pattern>/exportBaselineStats</url-pattern>
   </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>increaseUntrustedInvites</servlet-name>
+    <servlet-class>org.lantern.IncreaseUntrustedInvites</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>exportBaselineStats</servlet-name>
+    <url-pattern>/exportBaselineStats</url-pattern>
+  </servlet-mapping>
 
   <servlet>
     <servlet-name>subscribed</servlet-name>
