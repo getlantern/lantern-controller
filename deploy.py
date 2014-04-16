@@ -10,12 +10,33 @@ from subprocess import call
 
 here = os.path.dirname(sys.argv[0])
 
-shutil.copyfile(os.path.join(here,
-                             '..',
-                             'too-many-secrets',
-                             'lantern-controller',
-                             'org.lantern.secrets.properties'),
-                os.path.join(here, 'src', 'main', 'resources', 'org', 'lantern', 'secrets'))
+all_fallbacks_config_folder = os.path.join(here,
+                                           '..',
+                                           'too-many-secrets',
+                                           'allfallbacks_config_folder.txt')
+in_path = os.path.join(here,
+                       '..',
+                       'too-many-secrets',
+                       'lantern-controller',
+                       'org.lantern.secrets.properties')
+
+out_path = os.path.join(here,
+                        'src',
+                        'main',
+                        'resources',
+                        'org',
+                        'lantern',
+                        'secrets')
+
+# The fallbacks config folder is in a separate file that is not even
+# a properties file.  Since it's shared with client code it's not really
+# convenient to add it to the secrets file in the too-many-secrets repo, so we
+# add it here.
+secrets_body = file(in_path).read()
+secrets_body += ('\nallFallbacksConfigFolder='
+                 + file(all_fallbacks_config_folder).read())
+
+file(out_path, 'w').write(secrets_body)
 
 secret = base64.b64encode(os.urandom(64))
 file(os.path.join(here, 'src', 'main', 'resources', 'csrf-secret.properties'),

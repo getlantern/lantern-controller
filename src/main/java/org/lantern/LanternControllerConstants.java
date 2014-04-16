@@ -36,6 +36,8 @@ public class LanternControllerConstants {
     public static final String BASE_URL
         = String.format("https://%1$s.appspot.com", CONTROLLER_ID);
 
+    public static final FALLBACK_CHECKER_CONFIG_FOLDER;
+
     static {
         try {
             PropertiesConfiguration config
@@ -47,6 +49,7 @@ public class LanternControllerConstants {
                 = config.getString("defaultFallbackHostAndPort");
             AWS_CREDENTIALS = new BasicAWSCredentials(config.getString("awsAccessKeyId"),
                                                       config.getString("awsSecretKey"));
+            FALLBACK_CHECKER_CONFIG_FOLDER = config.getString("allFallbacksConfigFolder");
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
