@@ -36,7 +36,7 @@ public class LanternControllerConstants {
     public static final String BASE_URL
         = String.format("https://%1$s.appspot.com", CONTROLLER_ID);
 
-    public static final FALLBACK_CHECKER_CONFIG_FOLDER;
+    public static final String FALLBACK_CHECKER_CONFIG_FOLDER;
 
     static {
         try {
