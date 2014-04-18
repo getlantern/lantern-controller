@@ -230,6 +230,7 @@ public class AdminServlet extends HttpServlet {
                         response,
                         "Sending completed, all apparently OK.");
             } else {
+                to = EmailAddressUtils.normalizedEmail(to);
                 log.info("Sending only to " + to);
                 enqueueUpdateEmail(dao.findUser(to), version);
                 LanternControllerUtils.populateOKResponse(
@@ -269,7 +270,8 @@ public class AdminServlet extends HttpServlet {
                                         String[] pathComponents) {
         Dao dao = new Dao();
         try {
-            String inviter = checkAndTrim(request, "inviter");
+            String inviter = EmailAddressUtils.normalizedEmail(
+                                  checkAndTrim(request, "inviter"));
             String emails = checkAndTrim(request, "invitees");
             boolean doFriend = "add".equals(request.getParameter("friend"));
             for (String email : emails.split("\n")) {
