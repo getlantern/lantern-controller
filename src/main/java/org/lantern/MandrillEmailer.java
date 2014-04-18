@@ -139,7 +139,8 @@ public class MandrillEmailer {
                                   m));
     }
 
-    public static void sendFallbackAlarm(String fallbackId,
+    public static void sendFallbackAlarm(String subject,
+                                         String fallbackId,
                                          String ip,
                                          String details)
             throws IOException {
@@ -151,7 +152,7 @@ public class MandrillEmailer {
         sendEmail(
             jsonToSendEmail(
                 "alarm",
-                "ALARM from " + fallbackId,
+                subject,
                 null,
                 LanternControllerConstants.FALLBACK_ALARM_FROM_EMAIL,
                 LanternControllerConstants.FALLBACK_ALARM_TO_EMAIL,

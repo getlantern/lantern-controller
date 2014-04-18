@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 
@@ -114,9 +115,14 @@ public class SQSChecker extends HttpServlet {
                           + "(" + ip + "): "
                           + details;
         new Dao().logPermanently(key, summary);
+        String subject = (String)sqs.get("subject");
+        if (StringUtils.isEmpty(subject)) {
+            subject = "ALARM from " + fallbackId;
+        }
+
         if ((Boolean)sqs.get("send-email")) {
             try {
-                MandrillEmailer.sendFallbackAlarm(fallbackId, ip, details);
+                MandrillEmailer.sendFallbackAlarm(subject, fallbackId, ip, details);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
