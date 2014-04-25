@@ -22,7 +22,7 @@
     "PROMPT_SPONSOR": "To add even more capacity, you can also sponsor a <a href=\"https://github.com/getlantern/lantern/wiki/Lantern-Cloud-Servers\">Lantern Cloud Server</a>, which provides uninterrupted access to you and your network 24/7.",
     "PROMPT_BODY_NEED": "Lantern is designed to be faster, more blocking-resistant, and easier to use than other solutions. As open source software, itʼs free to run on your computer and always will be.",
     "NOTE_HEADER_BETA": "Lantern is still in beta testing.",
-    "NOTE_BODY_CLOSED": "Install Lantern and then sign in with the <b>same email address</b> this email was sent to to make sure you can sign in.",
+    "NOTE_BODY_CLOSED": "Install Lantern and then sign in with the <b>same email address</b> this email was sent to make sure you can sign in.",
     "DOWNLOAD_HEADER": "Your personalized download links:",
     "USAGE": "Usage",
     "FORUMS": "Forums",
