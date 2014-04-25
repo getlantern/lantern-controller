@@ -90,11 +90,18 @@ for lang in LANGS_DEFAULT:
 LANGS_BY_TMPL = {
     'new-trust-network-invite.tmpl': [  # XXX pull remaining translations when available
         LANG_EN_US,
-        #LANG_ZH_CN,
-        #LANG_ES,
-        #LANG_FR_CA,
-        #LANG_FR_FR,
-        #LANG_CA,
+        LANG_ZH_CN,
+        LANG_FA_IR,
+        LANG_ES,
+        LANG_FR_CA,
+        LANG_FR_FR,
+        LANG_PT_BR,
+        LANG_CA,
+        LANG_DE,
+        LANG_NB,
+        LANG_CS,
+        LANG_SK,
+        LANG_UK_UA,
         ]
     }
 
