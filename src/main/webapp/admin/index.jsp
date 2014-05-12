@@ -135,6 +135,22 @@ calculated value, the existing quota is left alone.</p>
 <br/>
 <br/>
 
+<h2>Change user's fallback</h2>
+<p>A new config.json will be uploaded for the user.</p>
+<form method="POST" action="/admin/post/changeUsersFallback">
+User: <input type="text" name="user" value="_pants@getlantern.org">
+<br/>
+Fallback Owner: <input type="text" name="fpuid" value="_pants@getlantern.org">
+<br/>
+Fallback: <input type="text" name="fallback" value="fp-fte3-at-getlantern-dot-org-4853-3-2014-5-10">
+<br/>
+<button type="submit" name="set" value="true">Change</button><br/>
+<%= AdminServlet.getCsrfTag() %>
+</form>
+
+<br/>
+<br/>
+
 <h2>Trigger maintenance task</h2>
 <p>RemoteApi-like thingy.  Don't touch this unless you added it.  Disable it when done.</p>
 <form method="POST" action="/admin/post/triggerMaintenanceTask">

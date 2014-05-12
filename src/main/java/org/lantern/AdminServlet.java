@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.lantern.data.Dao;
+import org.lantern.data.LanternInstance;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 import org.lantern.monitoring.Stats.Members;
@@ -207,6 +208,37 @@ public class AdminServlet extends HttpServlet {
 
         LanternControllerUtils.populateOKResponse(response, "Invites paused: " + paused);
 
+    }
+
+    public void changeUsersFallback(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    String[] pathComponents) {
+        Dao dao = new Dao();
+        try {
+            String userId = checkAndTrim(request, "user");
+            String fpuId = checkAndTrim(request, "fpuid");
+            String fallbackId = checkAndTrim(request, "fallback");
+            LanternInstance fallback = dao.findInstance(fpuId, fallbackId);
+            if (fallback == null) {
+                LanternControllerUtils.populateErrorResponse(
+                        response,
+                        "No such fallback.");
+                return;
+            }
+            LanternUser user = dao.findUser(userId);
+            if (user == null) {
+                LanternControllerUtils.populateErrorResponse(
+                        response,
+                        "No such user.");
+                return;
+            }
+            dao.moveToNewFallback(userId, fpuId, fallbackId);
+            LanternControllerUtils.populateOKResponse(response, "OK");
+        } catch (IOException e) {
+            LanternControllerUtils.populateErrorResponse(
+                    response,
+                    e.getMessage());
+        }
     }
 
     public void sendUpdateEmail(HttpServletRequest request,
