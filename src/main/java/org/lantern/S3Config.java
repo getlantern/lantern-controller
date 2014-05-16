@@ -34,8 +34,8 @@ public class S3Config {
     private static final String INSTALLER_BASE_URL = "https://s3.amazonaws.com";
     private static final String LANDING_PAGE_URL
         = "https://s3.amazonaws.com/lantern-installers/index.html";
-    private static final long ONE_HUNDREDISH_YEARS_IN_SECS
-        = 60 * 60 * 24 * 365 * 100;
+    private static final long TENISH_YEARS_IN_SECS
+        = 10 * 365 * 24 * 60 * 60;
 
     /**
      * http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
@@ -179,9 +179,10 @@ public class S3Config {
             = LanternControllerConstants.AWS_CREDENTIALS.getAWSAccessKeyId();
         String awsKey
             = LanternControllerConstants.AWS_CREDENTIALS.getAWSSecretKey();
-        java.util.Date now = new java.util.Date();
-        long nowSecs = Math.round(now.getTime() / 1000);
-        long expiration = nowSecs + ONE_HUNDREDISH_YEARS_IN_SECS;
+        long nowSecs = Math.round(System.currentTimeMillis() / 1000);
+        long expiration = nowSecs + TENISH_YEARS_IN_SECS;
+        log.info("expiration is: " + expiration);
+        log.info("one hundred years is: " + TENISH_YEARS_IN_SECS);
         String s3key = "newest" + arch + "." + extension;
         String resource = "/" + INSTALLER_BUCKET + "/" + s3key;
         String filename = "lantern-" + configFolder + "." + extension;
