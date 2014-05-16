@@ -181,12 +181,10 @@ public class S3Config {
             = LanternControllerConstants.AWS_CREDENTIALS.getAWSSecretKey();
         long nowSecs = Math.round(System.currentTimeMillis() / 1000);
         long expiration = nowSecs + TENISH_YEARS_IN_SECS;
-        log.info("expiration is: " + expiration);
-        log.info("one hundred years is: " + TENISH_YEARS_IN_SECS);
         String s3key = "newest" + arch + "." + extension;
         String resource = "/" + INSTALLER_BUCKET + "/" + s3key;
         String filename = "lantern-" + configFolder + "." + extension;
-        String reqParam = "response-content-disposition= 'attachment; filename=" + filename;
+        String reqParam = "response-content-disposition=attachment; filename=" + filename;
         try {
             String url = new SignedURL(awsId,
                                        awsKey,
