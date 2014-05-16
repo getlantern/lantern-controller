@@ -2,12 +2,18 @@ package org.lantern;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
 import java.security.SecureRandom;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import org.lantern.data.Dao;
@@ -201,6 +207,8 @@ public class S3Config {
         } catch (AmazonServiceException e) {
             throw new RuntimeException(e);
         } catch (AmazonClientException e) {
+            throw new RuntimeException(e);
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
