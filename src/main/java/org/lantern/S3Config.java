@@ -2,20 +2,14 @@ package org.lantern;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.logging.Logger;
-import java.util.Map;
-import java.util.HashMap;
 import java.security.SecureRandom;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import org.lantern.aws.SignedURL;
 import org.lantern.data.Dao;
 import org.lantern.data.LanternInstance;
 import org.lantern.data.LanternUser;
@@ -37,10 +31,11 @@ public class S3Config {
     private static final String CONFIG_BUCKET = "lantern-config";
     private static final String CONFIG_FILENAME = "config.json";
 
+    private static final String INSTALLER_BASE_URL = "https://s3.amazonaws.com";
     private static final String LANDING_PAGE_URL
         = "https://s3.amazonaws.com/lantern-installers/index.html";
-    private static final long ONE_HUNDREDISH_YEARS_IN_MS
-        = 1000 * 60 * 60 * 24 * 30 * 12 * 100;
+    private static final long ONE_HUNDREDISH_YEARS_IN_SECS
+        = 60 * 60 * 24 * 365 * 100;
 
     /**
      * http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
@@ -180,35 +175,29 @@ public class S3Config {
                                          String platform,
                                          String arch,
                                          String extension) {
-        AmazonS3Client s3client
-            = new AmazonS3Client(LanternControllerConstants.AWS_CREDENTIALS);
+        String awsId
+            = LanternControllerConstants.AWS_CREDENTIALS.getAWSAccessKeyId();
+        String awsKey
+            = LanternControllerConstants.AWS_CREDENTIALS.getAWSSecretKey();
+        java.util.Date now = new java.util.Date();
+        long nowSecs = Math.round(now.getTime() / 1000);
+        long expiration = nowSecs + ONE_HUNDREDISH_YEARS_IN_SECS;
+        String s3key = "newest" + arch + "." + extension;
+        String resource = "/" + INSTALLER_BUCKET + "/" + s3key;
+        String filename = "lantern-" + configFolder + "." + extension;
+        String reqParam = "response-content-disposition: attachment; filename=" + filename;
         try {
-            java.util.Date expiration = new java.util.Date();
-            long milliSeconds = expiration.getTime();
-            milliSeconds += ONE_HUNDREDISH_YEARS_IN_MS;
-            expiration.setTime(milliSeconds);
-
-            String key = "newest" + arch + "." + extension;
-            String filename = "lantern-" + configFolder + "." + extension;
-
-            GeneratePresignedUrlRequest req =
-                new GeneratePresignedUrlRequest(INSTALLER_BUCKET, key);
-            req.setMethod(HttpMethod.GET);
-            req.setExpiration(expiration);
-            req.addRequestParameter("response-content-disposition",
-                    "attachment; filename=" + filename);
-
-            URL url = s3client.generatePresignedUrl(req);
-            String encodedUrl = URLEncoder.encode(url.toString(), "UTF-8");
-
+            String url = new SignedURL(awsId,
+                                       awsKey,
+                                       INSTALLER_BASE_URL,
+                                       resource,
+                                       expiration).withQueryString(reqParam)
+                                                     .signed();
+            String encodedUrl = URLEncoder.encode(url, "UTF-8");
             return LANDING_PAGE_URL
                    + "?platform=" + platform
                    + "?installer=" + encodedUrl;
-        } catch (AmazonServiceException e) {
-            throw new RuntimeException(e);
-        } catch (AmazonClientException e) {
-            throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
