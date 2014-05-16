@@ -208,22 +208,6 @@ public class MaintenanceTask extends HttpServlet {
         }
     }
 
-    private void refreshAllWrappers() {
-        Dao dao = new Dao();
-        List<LanternUser> users = dao.ofy().query(LanternUser.class).list();
-        for (LanternUser user : users) {
-            try {
-                if (user.getConfigFolder() != null) {
-                    S3Config.enqueueWrapperUploadRequest(user.getId(),
-                                                         user.getConfigFolder());
-                }
-            } catch (Exception e) {
-                // This will happen for the root user.
-                log.warning("Exception trying to refresh config: " + e);
-            }
-        }
-    }
-
     private void checkConfigFolders(String input) {
 
         Dao dao = new Dao();

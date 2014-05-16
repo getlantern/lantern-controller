@@ -94,14 +94,9 @@ public class LanternUser implements Serializable {
     private int generation = 0;
 
     /**
-     * S3 path suffix of the wrappers and config files for this user.
+     * S3 path prefix of the config file for this user.
      */
     private String configFolder;
-
-    /**
-     * Whether the wrappers for this user have been reported as uploaded.
-     */
-    private boolean wrappersUploaded = false;
 
     public LanternUser() {
         super();
@@ -279,14 +274,6 @@ public class LanternUser implements Serializable {
 
     public String getConfigFolder() {
         return configFolder;
-    }
-
-    public void setWrappersUploaded() {
-        wrappersUploaded = true;
-    }
-
-    public boolean getWrappersUploaded() {
-        return wrappersUploaded;
     }
 
     public int incrementFallbackSerialNumber() {

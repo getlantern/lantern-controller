@@ -25,9 +25,16 @@ public class S3Config {
     /** Maximum time clients should wait to check S3 for config updates. */
     private static final int MAX_POLL_MINUTES = 15;
 
+    private static final String INSTALLER_BUCKET = "lantern-installers";
+
     /* DRY: grep lantern_aws. */
     private static final String CONFIG_BUCKET = "lantern-config";
     private static final String CONFIG_FILENAME = "config.json";
+
+    private static final String LANDING_PAGE_URL
+        = "https://s3.amazonaws.com/lantern-installers/index.html";
+    private static final long ONE_HUNDREDISH_YEARS_IN_MS
+        = 1000 * 60 * 60 * 24 * 30 * 12 * 100;
 
     /**
      * http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
@@ -35,17 +42,22 @@ public class S3Config {
      * "The name for a key is a sequence of Unicode characters whose UTF-8
      * encoding is at most 1024 bytes long."
      *
-     * We reserve some 64 characters for filenames (the longest named wrappers
-     * currently have ~40 chars).
+     * We further constrain the length so it will fit in a Windows filename,
+     * since we are storing this in the installer name.
+     *
+     * We reserve some space for a lantern- prefix and a file extension.
      */
-    private static final int CONFIG_FOLDER_LENGTH = 1024 - 64;
+    private static final int CONFIG_FOLDER_LENGTH = 255 - "lantern-.ext".length();
 
     /**
-     * For simplicity, and because the key space is absurdly vast anyway,
+     * For simplicity, and because the key space is big enough anyway,
      * let's just use characters that don't need to be percent encoded in
      * a URL path.
      *
      * http://tools.ietf.org/html/rfc3986#section-2.3
+     *
+     * As a happy coincidence, all supported OSs allow these characters in
+     * filenames.
      */
     private static final String CONFIG_FOLDER_ALPHABET
         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
@@ -71,10 +83,6 @@ public class S3Config {
 
     /**
      * Utility.
-     *
-     * *WARNING*: If you call this from RemoteApi make sure to hardcode
-     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
-     * initialized to null by default in a RemoteApi context.
      */
     public static void refreshAllConfigs() {
         for (LanternUser user : dao.ofy().query(LanternUser.class)) {
@@ -85,22 +93,6 @@ public class S3Config {
                 log.warning("Exception trying to refresh config: " + e);
             }
         }
-    }
-
-    /**
-     * Utility.
-     *
-     * *WARNING*: If you call this from RemoteApi make sure to hardcode
-     * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
-     * initialized to null by default in a RemoteApi context.
-     */
-    public static void refreshWrapper(String userId) {
-        log.info("Refreshing wrapper for " + userId);
-        LanternUser user = dao.findUser(userId);
-        if (user.getConfigFolder() == null) {
-            throw new RuntimeException("No config folder for user " + userId);
-        }
-        enqueueWrapperUploadRequest(user.getId(), user.getConfigFolder());
     }
 
     public static String generateConfigFolder() {
@@ -162,13 +154,54 @@ public class S3Config {
         }
     }
 
-    public static void enqueueWrapperUploadRequest(String userId,
-                                             String folderName) {
-        log.info("Requesting wrappers for " + userId);
-        Map<String, Object> m = new HashMap<String, Object>();
-        //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
-        m.put("upload-wrappers-id", userId);
-        m.put("upload-wrappers-to", folderName);
-        new SQSUtil().send(m);
+    public static String getLinux32DownloadUrl(String configFolder) {
+        return getDownloadUrl(configFolder, "linux32", "-32", "deb");
+    }
+
+    public static String getLinux64DownloadUrl(String configFolder) {
+        return getDownloadUrl(configFolder, "linux64", "-64", "deb");
+    }
+
+    public static String getWindowsDownloadUrl(String configFolder) {
+        return getDownloadUrl(configFolder, "windows", "", "exe");
+    }
+
+    public static String getOsxDownloadUrl(String configFolder) {
+        return getDownloadUrl(configFolder, "osx", "", "dmg");
+    }
+
+    private static String getDownloadUrl(String configFolder,
+                                         String platform,
+                                         String arch,
+                                         String extension) {
+        AmazonS3Client s3client
+            = new AmazonS3Client(LanternControllerConstants.AWS_CREDENTIALS);
+        try {
+            java.util.Date expiration = new java.util.Date();
+            long milliSeconds = expiration.getTime();
+            milliSeconds += ONE_HUNDREDISH_YEARS_IN_MS;
+            expiration.setTime(milliSeconds);
+
+            String key = "newest" + arch + "." + extension;
+            String filename = "lantern-" + configFolder + "." + extension;
+
+            GeneratePresignedUrlRequest req =
+                new GeneratePresignedUrlRequest(INSTALLER_BUCKET, key);
+            req.setMethod(HttpMethod.GET);
+            req.setExpiration(expiration);
+            req.addRequestParameter("response-content-disposition",
+                    "attachment; filename=" + filename);
+
+            URL url = s3client.generatePresignedUrl(req);
+            String encodedUrl = URLEncoder.encode(url.toString(), "UTF-8");
+
+            return LANDING_PAGE_URL
+                   + "?platform=" + platform
+                   + "?installer=" + encodedUrl;
+        } catch (AmazonServiceException e) {
+            throw new RuntimeException(e);
+        } catch (AmazonClientException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
