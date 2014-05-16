@@ -185,7 +185,7 @@ public class S3Config {
         String s3key = "newest" + arch + "." + extension;
         String resource = "/" + INSTALLER_BUCKET + "/" + s3key;
         String filename = "lantern-" + configFolder + "." + extension;
-        String reqParam = "response-content-disposition: attachment; filename=" + filename;
+        String reqParam = "response-content-disposition= 'attachment; filename=" + filename;
         try {
             String url = new SignedURL(awsId,
                                        awsKey,
@@ -196,7 +196,7 @@ public class S3Config {
             String encodedUrl = URLEncoder.encode(url, "UTF-8");
             return LANDING_PAGE_URL
                    + "?platform=" + platform
-                   + "?installer=" + encodedUrl;
+                   + "&installer=" + encodedUrl;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
