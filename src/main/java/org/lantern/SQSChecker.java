@@ -135,7 +135,6 @@ public class SQSChecker extends HttpServlet {
         String userId = (String)msg.get("wrappers-uploaded-for");
         log.info("Wrappers uploaded for " + userId);
         Dao dao = new Dao();
-        dao.setWrappersUploaded(userId);
         dao.sendInvitesTo(userId);
     }
 }

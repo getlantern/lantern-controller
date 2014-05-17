@@ -515,14 +515,14 @@ public class Dao extends DAOBase {
                 }
                 if (invitee.getConfigFolder() == null) {
                     invitee.setConfigFolder("pending");
-                    enqueueConfigAndWrappers(normalizedInviteeEmail);
+                    enqueueConfigAndInviteEmail(normalizedInviteeEmail);
                     anyChange = true;
                 }
                 if (anyChange) {
                     ofy.put(invitee);
                     ofy.getTxn().commit();
                 } else {
-                    log.info("Invitee exists and wrappers have been requested; nothing to do here.");
+                    log.info("Invitee exists and config upload has been requested; nothing to do here.");
                 }
                 return invitee;
             }
@@ -1066,10 +1066,6 @@ public class Dao extends DAOBase {
                 // more than one proxy running and nothing guarantees that
                 // this is the one to which we're currently directing new
                 // invitees.
-                //
-                // For example, if installer wrappers are rebuilt in the
-                // fallback proxies, they will report themselves as running
-                // again, in whatever order.
                 if (StringUtils.isBlank(old)
                     || old.equals(
                         LanternControllerConstants.FALLBACK_PROXY_LAUNCHING)) {
@@ -1300,22 +1296,6 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void setWrappersUploaded(final String userId) {
-        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
-            protected Void run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                user.setWrappersUploaded();
-                ofy.put(user);
-                ofy.getTxn().commit();
-                return null;
-            }
-        };
-        t.run();
-        if (t.failed()) {
-            log.severe("Error trying to set wrappersUploaded!");
-        }
-    }
-
     public void sendInvitesTo(final String userId) {
         log.info("Sending all authorized invites to " + userId);
         LanternUser invitee = findUser(userId);
@@ -1350,31 +1330,10 @@ public class Dao extends DAOBase {
         }
     }
 
-    public void retrofitConfigAndWrappers(final String userId) {
-        RetryingTransaction<Void> t = new RetryingTransaction<Void>() {
-            protected Void run(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                if (user.getConfigFolder() == null) {
-                    // Not bothering with a constant because any non-null value
-                    // will do.
-                    user.setConfigFolder("pending");
-                    enqueueConfigAndWrappers(userId);
-                    ofy.put(user);
-                    ofy.getTxn().commit();
-                }
-                return null;
-            }
-        };
-        t.run();
-        if (t.failed()) {
-            log.severe("Transaction failed!");
-        }
-    }
-
-    private void enqueueConfigAndWrappers(String userId) {
+    private void enqueueConfigAndInviteEmail(String userId) {
         QueueFactory.getDefaultQueue().add(
                 TaskOptions.Builder
-                .withUrl("/upload_config_and_request_wrappers")
+                .withUrl("/upload_config_and_send_invite")
                 .param("userId", userId));
     }
 
@@ -1415,7 +1374,7 @@ public class Dao extends DAOBase {
                     return null;
                 }
                 log.info("Moving user " + userId
-                        + " to fallback " + fallbackInstanceId);
+                         + " to fallback " + fallbackInstanceId);
                 user.setFallbackProxyUserId(fallbackProxyUserId);
                 user.setFallbackProxy(getInstanceKey(fallbackProxyUserId,
                                                      fallbackInstanceId));

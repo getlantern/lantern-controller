@@ -80,13 +80,13 @@
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>uploadConfigAndRequestWrappers</servlet-name>
-    <servlet-class>org.lantern.UploadConfigAndRequestWrappers</servlet-class>
+    <servlet-name>uploadConfigAndSendInvite</servlet-name>
+    <servlet-class>org.lantern.UploadConfigAndSendInvite</servlet-class>
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>uploadConfigAndRequestWrappers</servlet-name>
-    <url-pattern>/upload_config_and_request_wrappers</url-pattern>
+    <servlet-name>uploadConfigAndSendInvite</servlet-name>
+    <url-pattern>/upload_config_and_send_invite</url-pattern>
   </servlet-mapping>
 
   <servlet>
@@ -208,7 +208,7 @@
       <url-pattern>/admin/*</url-pattern>
       <url-pattern>/send_invite_task</url-pattern>
       <url-pattern>/port_users_task</url-pattern>
-      <url-pattern>/upload_config_and_request_wrappers</url-pattern>
+      <url-pattern>/upload_config_and_send_invite</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
       <url-pattern>/maintenance_task</url-pattern>
     </web-resource-collection>

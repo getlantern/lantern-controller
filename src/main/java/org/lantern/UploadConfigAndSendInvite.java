@@ -8,12 +8,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.lantern.data.Dao;
 
-@SuppressWarnings("serial")
-public class UploadConfigAndRequestWrappers extends HttpServlet {
 
+@SuppressWarnings("serial")
+public class UploadConfigAndSendInvite extends HttpServlet {
 
     private static final transient Logger log = Logger
-            .getLogger(UploadConfigAndRequestWrappers.class.getName());
+            .getLogger(UploadConfigAndSendInvite.class.getName());
 
     @Override
     public void doPost(final HttpServletRequest request,
@@ -29,8 +29,7 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         String config = S3Config.compileConfig(userId);
         log.info("Uploading config:\n" + config);
         S3Config.uploadConfig(configFolder, config);
-        log.info("Successfully uploaded; enquequing wrapper request...");
-        S3Config.enqueueWrapperUploadRequest(userId, configFolder);
+        dao.sendInvitesTo(userId);
         log.info("All done.");
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
