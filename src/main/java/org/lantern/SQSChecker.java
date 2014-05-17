@@ -49,6 +49,8 @@ public class SQSChecker extends HttpServlet {
            handleFallbackProxyUp(msg);
        } else if (msg.containsKey("fp-alarm")) {
            handleFallbackProxyAlarm(msg);
+       } else if (msg.containsKey("wrappers-uploaded-for")) {
+           handleWrappersUploaded(msg);
        } else if (msg.containsKey("port-users")) {
            portUsers(msg);
        } else {
@@ -127,5 +129,12 @@ public class SQSChecker extends HttpServlet {
         } else {
             log.info("Email not requested.");
         }
+    }
+
+    private void handleWrappersUploaded(Map<String, Object> msg) {
+        String userId = (String)msg.get("wrappers-uploaded-for");
+        log.info("Wrappers uploaded for " + userId);
+        Dao dao = new Dao();
+        dao.sendInvitesTo(userId);
     }
 }
