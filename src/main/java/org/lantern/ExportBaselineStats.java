@@ -17,6 +17,7 @@ import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 import org.lantern.monitoring.Stats.Counters;
 import org.lantern.monitoring.Stats.Members;
+import org.lantern.monitoring.Stats;
 import org.lantern.monitoring.StatshubAPI;
 
 import com.googlecode.objectify.Objectify;
@@ -56,29 +57,11 @@ public class ExportBaselineStats extends HttpServlet {
             final HttpServletResponse response) throws ServletException {
         final String userId = request.getParameter("userId");
         LOGGER.info("Exporting baseline stats for user: " + userId);
-        Dao dao = new Dao();
-        LanternUser user = dao.withTransaction(new DbCall<LanternUser>() {
-            @Override
-            public LanternUser call(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, userId);
-                if (user.initializeGuidIfNecessary()) {
-                    ofy.put(user);
-                }
-                return user;
-            }
-        });
+        LanternUser user = userWithGuid(userId);
 
-        // Pick the first available country, preferring censored
-        String countryToUse = "";
-        boolean isCensored = false;
-        for (String country : user.getCountryCodes()) {
-            countryToUse = "--".equals(country) ? countryToUse : country;
-            if (CENSORING_COUNTRIES.contains(countryToUse.toUpperCase())) {
-                isCensored = true;
-                break;
-            }
-        }
-
+        String countryToUse = countryForUser(user);
+        boolean isCensored = CENSORING_COUNTRIES.contains(countryToUse);
+        
         org.lantern.monitoring.Stats stats = new org.lantern.monitoring.Stats();
         if (user.isEverSignedIn()) {
             stats.setMember(Members.userOnlineEver, user.getGuid());
@@ -103,6 +86,36 @@ public class ExportBaselineStats extends HttpServlet {
             throw new ServletException(e);
         }
 
+    }
+    
+    public static LanternUser userWithGuid(final String userId) {
+        return new Dao().withTransaction(new DbCall<LanternUser>() {
+            @Override
+            public LanternUser call(Objectify ofy) {
+                LanternUser user = ofy.find(LanternUser.class, userId);
+                if (user != null && user.initializeGuidIfNecessary()) {
+                    ofy.put(user);
+                }
+                return user;
+            }
+        });
+    }
+    
+    /**
+     * Picks one of the user's countries, prefering censored ones.
+     * 
+     * @param user
+     * @return
+     */
+    public static String countryForUser(LanternUser user) {
+        String countryToUse = Stats.UNKNOWN_COUNTRY;
+        for (String country : user.getCountryCodes()) {
+            countryToUse = "--".equals(country) ? countryToUse : country;
+            if (CENSORING_COUNTRIES.contains(countryToUse.toUpperCase())) {
+                break;
+            }
+        }
+        return countryToUse;
     }
 
 }
