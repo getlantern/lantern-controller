@@ -77,9 +77,10 @@ public class SendInviteTask extends HttpServlet {
     private void recordInviteStats(final String inviterEmail) throws Exception {
         String inviterGuid = null;
         String country = Stats.UNKNOWN_COUNTRY;
-        if ("invite@getlantern.org".equals(inviterEmail)) {
-            log.info("Invited by lantern, using email as guid");
-            inviterGuid = inviterEmail;
+        if (inviterEmail.endsWith("@getlantern.org")) {
+            log.info("Invited by lantern, using special country");
+            // Use a special country to indicate that the invite came from Lantern
+            country = "lantern";
         } else {
             LanternUser inviter = ExportBaselineStats
                     .userWithGuid(inviterEmail);
