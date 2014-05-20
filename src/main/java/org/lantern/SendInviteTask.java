@@ -58,9 +58,14 @@ public class SendInviteTask extends HttpServlet {
                 throw new RuntimeException("Unknown template: " + template);
             }
             new Dao().setInviteStatus(inviterEmail,
-                                      inviteeEmail,
-                                      Invite.Status.sent);
-            recordInvitation(inviterEmail);
+                    inviteeEmail,
+                    Invite.Status.sent);
+            try {
+                recordInviteStats(inviterEmail);
+            } catch (Exception e) {
+                log.log(Level.WARNING,
+                        "Unable to record invite stats: " + e.getMessage(), e);
+            }
             LanternControllerUtils.populateOKResponse(response, "OK");
             log.info("Invite task reported success.");
         } catch (IOException e) {
@@ -69,7 +74,7 @@ public class SendInviteTask extends HttpServlet {
         }
     }
 
-    private void recordInvitation(final String inviterEmail) {
+    private void recordInviteStats(final String inviterEmail) throws Exception {
         String inviterGuid = null;
         String country = Stats.UNKNOWN_COUNTRY;
         if ("invite@getlantern.org".equals(inviterEmail)) {
@@ -90,11 +95,6 @@ public class SendInviteTask extends HttpServlet {
         log.info("Recording invite stats for inviter: " + inviterEmail);
         org.lantern.monitoring.Stats stats = new org.lantern.monitoring.Stats();
         stats.setIncrement(Counters.usersInvited, 1);
-        try {
-            STATSHUB.postUserStats(inviterGuid, country, stats);
-        } catch (Exception e) {
-            log.log(Level.WARNING,
-                    "Unable to post invite stats: " + e.getMessage(), e);
-        }
+        STATSHUB.postUserStats(inviterGuid, country, stats);
     }
 }
