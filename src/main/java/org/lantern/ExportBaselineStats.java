@@ -102,7 +102,7 @@ public class ExportBaselineStats extends HttpServlet {
     }
     
     /**
-     * Picks the user's first available country, preferring censored.
+     * Picks one of the user's countries, prefering censored ones.
      * 
      * @param user
      * @return
