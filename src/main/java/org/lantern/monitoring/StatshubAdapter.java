@@ -78,7 +78,7 @@ public class StatshubAdapter {
             statshub.postUserStats(userGuid, countryCode, userStats);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Unable to forward stats to Statshub: "
-                    + e.getMessage(), e);
+                    + e.getMessage() + "  stats were: " + statsJson, e);
         }
     }
 
