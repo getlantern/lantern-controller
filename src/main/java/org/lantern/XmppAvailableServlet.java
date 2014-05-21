@@ -132,7 +132,7 @@ public class XmppAvailableServlet extends HttpServlet {
         if (user != null) {
             final String stats =
                     LanternControllerUtils.getProperty(doc, "stats");
-            if (stats != null) {
+            if (stats != null && stats.trim().length() > 0) {
                 StatshubAdapter.forwardStats(
                         instanceId,
                         user.getGuid(),
