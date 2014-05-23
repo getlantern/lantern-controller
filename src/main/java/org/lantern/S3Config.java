@@ -169,6 +169,6 @@ public class S3Config {
         //DRY: cloudmaster.py and upload_wrappers.py in lantern_aws
         m.put("upload-wrappers-id", userId);
         m.put("upload-wrappers-to", folderName);
-        new SQSUtil().send(m);
+        SQSUtil.send(m, SQSUtil.getWrapperRequestQueueUrl());
     }
 }

@@ -14,7 +14,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.lantern.loggly.LoggerFactory;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
@@ -22,7 +21,6 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-import com.google.appengine.api.utils.SystemProperty;
 import com.google.apphosting.api.DeadlineExceededException;
 
 public class SQSUtil {
@@ -31,14 +29,23 @@ public class SQSUtil {
         = "sqs." + LanternConstants.AWS_REGION + ".amazonaws.com";
     private static final String REQUEST_Q_NAME;
     private static final String NOTIFY_Q_NAME;
+    
+    /**
+     * Queue for building installer wrappers.
+     */
+    private static final String WRAPPER_BUILD_REQUEST_Q_NAME;
+    
     static {
         final String appId = LanternControllerConstants.CONTROLLER_ID;
         REQUEST_Q_NAME = appId + "_request";
+        WRAPPER_BUILD_REQUEST_Q_NAME = appId + "_wrapper_build_request";
         NOTIFY_Q_NAME = "notify_" + appId;
     }
 
     private static String REQUEST_Q_URL;
     private static String NOTIFY_Q_URL;
+    
+    private static String WRAPPER_REQUEST_Q_URL;
 
     private static String getRequestQueueUrl() {
         if (REQUEST_Q_URL == null) {
@@ -53,6 +60,13 @@ public class SQSUtil {
         }
         return NOTIFY_Q_URL;
     }
+    
+    public static String getWrapperRequestQueueUrl() {
+        if (WRAPPER_REQUEST_Q_URL == null) {
+            WRAPPER_REQUEST_Q_URL = getQueueUrl(WRAPPER_BUILD_REQUEST_Q_NAME);
+        }
+        return WRAPPER_REQUEST_Q_URL;
+    }
 
     /**
      * Return the URL of the queue with the given name, creating it if it
@@ -66,15 +80,20 @@ public class SQSUtil {
                 ).getQueueUrl();
     }
 
-    private final transient Logger log = LoggerFactory.getLogger(getClass());
+    private static final transient Logger log = 
+            LoggerFactory.getLogger(SQSUtil.class);
 
-    public void send(final Map<String, Object> msgMap) {
+    public static void send(final Map<String, Object> msgMap) {
+        send(msgMap, getRequestQueueUrl());
+    }
+    
+    public static void send(final Map<String, Object> msgMap, final String requestQueueUrl) {
         final AmazonSQSClient sqs = getClient();
         final String msg = encode(msgMap);
-        sqs.sendMessage(new SendMessageRequest(getRequestQueueUrl(), msg));
+        sqs.sendMessage(new SendMessageRequest(requestQueueUrl, msg));
     }
 
-    public List<Map<String, Object>> receive() {
+    public static List<Map<String, Object>> receive() {
         // The version of the AWS SDK we're using doesn't expose any method to
         // set a timeout in this request, but it returns immediately if the
         // queue is empty.
@@ -127,7 +146,7 @@ public class SQSUtil {
         return ret;
     }
 
-    private String encode(final Map<String, Object> map) {
+    private static String encode(final Map<String, Object> map) {
         final String json = JsonUtils.jsonify(map);
         try {
             return new String(
@@ -138,7 +157,7 @@ public class SQSUtil {
         }
     }
 
-    private Map<String, Object> decode(String raw) {
+    private static Map<String, Object> decode(String raw) {
         try {
             final byte[] jsonBytes = Base64.decodeBase64(raw.getBytes("UTF-8"));
             final String json = new String(jsonBytes, "UTF-8");

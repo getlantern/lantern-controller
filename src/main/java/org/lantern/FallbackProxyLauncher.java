@@ -7,7 +7,6 @@ import java.util.logging.Logger;
 
 import org.lantern.data.Dao;
 import org.lantern.data.Invite;
-import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
 
 
@@ -175,6 +174,6 @@ public class FallbackProxyLauncher {
         map.put("launch-fp-as", userId);
         map.put("launch-refrtok", refreshToken);
         map.put("launch-serial", serial);
-        new SQSUtil().send(map);
+        SQSUtil.send(map);
     }
 }
