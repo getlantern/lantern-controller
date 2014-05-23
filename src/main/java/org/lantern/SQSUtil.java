@@ -38,8 +38,8 @@ public class SQSUtil {
     static {
         final String appId = LanternControllerConstants.CONTROLLER_ID;
         REQUEST_Q_NAME = appId + "_request";
+        WRAPPER_BUILD_REQUEST_Q_NAME = appId + "_wrapper_build_request";
         NOTIFY_Q_NAME = "notify_" + appId;
-        WRAPPER_BUILD_REQUEST_Q_NAME = "wrapper_build_request_queue_"+appId;
     }
 
     private static String REQUEST_Q_URL;
