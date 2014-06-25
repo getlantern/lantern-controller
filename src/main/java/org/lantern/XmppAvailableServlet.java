@@ -56,7 +56,7 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (EmailAddressUtils.NormalizationException e) {
             throw new RuntimeException(e);
         }
-        if (!dao.isInvited(from)) {
+        if (!dao.inviteIfNecessary(from)) {
             log.info(from+" not invited!!");
             processNotInvited(presence, xmpp, responseJson);
             return;

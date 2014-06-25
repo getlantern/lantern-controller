@@ -563,7 +563,7 @@ public class Dao extends DAOBase {
         return ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
     }
 
-    public boolean isInvited(final String email) {
+    public boolean inviteIfNecessary(final String email) {
         LanternUser user = withTransaction(new DbCall<LanternUser>() {
             @Override
              public LanternUser call(Objectify ofy) {
