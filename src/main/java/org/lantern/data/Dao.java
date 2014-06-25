@@ -526,7 +526,7 @@ public class Dao extends DAOBase {
                     log.info("Successfully committed attempt to add invitee.");
                     anyChange = true;
                 }
-                if (invitee.getConfigFolder() == null) {
+                if (invitee.getConfigFolder() == null && inviter != null) {
                     invitee.setConfigFolder("pending");
                     enqueueConfigAndWrappers(normalizedInviteeEmail);
                     anyChange = true;
