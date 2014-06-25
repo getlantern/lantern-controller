@@ -480,7 +480,7 @@ public class Dao extends DAOBase {
         }
     }
 
-    public LanternUser createInvitee(final String inviteeEmail,
+    public LanternUser createOrUpdateUser(final String inviteeEmail,
                                      final String inviterId,
                                      final String fallbackProxyUserId,
                                      final String fallbackInstanceId) {
@@ -561,26 +561,6 @@ public class Dao extends DAOBase {
         Key<LanternUser> bogusParentKey
             = new Key<LanternUser>(LanternUser.class, id);
         return ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
-    }
-
-    public boolean inviteIfNecessary(final String email) {
-        LanternUser user = withTransaction(new DbCall<LanternUser>() {
-            @Override
-             public LanternUser call(Objectify ofy) {
-                LanternUser user = ofy.find(LanternUser.class, email);
-                if (user == null) {
-                    // Lazily create a new user so that anyone can run Lantern
-                    user = createInvitee(
-                            email,
-                            null,
-                            null,
-                            null);
-                    ofy.put(user);
-                }
-                return user;
-             } 
-         });
-         return user != null;
     }
 
     public void updateLastAccessed(final String email) {

@@ -62,7 +62,7 @@ public class AddUser {
             final String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();
             
             // SPECIFY THE INVITEE HERE!!
-            dao.createInvitee("myles@getlantern.org", inviterEmail, fpuid, instanceId);
+            dao.createOrUpdateUser("myles@getlantern.org", inviterEmail, fpuid, instanceId);
             
         } finally {
             installer.uninstall();
