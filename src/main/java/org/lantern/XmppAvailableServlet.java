@@ -56,16 +56,10 @@ public class XmppAvailableServlet extends HttpServlet {
         } catch (EmailAddressUtils.NormalizationException e) {
             throw new RuntimeException(e);
         }
-        if (!dao.isInvited(from)) {
-            log.info(from+" not invited!!");
-            processNotInvited(presence, xmpp, responseJson);
-            return;
-        } else {
-            log.info("User is invited: " + presence.getFromJid());
-            dao.updateLastAccessed(from);
-            responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
-        }
-
+        dao.createOrUpdateUser(from, null, null, null);
+        dao.updateLastAccessed(from);
+        responseJson.put(LanternConstants.INVITED, Boolean.TRUE);
+        
         String userId;
         try {
             userId = LanternXmppUtils.jidToEmail(from);

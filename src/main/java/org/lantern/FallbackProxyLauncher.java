@@ -83,7 +83,7 @@ public class FallbackProxyLauncher {
         } else if (incrementFallbackInvites(fpuid, 1)) {
             log.info("Proxy is full; launching a new one.");
         } else {
-            dao.createInvitee(inviteeEmail,
+            dao.createOrUpdateUser(inviteeEmail,
                               inviterEmail,
                               fpuid,
                               instanceId);
@@ -111,7 +111,7 @@ public class FallbackProxyLauncher {
         // Currently we're only having one fallback per user.  In the
         // future we may want to wait for all of a user's fallbacks to come up.
         for (Invite invite : invites) {
-            dao.createInvitee(invite.getInvitee(),
+            dao.createOrUpdateUser(invite.getInvitee(),
                               invite.getInviter(),
                               fallbackProxyUserId,
                               instanceId);

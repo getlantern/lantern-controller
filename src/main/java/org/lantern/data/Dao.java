@@ -480,7 +480,7 @@ public class Dao extends DAOBase {
         }
     }
 
-    public LanternUser createInvitee(final String inviteeEmail,
+    public LanternUser createOrUpdateUser(final String inviteeEmail,
                                      final String inviterId,
                                      final String fallbackProxyUserId,
                                      final String fallbackInstanceId) {
@@ -491,7 +491,12 @@ public class Dao extends DAOBase {
 
         log.info("Making sure " + normalizedInviteeEmail
                  + ", invited by " + inviterId + ", has been created.");
-        final LanternUser inviter = findUser(inviterId);
+        final LanternUser inviter;
+        if (inviterId == null) {
+            inviter = null;
+        } else {
+            inviter = findUser(inviterId);
+        }
         RetryingTransaction<LanternUser> txn
             = new RetryingTransaction<LanternUser>() {
             @Override
@@ -502,18 +507,26 @@ public class Dao extends DAOBase {
                 if (invitee == null) {
                     log.info("Adding invitee to database");
                     invitee = new LanternUser(normalizedInviteeEmail);
-                    invitee.setDegree(inviter.getDegree() + 1);
-                    invitee.setSponsor(inviter.getId());
-                    invitee.setFallbackProxyUserId(fallbackProxyUserId);
-                    invitee.setFallbackProxy(
-                            getInstanceKey(fallbackProxyUserId,
-                                           fallbackInstanceId));
+                    if (inviter == null) {
+                        // For uninvited users, set them to a very high degree
+                        // so that they don't get any invites.
+                        invitee.setDegree(1000);
+                    } else {
+                        invitee.setDegree(inviter.getDegree() + 1);
+                        invitee.setSponsor(inviter.getId());
+                    }
+                    if (fallbackProxyUserId != null) {
+                        invitee.setFallbackProxyUserId(fallbackProxyUserId);
+                        invitee.setFallbackProxy(
+                                getInstanceKey(fallbackProxyUserId,
+                                               fallbackInstanceId));
+                    }
                     // Not bothering with a constant because any non-null value
                     // will do.
                     log.info("Successfully committed attempt to add invitee.");
                     anyChange = true;
                 }
-                if (invitee.getConfigFolder() == null) {
+                if (invitee.getConfigFolder() == null && inviter != null) {
                     invitee.setConfigFolder("pending");
                     enqueueConfigAndWrappers(normalizedInviteeEmail);
                     anyChange = true;
@@ -548,12 +561,6 @@ public class Dao extends DAOBase {
         Key<LanternUser> bogusParentKey
             = new Key<LanternUser>(LanternUser.class, id);
         return ofy.find(new Key<Invite>(bogusParentKey, Invite.class, id));
-    }
-
-    public boolean isInvited(final String email) {
-        final Objectify ofy = ofy();
-        final LanternUser user = ofy.find(LanternUser.class, email);
-        return user != null;
     }
 
     public void updateLastAccessed(final String email) {
