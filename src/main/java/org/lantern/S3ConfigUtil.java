@@ -15,10 +15,10 @@ import org.lantern.data.LanternInstance;
 import org.lantern.data.LanternUser;
 
 
-public class S3Config {
+public class S3ConfigUtil {
 
     private static final transient Logger log = Logger
-            .getLogger(S3Config.class.getName());
+            .getLogger(S3ConfigUtil.class.getName());
 
     /** Minimum time clients should wait to check S3 for config updates. */
     private static final int MIN_POLL_MINUTES = 5;

@@ -16,7 +16,7 @@ import org.lantern.EmailAddressUtils;
 import org.lantern.FallbackProxyLauncher;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
-import org.lantern.S3Config;
+import org.lantern.S3ConfigUtil;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.loggly.LoggerFactory;
@@ -1435,7 +1435,7 @@ public class Dao extends DAOBase {
         if (t.failed()) {
             log.severe("Transaction failed!");
         } else {
-            S3Config.refreshConfig(userId);
+            S3ConfigUtil.refreshConfig(userId);
         }
     }
 }

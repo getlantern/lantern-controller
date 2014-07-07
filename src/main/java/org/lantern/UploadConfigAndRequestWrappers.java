@@ -21,16 +21,16 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         Dao dao = new Dao();
         String userId = request.getParameter("userId");
         log.info("Uploading config for " + userId);
-        String configFolder = S3Config.generateConfigFolder();
+        String configFolder = S3ConfigUtil.generateConfigFolder();
         dao.setConfigFolder(userId, configFolder);
         log.info("ConfigFolder starts with '"
                  + configFolder.substring(0, 10)
                  + "'...");
-        String config = S3Config.compileConfig(userId);
+        String config = S3ConfigUtil.compileConfig(userId);
         log.info("Uploading config:\n" + config);
-        S3Config.uploadConfig(configFolder, config);
+        S3ConfigUtil.uploadConfig(configFolder, config);
         log.info("Successfully uploaded; enquequing wrapper request...");
-        S3Config.enqueueWrapperUploadRequest(userId, configFolder);
+        S3ConfigUtil.enqueueWrapperUploadRequest(userId, configFolder);
         log.info("All done.");
         LanternControllerUtils.populateOKResponse(response, "OK");
     }
