@@ -110,7 +110,7 @@ LANGS_BY_TMPL = {
     }
 
 env = Environment(loader=FileSystemLoader(BASE_DIR))
-env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code][key]
+env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code].get(key, TRANSLATIONS["en_US"][key])
 
 tmpl_filenames = [filename
                   for filename in os.listdir(BASE_DIR)
