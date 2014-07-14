@@ -19,7 +19,7 @@ import com.google.api.server.spi.response.UnauthorizedException;
         version = "v1",
         clientIds = { "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com" },
         scopes = { "https://www.googleapis.com/auth/userinfo.email" })
-public class FriendEndpoint extends BaseFriendEndpoint {
+public class FriendEndpoint extends BaseEndpoint {
 
     /**
      * This method lists all the entities inserted in datastore. It uses HTTP

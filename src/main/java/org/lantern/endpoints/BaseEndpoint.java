@@ -8,11 +8,11 @@ import com.google.api.server.spi.response.UnauthorizedException;
 import com.google.appengine.api.users.User;
 
 /**
- * Base class for Endpoints for interacting with the friends of a given user.
+ * Base class for Endpoints.
  */
-public class BaseFriendEndpoint {
+public class BaseEndpoint {
 
-    private final transient Logger log = LoggerFactory.getLogger(getClass());
+    protected final transient Logger log = LoggerFactory.getLogger(getClass());
 
     protected void checkAuthorization(final User user)
             throws UnauthorizedException {

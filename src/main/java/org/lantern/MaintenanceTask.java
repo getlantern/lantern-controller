@@ -77,7 +77,7 @@ public class MaintenanceTask extends HttpServlet {
     }
 
     private void uploadFallbacks() {
-        S3Config.uploadConfig(
+        S3ConfigUtil.uploadConfig(
             LanternControllerConstants.FALLBACK_CHECKER_CONFIG_FOLDER,
             compileFallbackCheckerConfig());
     }
@@ -214,7 +214,7 @@ public class MaintenanceTask extends HttpServlet {
         for (LanternUser user : users) {
             try {
                 if (user.getConfigFolder() != null) {
-                    S3Config.enqueueWrapperUploadRequest(user.getId(),
+                    S3ConfigUtil.enqueueWrapperUploadRequest(user.getId(),
                                                          user.getConfigFolder());
                 }
             } catch (Exception e) {
