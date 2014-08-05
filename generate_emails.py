@@ -9,13 +9,17 @@ from os.path import join
 import os
 from premailer import transform
 from subprocess import call
+import sys
 
 BASE_DIR = 'src/main/resources/org/lantern/email'
 
-cmd = 'compass compile -c compass.rb'
-print('* Running "%s"...' % cmd)
-result = call(cmd.split())
-assert result == 0
+if len(sys.argv) == 1 or sys.argv[1] != "nosass":
+    # Compile SASS
+    cmd = 'compass compile -c compass.rb'
+    print('* Running "%s"...' % cmd)
+    result = call(cmd.split())
+    assert result == 0
+    
 CSS_PATH = join(BASE_DIR, 'style.css')
 with open(CSS_PATH, encoding='utf-8') as fp:
     COMPILED_CSS = fp.read()
@@ -106,7 +110,7 @@ LANGS_BY_TMPL = {
     }
 
 env = Environment(loader=FileSystemLoader(BASE_DIR))
-env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code][key]
+env.filters['trans'] = lambda key, lang: TRANSLATIONS[lang.code].get(key, TRANSLATIONS["en_US"][key])
 
 tmpl_filenames = [filename
                   for filename in os.listdir(BASE_DIR)

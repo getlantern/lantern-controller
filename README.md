@@ -126,9 +126,8 @@ packages.
 Also make sure you have [compass](http://compass-style.org/) 0.12.2 installed,
 which is required to compile the sass. You can run
 `gem install compass --version '= 0.12.2'` to install it (sudo as necessary).
-If the sass hasn't changed since the last time it was compiled, you can also
-just comment out the code in the beginning of generate_emails.py which makes
-the "compass compile" call.
+If the sass hasn't changed since the last time it was compiled, you can run
+`./generate_emails.py nosass` to skip the compass compilation step.
 
 Any time a **new** translation file is pulled from Transifex (see the
 [Transifex](#transifex) section above), a corresponding `Lang` instance should
