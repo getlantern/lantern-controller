@@ -11,6 +11,8 @@ import org.lantern.data.Dao.DbCall;
 import org.lantern.data.LanternInstance;
 import org.lantern.data.LanternUser;
 import org.lantern.proxy.FallbackProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
@@ -25,8 +27,10 @@ import com.googlecode.objectify.Objectify;
         version = "v1",
         clientIds = { "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com" },
         scopes = { "https://www.googleapis.com/auth/userinfo.email" })
-public class S3ConfigEndpoint extends BaseEndpoint {
+public class S3ConfigEndpoint {
 
+    private final transient Logger log = LoggerFactory.getLogger(getClass());
+    
     /**
      * This method gets the logged in user's S3Config.
      * 
@@ -42,7 +46,7 @@ public class S3ConfigEndpoint extends BaseEndpoint {
     public BaseS3Config get(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         return new Dao().withObjectify(new DbCall<BaseS3Config>() {
             @Override
             public BaseS3Config call(Objectify ofy) {

@@ -19,7 +19,7 @@ import com.google.api.server.spi.response.UnauthorizedException;
         version = "v1",
         clientIds = { "323232879315-bea7ng41i8fsvua1takpcprbpd38nal9.apps.googleusercontent.com" },
         scopes = { "https://www.googleapis.com/auth/userinfo.email" })
-public class FriendEndpoint extends BaseEndpoint {
+public class FriendEndpoint {
 
     /**
      * This method lists all the entities inserted in datastore. It uses HTTP
@@ -36,7 +36,7 @@ public class FriendEndpoint extends BaseEndpoint {
     public List<Friend> listFriend(
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         return Friending.listFriend(user).payload();
     }
 
@@ -57,7 +57,7 @@ public class FriendEndpoint extends BaseEndpoint {
     public Friend getFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         return Friending.getFriend(id, user).payload();
     }
 
@@ -77,7 +77,7 @@ public class FriendEndpoint extends BaseEndpoint {
     public Friend insertFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         return Friending.insertFriend(friend, user).payload();
     }
 
@@ -97,7 +97,7 @@ public class FriendEndpoint extends BaseEndpoint {
     public Friend updateFriend(final LanternFriend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         return Friending.updateFriend(friend, user).payload();
     }
 
@@ -116,7 +116,7 @@ public class FriendEndpoint extends BaseEndpoint {
     public void removeFriend(@Named("id") final Long id,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        checkAuthorization(user);
+        Endpoints.checkAuthorizationAndCreateUser(user);
         Friending.removeFriend(id, user);
     }
 }

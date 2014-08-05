@@ -36,7 +36,6 @@ public class SendInviteTask extends HttpServlet {
         if ("null".equals(inviterName)) {
             inviterName = null;
         }
-        String configFolder = request.getParameter("configFolder");
         String template = request.getParameter("template");
         // Prevent race conditions when deploying.
         if (template == null) {
@@ -48,12 +47,10 @@ public class SendInviteTask extends HttpServlet {
                 MandrillEmailer.sendInvite(
                         inviterName,
                         inviterEmail,
-                        inviteeEmail,
-                        configFolder);
+                        inviteeEmail);
             } else if (template.equals("new-trust-network-invite")) {
                 MandrillEmailer.sendNewTrustNetworkInvite(
-                        inviteeEmail,
-                        configFolder);
+                        inviteeEmail);
             } else {
                 throw new RuntimeException("Unknown template: " + template);
             }

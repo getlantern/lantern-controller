@@ -51,21 +51,18 @@ public class MandrillEmailer {
      */
     public static void sendInvite(String inviterName,
                                   String inviterEmail,
-                                  String inviteeEmail,
-                                  String configFolder)
+                                  String inviteeEmail)
             throws IOException {
         log.info("Sending invite to "+inviteeEmail);
         sendEmail(inviteJson(inviterName,
                              inviterEmail,
-                             inviteeEmail,
-                             configFolder));
+                             inviteeEmail));
     }
 
     // Factored out and made public for testing.
     public static String inviteJson(String inviterName,
                                     String inviterEmail,
-                                    String inviteeEmail,
-                                    String configFolder)
+                                    String inviteeEmail)
             throws IOException {
         if (StringUtils.isBlank(inviteeEmail)) {
             log.warning("No inviter e-mail!");
@@ -80,7 +77,6 @@ public class MandrillEmailer {
         Map<String, String> m = new HashMap<String,String>();
         m.put("INVITER_EMAIL", inviterEmail);
         m.put("INVITER_NAME", inviterNameOrEmail);
-        populateInstallerUrls(m, configFolder);
         return jsonToSendEmail(
                       template,
                       "Lantern Invitation",
@@ -111,7 +107,6 @@ public class MandrillEmailer {
         log.info("Sending version update notification to " + toEmail);
         Map<String, String> m = new HashMap<String,String>();
         m.put("VERSION", version);
-        populateInstallerUrls(m, configFolder);
         sendEmail(jsonToSendEmail("update-notification",
                                   "Lantern Update Available",
                                   null,
@@ -123,12 +118,10 @@ public class MandrillEmailer {
     }
 
     //XXX: Ad hoc; remove after having sent them all.
-    public static void sendNewTrustNetworkInvite(String toEmail,
-                                                String configFolder)
+    public static void sendNewTrustNetworkInvite(String toEmail)
             throws IOException {
         log.info("Sending new trust network invite to " + toEmail);
         Map<String, String> m = new HashMap<String,String>();
-        populateInstallerUrls(m, configFolder);
         sendEmail(jsonToSendEmail("new-trust-network-invite",
                                   "Lantern Update Available",
                                   null,
@@ -161,6 +154,7 @@ public class MandrillEmailer {
                 m));
     }
 
+    /*
     private static void populateInstallerUrls(Map<String, String> m,
                                               String configFolder) {
         //DRY: upload_wrappers.py at lantern_aws.
@@ -170,6 +164,7 @@ public class MandrillEmailer {
         m.put("INSTALLER_URL_DMG", baseUrl + "macos.html");
         m.put("INSTALLER_URL_EXE", baseUrl + "windows.html");
     }
+    */
 
     private static String jsonToSendEmail(String template,
                                           String subject,

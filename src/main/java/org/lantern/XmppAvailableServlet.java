@@ -16,7 +16,6 @@ import org.json.simple.JSONObject;
 import org.lantern.data.Dao;
 import org.lantern.data.LanternUser;
 import org.lantern.loggly.LoggerFactory;
-import org.lantern.monitoring.StatshubAdapter;
 import org.lantern.state.Mode;
 import org.w3c.dom.Document;
 
@@ -122,22 +121,6 @@ public class XmppAvailableServlet extends HttpServlet {
 
         final String language =
                 LanternControllerUtils.getProperty(doc, "language");
-        
-        if (user != null) {
-            final String stats =
-                    LanternControllerUtils.getProperty(doc, "stats");
-            if (stats != null && stats.trim().length() > 0) {
-                StatshubAdapter.forwardStats(
-                        instanceId,
-                        user.getGuid(),
-                        countryCode,
-                        mode,
-                        presence.isAvailable(),
-                        isFallbackProxy,
-                        stats);
-            }
-        }
-        
         dao.signedIn(from, language);
     }
 

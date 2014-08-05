@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import org.lantern.EmailAddressUtils;
@@ -110,7 +111,10 @@ public class Friending {
     public static FriendResponse<Friend> insertFriend(final Friend friend,
             final com.google.appengine.api.users.User user)
             throws UnauthorizedException {
-        return new Dao().withTransaction(new DbCall<FriendResponse<Friend>>() {
+        
+        final AtomicBoolean friended = new AtomicBoolean();
+        final FriendResponse<Friend> response = 
+                new Dao().withTransaction(new DbCall<FriendResponse<Friend>>() {
             @Override
             public FriendResponse<Friend> call(Objectify ofy) {
                 String userEmail = email(user);
@@ -132,9 +136,9 @@ public class Friending {
                     return doUpdateFriend(ofy, quota, friend, existing);
                 }
 
-                boolean friended = Friend.Status.friend == friend.getStatus();
+                friended.set(Friend.Status.friend == friend.getStatus());
 
-                if (friended) {
+                if (friended.get()) {
                     if (!haveBeenFriendedBy(friend) &&
                             !quota.checkAndIncrementTotalFriended()) {
                         log.info("Friending quota exceeded");
@@ -146,13 +150,13 @@ public class Friending {
                 ofy.put(friend);
                 ofy.put(quota);
 
-                if (friended) {
-                    invite(friend);
-                }
-
                 return success(quota, friend);
             }
         });
+        if (friended.get()) {
+            invite(friend);
+        }
+        return response;
     }
 
     public static FriendResponse<Friend> updateFriend(final Friend friend,
