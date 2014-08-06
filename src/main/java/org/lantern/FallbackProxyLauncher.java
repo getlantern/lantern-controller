@@ -69,8 +69,16 @@ public class FallbackProxyLauncher {
         final Dao dao = new Dao();
         String fpuid = dao.findUser(inviterEmail).getFallbackProxyUserId();
         if (fpuid == null) {
-            log.warning("Old invite; we'll process this when the user gets"
-                        + " a fallbackProxyUserId");
+            log.info("Invite from an open downloader or old invite.");
+            // If they have no fallback proxy, then they're either an old 
+            // invite or in the open download. Either way, send them an invite
+            // to the open download.
+            dao.createOrUpdateUser(inviteeEmail,
+                    inviterEmail,
+                    fpuid, // null, just here for self-documenting
+                    null);
+            
+            dao.sendInvitesTo(inviteeEmail);
             return true;
         }
         String instanceId = dao.findUser(fpuid).getFallbackForNewInvitees();

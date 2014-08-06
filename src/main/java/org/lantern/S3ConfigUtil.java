@@ -59,6 +59,7 @@ public class S3ConfigUtil {
      * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
      * initialized to null by default in a RemoteApi context.
      */
+    /*
     public static void refreshConfig(String userId) {
         log.info("Refreshing config for " + userId);
         String config = compileConfig(userId);
@@ -68,6 +69,7 @@ public class S3ConfigUtil {
         }
         uploadConfig(user.getConfigFolder(), config);
     }
+    */
 
     /**
      * Utility.
@@ -76,6 +78,7 @@ public class S3ConfigUtil {
      * LanternControllerConstants.CONTROLLER_ID.  For some reason that gets
      * initialized to null by default in a RemoteApi context.
      */
+    /*
     public static void refreshAllConfigs() {
         for (LanternUser user : dao.ofy().query(LanternUser.class)) {
             try {
@@ -86,6 +89,7 @@ public class S3ConfigUtil {
             }
         }
     }
+    */
 
     /**
      * Utility.
@@ -140,6 +144,7 @@ public class S3ConfigUtil {
             + " ] }";
     }
 
+    /*
     public static void uploadConfig(String folderName, String configContents) {
         AmazonS3Client s3client
             = new AmazonS3Client(LanternControllerConstants.AWS_CREDENTIALS);
@@ -161,6 +166,7 @@ public class S3ConfigUtil {
             throw new RuntimeException(e);
         }
     }
+    */
 
     public static void enqueueWrapperUploadRequest(String userId,
                                              String folderName) {

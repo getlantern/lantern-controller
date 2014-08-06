@@ -425,10 +425,11 @@ public class Dao extends DAOBase {
 
                 String fpuid = inviter.getFallbackProxyUserId();
 
-                if (fpuid == null) {
-                    throw new RuntimeException(
-                            "This should never be true anymore!");
-                }
+
+                // The fallback proxy user ID can be null if the inviter is 
+                // an open downloader. We still want to allow the invite in 
+                // that case, however - they simply won't get access to a 
+                // 'private' proxy.
 
                 Invite invite = new Invite(normInviterId, normInviteeEmail, fpuid, emailTemplate);
                 ofy.put(invite);
@@ -508,9 +509,10 @@ public class Dao extends DAOBase {
                     log.info("Adding invitee to database");
                     invitee = new LanternUser(normalizedInviteeEmail);
                     if (inviter == null) {
-                        // For uninvited users, set them to a very high degree
-                        // so that they don't get any invites.
-                        invitee.setDegree(1000);
+                        // For uninvited users, just give them a few invites
+                        // that will simply be additional invites to the
+                        // open download.
+                        invitee.setDegree(4);
                     } else {
                         invitee.setDegree(inviter.getDegree() + 1);
                         invitee.setSponsor(inviter.getId());
@@ -524,11 +526,6 @@ public class Dao extends DAOBase {
                     // Not bothering with a constant because any non-null value
                     // will do.
                     log.info("Successfully committed attempt to add invitee.");
-                    anyChange = true;
-                }
-                if (invitee.getConfigFolder() == null && inviter != null) {
-                    invitee.setConfigFolder("pending");
-                    enqueueConfigAndWrappers(normalizedInviteeEmail);
                     anyChange = true;
                 }
                 if (anyChange) {
@@ -1329,10 +1326,6 @@ public class Dao extends DAOBase {
         if (invitee == null) {
             throw new RuntimeException("Not a LanternUser");
         }
-        String configFolder = invitee.getConfigFolder();
-        if (configFolder == null) {
-            throw new RuntimeException("No config folder.");
-        }
         for (Invite inv : ofy().query(Invite.class)
                                .filter("invitee", userId)
                                .filter("status", Invite.Status.authorized)) {
@@ -1351,7 +1344,6 @@ public class Dao extends DAOBase {
                    .param("inviterName", "" + inviter.getName()) // handle null
                    .param("inviterEmail", inviter.getId())
                    .param("inviteeEmail", userId)
-                   .param("configFolder", configFolder)
                    .param("template", inv.getEmailTemplate()));
             log.info("Successfully enqueued invite email.");
         }
@@ -1365,7 +1357,7 @@ public class Dao extends DAOBase {
                     // Not bothering with a constant because any non-null value
                     // will do.
                     user.setConfigFolder("pending");
-                    enqueueConfigAndWrappers(userId);
+                    //enqueueConfigAndWrappers(userId);
                     ofy.put(user);
                     ofy.getTxn().commit();
                 }
@@ -1378,12 +1370,14 @@ public class Dao extends DAOBase {
         }
     }
 
+    /*
     private void enqueueConfigAndWrappers(String userId) {
         QueueFactory.getDefaultQueue().add(
                 TaskOptions.Builder
                 .withUrl("/upload_config_and_request_wrappers")
                 .param("userId", userId));
     }
+    */
 
     /**
      * Add a friend entry, bypassing quota checks, unless there's one already.
@@ -1435,7 +1429,7 @@ public class Dao extends DAOBase {
         if (t.failed()) {
             log.severe("Transaction failed!");
         } else {
-            S3ConfigUtil.refreshConfig(userId);
+            //S3ConfigUtil.refreshConfig(userId);
         }
     }
 }
