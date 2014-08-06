@@ -77,6 +77,7 @@ public class MandrillEmailer {
         Map<String, String> m = new HashMap<String,String>();
         m.put("INVITER_EMAIL", inviterEmail);
         m.put("INVITER_NAME", inviterNameOrEmail);
+        populateInstallerUrls(m);
         return jsonToSendEmail(
                       template,
                       "Lantern Invitation",
@@ -107,6 +108,7 @@ public class MandrillEmailer {
         log.info("Sending version update notification to " + toEmail);
         Map<String, String> m = new HashMap<String,String>();
         m.put("VERSION", version);
+        populateInstallerUrls(m);
         sendEmail(jsonToSendEmail("update-notification",
                                   "Lantern Update Available",
                                   null,
@@ -122,6 +124,7 @@ public class MandrillEmailer {
             throws IOException {
         log.info("Sending new trust network invite to " + toEmail);
         Map<String, String> m = new HashMap<String,String>();
+        populateInstallerUrls(m);
         sendEmail(jsonToSendEmail("new-trust-network-invite",
                                   "Lantern Update Available",
                                   null,
@@ -154,17 +157,22 @@ public class MandrillEmailer {
                 m));
     }
 
-    /*
-    private static void populateInstallerUrls(Map<String, String> m,
-                                              String configFolder) {
+    private static void populateInstallerUrls(Map<String, String> m) {
         //DRY: upload_wrappers.py at lantern_aws.
+        /*
         final String baseUrl = LanternConstants.S3_CONFIG_BASE_URL
                                + configFolder + "/lantern-net-installer_";
         m.put("INSTALLER_URL_DEB", baseUrl + "unix.html");
         m.put("INSTALLER_URL_DMG", baseUrl + "macos.html");
         m.put("INSTALLER_URL_EXE", baseUrl + "windows.html");
+        */
+        
+        // TODO: Move back to html links with analytics! Add 32 bit Ubuntu!!
+        final String baseUrl = "https://s3.amazonaws.com/lantern/";
+        m.put("INSTALLER_URL_DEB", baseUrl + "lantern-installer-64.deb");
+        m.put("INSTALLER_URL_DMG", baseUrl + "lantern-installer.dmg");
+        m.put("INSTALLER_URL_EXE", baseUrl + "lantern-installer.exe");
     }
-    */
 
     private static String jsonToSendEmail(String template,
                                           String subject,

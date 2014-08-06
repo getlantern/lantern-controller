@@ -6,8 +6,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.lantern.data.Dao;
-
 @SuppressWarnings("serial")
 public class UploadConfigAndRequestWrappers extends HttpServlet {
 
@@ -18,6 +16,9 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
     @Override
     public void doPost(final HttpServletRequest request,
                        final HttpServletResponse response) {
+        log.severe("Received call to upload config and request wrappers, " +
+            "but we're not using that anymore");
+        /*
         Dao dao = new Dao();
         String userId = request.getParameter("userId");
         log.info("Uploading config for " + userId);
@@ -33,5 +34,6 @@ public class UploadConfigAndRequestWrappers extends HttpServlet {
         S3ConfigUtil.enqueueWrapperUploadRequest(userId, configFolder);
         log.info("All done.");
         LanternControllerUtils.populateOKResponse(response, "OK");
+        */
     }
 }

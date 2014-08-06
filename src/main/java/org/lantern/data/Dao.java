@@ -1429,7 +1429,7 @@ public class Dao extends DAOBase {
         if (t.failed()) {
             log.severe("Transaction failed!");
         } else {
-            S3ConfigUtil.refreshConfig(userId);
+            //S3ConfigUtil.refreshConfig(userId);
         }
     }
 }

@@ -77,9 +77,11 @@ public class MaintenanceTask extends HttpServlet {
     }
 
     private void uploadFallbacks() {
+        /*
         S3ConfigUtil.uploadConfig(
             LanternControllerConstants.FALLBACK_CHECKER_CONFIG_FOLDER,
             compileFallbackCheckerConfig());
+            */
     }
 
     public static String compileFallbackCheckerConfig() {
