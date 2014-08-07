@@ -16,7 +16,6 @@ import org.lantern.EmailAddressUtils;
 import org.lantern.FallbackProxyLauncher;
 import org.lantern.LanternControllerConstants;
 import org.lantern.MandrillEmailer;
-import org.lantern.S3ConfigUtil;
 import org.lantern.admin.PendingInvites;
 import org.lantern.data.Invite.Status;
 import org.lantern.loggly.LoggerFactory;
@@ -730,10 +729,6 @@ public class Dao extends DAOBase {
                     .list();
     }
 
-    private boolean emailsMatch(final String one, final String other) {
-        return one.trim().equalsIgnoreCase(other.trim());
-    }
-
     public int getUserCount() {
         Objectify ofy = ofy();
         return ofy.query(LanternUser.class).filter("everSignedIn", true).count();
@@ -745,7 +740,7 @@ public class Dao extends DAOBase {
             ofy().put(new PermanentLogEntry(key, contents));
             log.warning("Permanent log: " + contents);
         } else {
-            log.warning("Already logged: " + contents);
+            log.info("Already logged: " + contents);
         }
     }
 
