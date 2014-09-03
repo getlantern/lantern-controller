@@ -67,7 +67,7 @@ public class LanternControllerConstants {
         = "fallback-alarms@getlantern.org";
     public static final String MAILCHIMP_LIST_ID = "cdc1af284e";
     public static final String MAILCHIP_API_URL_BASE = "http://<dc>.api.mailchimp.com/1.3/?method=<method>";
-    public static final double MAX_MAX_FRIENDS = 20;
+    public static final double MAX_MAX_FRIENDS = 30;
     public static final double MAX_FRIENDS_FACTOR = 1.25;
     
     public static String getMandrillApiKey() {

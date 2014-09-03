@@ -359,7 +359,7 @@ public class Friending {
      * Calculates the maximum friends for a given degree using the formula <a
      * href
      * ="https://www.wolframalpha.com/input/?i=plot+20%2F%28x%2B1%29%5E1.25">
-     * 20/(x+1)^1.25</a>.
+     * 20/(x/2+1)^1.25</a>.
      * 
      * @param degree
      * @return
@@ -368,10 +368,12 @@ public class Friending {
         double M = LanternControllerConstants.MAX_MAX_FRIENDS;
         double x = degree;
         double f = LanternControllerConstants.MAX_FRIENDS_FACTOR;
-        double max = M / (Math.pow((x + 1), f));
-        return (int) Math.round(max);
+        double max = M / (Math.pow((x/2 + 1), f));
+        
+        // Give everyone a minimum of 6 invites.
+        return Math.max((int) Math.round(max), 6);
     }
-
+    
     /**
      * Normalizes email addresses.
      * 

@@ -508,10 +508,8 @@ public class Dao extends DAOBase {
                     log.info("Adding invitee to database");
                     invitee = new LanternUser(normalizedInviteeEmail);
                     if (inviter == null) {
-                        // For uninvited users, just give them a few invites
-                        // that will simply be additional invites to the
-                        // open download.
-                        invitee.setDegree(7);
+                        // Set the degree really high for uninvited users.
+                        invitee.setDegree(1000);
                     } else {
                         invitee.setDegree(inviter.getDegree() + 1);
                         invitee.setSponsor(inviter.getId());
