@@ -511,7 +511,7 @@ public class Dao extends DAOBase {
                         // For uninvited users, just give them a few invites
                         // that will simply be additional invites to the
                         // open download.
-                        invitee.setDegree(4);
+                        invitee.setDegree(7);
                     } else {
                         invitee.setDegree(inviter.getDegree() + 1);
                         invitee.setSponsor(inviter.getId());
