@@ -206,9 +206,8 @@ public class S3ConfigEndpoint {
     }
 
     private String fallbackUserId(String fallbackId) {
-        int serialEnd = fallbackSerialStartIndex;
-        while (fallbackId.charAt(++serialEnd) != '-')
-            ;
+        int serialEnd = fallbackSerialStartIndex
+            + fallbackId.substring(fallbackSerialStartIndex).indexOf('-');
         return "from-old-controller-"
             + fallbackId.substring(fallbackSerialStartIndex, serialEnd)
             + "@getlantern.org";
