@@ -234,8 +234,17 @@ public class Friending {
         } else {
             log.info("Found existing friend to update");
             Status priorStatus = existing.getStatus();
-            boolean newlyFriended = Status.friend == friend.getStatus()
-                    && Status.friend != priorStatus;
+            Status newStatus = friend.getStatus();
+            boolean wasFriend = Status.friend == priorStatus;
+            boolean isFriend = Status.friend == newStatus;
+            boolean isPending = Status.pending == newStatus;
+            boolean newlyFriended = isFriend && !wasFriend;
+            
+            if (wasFriend && isPending) {
+                log.info("Refusing to downgrade friend to pending");
+                return failure(quota);
+            }
+            
             if (newlyFriended) {
                 if (!haveBeenFriendedBy(friend) &&
                         !quota.checkAndIncrementTotalFriended()) {
