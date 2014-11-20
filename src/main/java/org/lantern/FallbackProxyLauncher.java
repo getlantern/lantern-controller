@@ -95,6 +95,7 @@ public class FallbackProxyLauncher {
                               inviterEmail,
                               fpuid,
                               instanceId);
+            dao.sendInvitesTo(inviteeEmail);
         }
         return true;
     }
