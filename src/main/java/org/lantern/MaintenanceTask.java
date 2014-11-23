@@ -2,6 +2,7 @@ package org.lantern;
 
 import java.net.URL;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -48,12 +49,36 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            log.info("Maintenance tasks are disabled.");
+            //log.info("Maintenance tasks are disabled.");
+            log.info("Sending stuck invite emails");
+            sendStuckInviteEmails();
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
         }
         LanternControllerUtils.populateOKResponse(response, "OK");
+    }
+
+    private void sendStuckInviteEmails() {
+        Dao dao = new Dao();
+        Objectify ofy = dao.ofy();
+        HashSet<String> processed = new HashSet<String>();
+        ArrayList<String> toSend = new ArrayList<String>();
+        for (Invite invite : ofy.query(Invite.class)
+                                .filter("status", Invite.Status.authorized)) {
+            String inviteeId = invite.getInvitee();
+            if (processed.contains(inviteeId)) {
+                continue;
+            }
+            processed.add(inviteeId);
+            LanternUser invitee = dao.findUser(inviteeId);
+            if (!invitee.isEverSignedIn()) {
+                toSend.add(inviteeId);
+            }
+        }
+        for (String inviteeId : toSend) {
+            dao.sendInvitesTo(inviteeId);
+        }
     }
 
 
@@ -74,14 +99,6 @@ public class MaintenanceTask extends HttpServlet {
                 ofy.put(fallback);
             }
         }
-    }
-
-    private void uploadFallbacks() {
-        /*
-        S3ConfigUtil.uploadConfig(
-            LanternControllerConstants.FALLBACK_CHECKER_CONFIG_FOLDER,
-            compileFallbackCheckerConfig());
-            */
     }
 
     public static String compileFallbackCheckerConfig() {
@@ -208,98 +225,5 @@ public class MaintenanceTask extends HttpServlet {
             }
             toMove.remove(userId);
         }
-    }
-
-    private void refreshAllWrappers() {
-        Dao dao = new Dao();
-        List<LanternUser> users = dao.ofy().query(LanternUser.class).list();
-        for (LanternUser user : users) {
-            try {
-                if (user.getConfigFolder() != null) {
-                    S3ConfigUtil.enqueueWrapperUploadRequest(user.getId(),
-                                                         user.getConfigFolder());
-                }
-            } catch (Exception e) {
-                // This will happen for the root user.
-                log.warning("Exception trying to refresh config: " + e);
-            }
-        }
-    }
-
-    private void checkConfigFolders(String input) {
-
-        Dao dao = new Dao();
-        int nulls = 0;
-        int ok = 0;
-        int fishy = 0;
-
-        int expectedNumberOfFallbacks = 2;
-
-        HashSet<String> tokens = new HashSet<String>();
-        HashSet<String> certs = new HashSet<String>();
-
-        List<LanternUser> users = dao.ofy().query(LanternUser.class).list();
-        for (LanternUser user : users) {
-            log.info("Checking " + user.getId());
-            String configFolder = user.getConfigFolder();
-            if (configFolder == null) {
-                log.info("Null config!");
-                nulls += 1;
-                continue;
-            }
-            boolean goodToken;
-            boolean goodCert;
-            try {
-                URL url = new URL("https://s3-ap-southeast-1.amazonaws.com/lantern-config/"
-                        + configFolder
-                        + "/config.json");
-                Map<String, Object> m = new ObjectMapper().readValue(
-                        url.openStream(), Map.class);
-                List<Map<String, Object>> fbs = (List)m.get("fallbacks");
-                if (fbs.size() != 1) {
-                    throw new RuntimeException("Weird-sized fallback list: " + fbs.size());
-                }
-                String authToken = (String)fbs.get(0).get("auth_token");
-                String cert = (String)fbs.get(0).get("cert");
-
-                if (authToken == null) {
-                    log.info("Null token!");
-                    goodToken = false;
-                } else if (tokens.contains(authToken)) {
-                    log.info("Good token.");
-                    goodToken = true;
-                } else if (tokens.size() < expectedNumberOfFallbacks) {
-                    log.info("Saw token " + authToken + " for the first time.  Adding.");
-                    tokens.add(authToken);
-                    goodToken = true;
-                } else {
-                    log.info("BAD TOKEN: " + authToken);
-                    goodToken = false;
-                }
-                if (cert == null) {
-                    log.info("Null cert!");
-                    goodCert = false;
-                } else if (certs.contains(cert)) {
-                    log.info("Good cert.");
-                    goodCert = true;
-                } else if (certs.size() < expectedNumberOfFallbacks) {
-                    log.info("Saw cert " + cert + " for the first time.  Adding.");
-                    certs.add(cert);
-                    goodCert = true;
-                } else {
-                    log.info("BAD cert: " + cert);
-                    goodCert = false;
-                }
-                if (goodToken && goodCert) {
-                    ok += 1;
-                } else {
-                    fishy += 1;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        log.info("OK: " + ok + "; fishy: " + fishy + "; null: " + nulls
-                 + "; certs: " + certs.size() + "; tokens:" + tokens.size());
     }
 }
