@@ -49,10 +49,7 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            //log.info("Maintenance tasks are disabled.");
-            log.info("Sending stuck invite emails");
-            sendStuckInviteEmails();
-            log.info("Done!");
+            log.info("Maintenance tasks are disabled.");
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
