@@ -1,8 +1,8 @@
 [Versions]
 lanternctrl = 255
-lanternctrl1-2 = 351
+lanternctrl1-2 = 352
 oxlanternctrl = 300
-lanternctrltest = 26
+lanternctrltest = 28
 lantern-controller-afisk = 270
 oxctrl2 = 4
 oxctrl3 = 21
