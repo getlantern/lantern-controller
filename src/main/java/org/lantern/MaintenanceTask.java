@@ -65,7 +65,9 @@ public class MaintenanceTask extends HttpServlet {
         HashSet<String> processed = new HashSet<String>();
         ArrayList<String> toSend = new ArrayList<String>();
         for (Invite invite : ofy.query(Invite.class)
-                                .filter("status", Invite.Status.authorized)) {
+                                .filter("status", Invite.Status.authorized)
+                                .limit(1000)
+                                .list()) {
             String inviteeId = invite.getInvitee();
             if (processed.contains(inviteeId)) {
                 continue;
