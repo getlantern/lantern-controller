@@ -52,6 +52,7 @@ public class MaintenanceTask extends HttpServlet {
             //log.info("Maintenance tasks are disabled.");
             log.info("Sending stuck invite emails");
             sendStuckInviteEmails();
+            log.info("Done!");
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
