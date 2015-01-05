@@ -49,7 +49,8 @@ public class MaintenanceTask extends HttpServlet {
             // This space reserved for your hacks.  Deploy them, run them,
             // delete/disable them, redeploy with them deleted/disabled.  DON'T
             // LEAVE THEM ENABLED, EITHER IN GITHUB OR GAE!
-            log.info("Maintenance tasks are disabled.");
+            //log.info("Maintenance tasks are disabled.");
+            log.info("EMAIL IS " + findEmailByInstanceId(input));
         } catch (Exception e) {
             // In no case we want to keep retrying this.
             log.severe("" + e);
@@ -225,5 +226,14 @@ public class MaintenanceTask extends HttpServlet {
             }
             toMove.remove(userId);
         }
+    }
+
+    public String findEmailByInstanceId(String instanceId) {
+        for (LanternInstance instance : new Dao().ofy().query(LanternInstance.class)) {
+            if (instance.getId().equals(instanceId)) {
+                return instance.getUser();
+            }
+        }
+        return null;
     }
 }
