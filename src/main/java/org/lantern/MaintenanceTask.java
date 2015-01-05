@@ -30,6 +30,10 @@ import org.lantern.loggly.LoggerFactory;
 
 import com.googlecode.objectify.Key;
 import com.googlecode.objectify.Objectify;
+import com.googlecode.objectify.Query;
+
+import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.QueryResultIterator;
 
 
 @SuppressWarnings("serial")
@@ -229,9 +233,20 @@ public class MaintenanceTask extends HttpServlet {
     }
 
     public String findEmailByInstanceId(String instanceId) {
-        for (LanternInstance instance : new Dao().ofy().query(LanternInstance.class)) {
-            if (instance.getId().equals(instanceId)) {
-                return instance.getUser();
+        Objectify ofy = new Dao().ofy();
+        int step = 1000;
+        for (int start = 0; ; start += step) {
+            List<LanternInstance> lst = ofy.query(LanternInstance.class)
+                                            .offset(start)
+                                            .limit(step)
+                                            .list();
+            if (lst.size() == 0) {
+                break;
+            }
+            for (LanternInstance instance : lst) {
+                if (instance.getId().equals(instanceId)) {
+                    return instance.getUser();
+                }
             }
         }
         return null;
