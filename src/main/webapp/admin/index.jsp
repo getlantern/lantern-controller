@@ -151,6 +151,12 @@ Fallback: <input type="text" name="fallback" value="fp-fte3-at-getlantern-dot-or
 <br/>
 <br/>
 
+<h2>List all Fallbacks</h2>
+<p>Exports a JSON array with details for connecting to all fallbacks</p>
+<a href="/listfallbacks">List Fallbacks</a>
+<br/>
+<br/>
+
 <h2>Trigger maintenance task</h2>
 <p>RemoteApi-like thingy.  Don't touch this unless you added it.  Disable it when done.</p>
 <form method="POST" action="/admin/post/triggerMaintenanceTask">

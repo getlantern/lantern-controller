@@ -166,6 +166,13 @@
     <servlet-class>org.lantern.AdminServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  
+  <servlet>
+    <display-name>List Fallbacks Servlet</display-name>
+    <servlet-name>ListFallbacksServlet</servlet-name>
+    <servlet-class>org.lantern.ListFallbacksServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
 
   <servlet>
     <servlet-name>Jersey REST Service</servlet-name>
@@ -200,6 +207,10 @@
     <servlet-name>AdminServlet</servlet-name>
     <url-pattern>/admin/post/*</url-pattern>
   </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>ListFallbacksServlet</servlet-name>
+    <url-pattern>/listfallbacks</url-pattern>
+  </servlet-mapping>
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>Admin only</web-resource-name>
@@ -211,6 +222,7 @@
       <url-pattern>/upload_config_and_request_wrappers</url-pattern>
       <url-pattern>/send_update_task</url-pattern>
       <url-pattern>/maintenance_task</url-pattern>
+      <url-pattern>/listfallbacks</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>admin</role-name>
